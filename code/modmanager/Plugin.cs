@@ -1,0 +1,1074 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using BepInEx;
+using BepInEx.Bootstrap;
+using BepInEx.Configuration;
+using BepInEx.Unity.Mono;
+using BepInEx.Unity.Mono.Bootstrap;
+using BepInEx.Unity.Mono.Configuration;
+using TMPro;
+using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
+
+namespace PncModManager;
+
+[BepInPlugin(PluginGuid, PluginName, PluginVersion)]
+public sealed class Plugin : BaseUnityPlugin
+{
+	public const string PluginGuid = "com.pnc.modmanager";
+	public const string PluginName = "PNC Mod Manager";
+	public const string PluginVersion = "1.4.0";
+	private const string PncEditPluginGuid = "com.edi.pnc";
+
+	/// <summary>
+	/// True while the manager window has the screen.
+	///
+	/// Read by other plugins - PncEdi's SafeInput does, by reflection, so neither assembly has to
+	/// reference the other - so that their hotkeys stand down while the user is typing into a
+	/// settings field. Time.timeScale going to zero is not enough on its own: Update() still runs
+	/// at timescale zero, so an unguarded Input.GetKeyDown in another mod fires on every keystroke
+	/// that happens to land on its shortcut.
+	/// </summary>
+	public static bool IsOpen { get; private set; }
+
+	private ConfigEntry<KeyboardShortcut> _toggleShortcut;
+	private ConfigEntry<bool> _pauseWhileOpen;
+	private ConfigEntry<bool> _showSettingsWithoutDescriptions;
+
+	private readonly List<PluginView> _plugins = new List<PluginView>();
+	private readonly Dictionary<string, string> _draftValues = new Dictionary<string, string>();
+	private readonly HashSet<string> _dirtyValues = new HashSet<string>();
+	private readonly Dictionary<string, string> _errors = new Dictionary<string, string>();
+
+	private bool _visible;
+	private int _selectedPlugin;
+	private string _search = string.Empty;
+	private Vector2 _pluginScroll;
+	private Vector2 _settingsScroll;
+	private Rect _windowRect;
+	private bool _windowInitialized;
+	private bool _previousCursorVisible;
+	private CursorLockMode _previousCursorLock;
+	private float _previousTimeScale;
+	private bool _pausedByManager;
+	private readonly List<EventSystem> _disabledEventSystems = new List<EventSystem>();
+	private string _status = "F11 closes the manager";
+
+	private GUIStyle _titleStyle;
+	private GUIStyle _sectionStyle;
+	private GUIStyle _descriptionStyle;
+	private GUIStyle _selectedButtonStyle;
+	private GUIStyle _errorStyle;
+	private GUIStyle _fallbackMenuButtonStyle;
+	private GUIStyle _profilePanelStyle;
+	private GUIStyle _profileHeadingStyle;
+	private GUIStyle _collapsibleHeaderStyle;
+	private GUIStyle _activeProfileButtonStyle;
+	private GUIStyle _modeBadgeStyle;
+	private GUIStyle _modeBadgeTitleStyle;
+	private GUIStyle _modeBadgeValueStyle;
+	private ConfigEntryBase _gameplayProfileEntry;
+	private bool _confirmGalleryReset;
+	private readonly HashSet<string> _collapsedPanels = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+	private MainMenuManager _mainMenu;
+	private GameObject _mainMenuButton;
+	private float _nextMainMenuCheck;
+	private bool _showFallbackMenuButton;
+	private bool _menuButtonFailureLogged;
+	private static readonly FieldInfo FirstSelectedField = typeof(MainMenuManager).GetField("firstSelected", BindingFlags.Instance | BindingFlags.NonPublic);
+	private static readonly FieldInfo CameraAnimatorField = typeof(MainMenuManager).GetField("cameraAnimator", BindingFlags.Instance | BindingFlags.NonPublic);
+	private static readonly FieldInfo ItemUnlocksScreenField = typeof(MainMenuManager).GetField("itemUnlocksScreen", BindingFlags.Instance | BindingFlags.NonPublic);
+	private static readonly FieldInfo ItemUnlocksPanelField = typeof(ItemUnlocksScreenUI).GetField("screenPanel", BindingFlags.Instance | BindingFlags.NonPublic);
+
+	private void Awake()
+	{
+		_toggleShortcut = Config.Bind(
+			"Interface",
+			"ToggleShortcut",
+			new KeyboardShortcut(KeyCode.F11),
+			"Keyboard shortcut that opens or closes the in-game mod manager.");
+		_pauseWhileOpen = Config.Bind(
+			"Interface",
+			"PauseWhileOpen",
+			true,
+			"Pause Time.timeScale while the manager is open. Disable this if a mod needs time to continue running while settings are edited.");
+		_showSettingsWithoutDescriptions = Config.Bind(
+			"Interface",
+			"ShowUndocumentedSettings",
+			true,
+			"Show configuration entries that do not provide a description.");
+
+		Logger.LogInfo("PNC Mod Manager loaded. Press " + _toggleShortcut.Value + " to configure loaded BepInEx mods.");
+	}
+
+	private void Update()
+	{
+		UpdateMainMenuButton();
+		try
+		{
+			if (_toggleShortcut.Value.IsDown())
+			{
+				SetVisible(!_visible);
+			}
+		}
+		catch (Exception exception)
+		{
+			Logger.LogWarning("Could not read the mod-manager shortcut: " + exception.Message);
+		}
+	}
+
+	private void UpdateMainMenuButton()
+	{
+		if (Time.unscaledTime < _nextMainMenuCheck)
+		{
+			return;
+		}
+
+		_nextMainMenuCheck = Time.unscaledTime + 0.5f;
+		MainMenuManager current = UnityEngine.Object.FindAnyObjectByType<MainMenuManager>();
+		if (current == null || !current.isActiveAndEnabled)
+		{
+			_mainMenu = null;
+			_mainMenuButton = null;
+			_showFallbackMenuButton = false;
+			return;
+		}
+
+		_mainMenu = current;
+		if (_mainMenuButton == null)
+		{
+			CreateMainMenuButton();
+		}
+	}
+
+	private void CreateMainMenuButton()
+	{
+		try
+		{
+			GameObject template = FirstSelectedField?.GetValue(_mainMenu) as GameObject;
+			if (template == null || template.transform.parent == null)
+			{
+				throw new InvalidOperationException("The main menu's first button was not available.");
+			}
+
+			_mainMenuButton = UnityEngine.Object.Instantiate(template, template.transform.parent, false);
+			_mainMenuButton.name = "PNC Mod Manager Button";
+			_mainMenuButton.transform.SetAsLastSibling();
+
+			Button[] buttons = _mainMenuButton.GetComponentsInChildren<Button>(true);
+			if (buttons.Length == 0)
+			{
+				throw new InvalidOperationException("The main-menu button template contains no Unity UI Button.");
+			}
+			foreach (Button button in buttons)
+			{
+				// Remove the template's serialized actions as well as its runtime listeners.
+				// RemoveAllListeners() alone leaves persistent calls such as StartGame intact.
+				button.onClick = new Button.ButtonClickedEvent();
+				button.onClick.AddListener(OpenFromMainMenu);
+				Navigation navigation = button.navigation;
+				navigation.mode = Navigation.Mode.Automatic;
+				button.navigation = navigation;
+			}
+
+			foreach (TMP_Text label in _mainMenuButton.GetComponentsInChildren<TMP_Text>(true))
+			{
+				label.text = "MOD MANAGER";
+			}
+			foreach (Text label in _mainMenuButton.GetComponentsInChildren<Text>(true))
+			{
+				label.text = "MOD MANAGER";
+			}
+
+			PositionClonedButton(template, _mainMenuButton);
+			_showFallbackMenuButton = false;
+			Logger.LogInfo("Added Mod Manager button to the main menu.");
+		}
+		catch (Exception exception)
+		{
+			if (_mainMenuButton != null)
+			{
+				UnityEngine.Object.Destroy(_mainMenuButton);
+				_mainMenuButton = null;
+			}
+			_showFallbackMenuButton = true;
+			if (!_menuButtonFailureLogged)
+			{
+				_menuButtonFailureLogged = true;
+				Logger.LogWarning("Could not clone the native main-menu button; using the fallback button: " + exception.Message);
+			}
+		}
+	}
+
+	private static void PositionClonedButton(GameObject template, GameObject clone)
+	{
+		Transform parent = clone.transform.parent;
+		if (parent.GetComponent<LayoutGroup>() != null)
+		{
+			return;
+		}
+
+		RectTransform cloneRect = clone.GetComponent<RectTransform>();
+		RectTransform templateRect = template.GetComponent<RectTransform>();
+		if (cloneRect == null || templateRect == null)
+		{
+			return;
+		}
+
+		float lowestY = templateRect.anchoredPosition.y;
+		foreach (Transform sibling in parent)
+		{
+			if (sibling == clone.transform || sibling.GetComponentInChildren<Button>(true) == null)
+			{
+				continue;
+			}
+			if (sibling is RectTransform siblingRect)
+			{
+				lowestY = Mathf.Min(lowestY, siblingRect.anchoredPosition.y);
+			}
+		}
+		cloneRect.anchoredPosition = new Vector2(templateRect.anchoredPosition.x, lowestY - Mathf.Max(8f, templateRect.rect.height + 8f));
+	}
+
+	private void OpenFromMainMenu()
+	{
+		SetVisible(true);
+	}
+
+	private void OnDestroy()
+	{
+		if (_visible)
+		{
+			SetVisible(false);
+		}
+		IsOpen = false;
+	}
+
+	private void SetVisible(bool visible)
+	{
+		if (_visible == visible)
+		{
+			return;
+		}
+
+		_visible = visible;
+		IsOpen = visible;
+		if (visible)
+		{
+			RefreshPlugins();
+			DisableBackgroundUiInput();
+			_previousCursorVisible = Cursor.visible;
+			_previousCursorLock = Cursor.lockState;
+			_previousTimeScale = Time.timeScale;
+			Cursor.visible = true;
+			Cursor.lockState = CursorLockMode.None;
+			if (_pauseWhileOpen.Value && Time.timeScale > 0f)
+			{
+				Time.timeScale = 0f;
+				_pausedByManager = true;
+			}
+			_status = "Changes are applied live and saved to BepInEx/config";
+		}
+		else
+		{
+			RestoreBackgroundUiInput();
+			Cursor.visible = _previousCursorVisible;
+			Cursor.lockState = _previousCursorLock;
+			if (_pausedByManager && Time.timeScale == 0f)
+			{
+				Time.timeScale = _previousTimeScale;
+			}
+			_pausedByManager = false;
+		}
+	}
+
+	private void DisableBackgroundUiInput()
+	{
+		_disabledEventSystems.Clear();
+		foreach (EventSystem eventSystem in UnityEngine.Object.FindObjectsByType<EventSystem>(FindObjectsSortMode.None))
+		{
+			if (eventSystem.enabled)
+			{
+				eventSystem.enabled = false;
+				_disabledEventSystems.Add(eventSystem);
+			}
+		}
+	}
+
+	private void RestoreBackgroundUiInput()
+	{
+		foreach (EventSystem eventSystem in _disabledEventSystems)
+		{
+			if (eventSystem != null)
+			{
+				eventSystem.enabled = true;
+			}
+		}
+		_disabledEventSystems.Clear();
+	}
+
+	private void RefreshPlugins()
+	{
+		string selectedGuid = _plugins.Count > 0 && _selectedPlugin < _plugins.Count
+			? _plugins[_selectedPlugin].Info.Metadata.GUID
+			: null;
+
+		_plugins.Clear();
+		BaseChainloader<BaseUnityPlugin> chainloader = UnityChainloader.Instance;
+		if (chainloader != null)
+		{
+			foreach (PluginInfo info in chainloader.Plugins.Values
+				.OrderBy(info => info.Metadata.GUID.Equals(PncEditPluginGuid, StringComparison.OrdinalIgnoreCase) ? 0 : 1)
+				.ThenBy(info => info.Metadata.Name, StringComparer.OrdinalIgnoreCase))
+			{
+				BaseUnityPlugin instance = info.Instance as BaseUnityPlugin;
+				if (instance != null)
+				{
+					_plugins.Add(new PluginView(info, instance.Config));
+				}
+			}
+		}
+
+		_selectedPlugin = 0;
+		if (selectedGuid != null)
+		{
+			int oldSelection = _plugins.FindIndex(view => view.Info.Metadata.GUID == selectedGuid);
+			if (oldSelection >= 0)
+			{
+				_selectedPlugin = oldSelection;
+			}
+		}
+		_status = _plugins.Count + " loaded BepInEx mod(s) discovered";
+	}
+
+	private void OnGUI()
+	{
+		if (!_visible)
+		{
+			if (_mainMenu != null && _mainMenu.isActiveAndEnabled)
+			{
+				if (IsMainMenuVisible())
+				{
+					DrawGameModeBadge();
+				}
+				if (_showFallbackMenuButton)
+				{
+					DrawFallbackMainMenuButton();
+				}
+			}
+			return;
+		}
+
+		EnsureStyles();
+		if (!_windowInitialized)
+		{
+			float width = Mathf.Min(1180f, Mathf.Max(760f, Screen.width - 80f));
+			float height = Mathf.Min(820f, Mathf.Max(520f, Screen.height - 80f));
+			_windowRect = new Rect((Screen.width - width) / 2f, (Screen.height - height) / 2f, width, height);
+			_windowInitialized = true;
+		}
+
+		_windowRect.width = Mathf.Min(_windowRect.width, Screen.width - 20f);
+		_windowRect.height = Mathf.Min(_windowRect.height, Screen.height - 20f);
+		_windowRect.x = Mathf.Clamp(_windowRect.x, 0f, Mathf.Max(0f, Screen.width - _windowRect.width));
+		_windowRect.y = Mathf.Clamp(_windowRect.y, 0f, Mathf.Max(0f, Screen.height - _windowRect.height));
+		_windowRect = GUI.Window(GetInstanceID(), _windowRect, DrawWindow, "PNC Mod Manager " + PluginVersion);
+	}
+
+	private bool IsMainMenuVisible()
+	{
+		GameObject firstButton = FirstSelectedField?.GetValue(_mainMenu) as GameObject;
+		if (firstButton == null || !firstButton.activeInHierarchy)
+		{
+			return false;
+		}
+
+		Animator cameraAnimator = CameraAnimatorField?.GetValue(_mainMenu) as Animator;
+		if (cameraAnimator != null &&
+			(cameraAnimator.GetBool("Options") ||
+			 cameraAnimator.GetBool("DioramaGallery") ||
+			 cameraAnimator.GetBool("EnemyGallery")))
+		{
+			return false;
+		}
+
+		ItemUnlocksScreenUI itemUnlocksScreen = ItemUnlocksScreenField?.GetValue(_mainMenu) as ItemUnlocksScreenUI;
+		GameObject itemUnlocksPanel = itemUnlocksScreen == null ? null : ItemUnlocksPanelField?.GetValue(itemUnlocksScreen) as GameObject;
+		if (itemUnlocksScreen != null && itemUnlocksPanel == null)
+		{
+			itemUnlocksPanel = itemUnlocksScreen.gameObject;
+		}
+		return itemUnlocksPanel == null || !itemUnlocksPanel.activeInHierarchy;
+	}
+
+	private void DrawFallbackMainMenuButton()
+	{
+		EnsureStyles();
+		float width = Mathf.Clamp(Screen.width * 0.18f, 190f, 280f);
+		float height = Mathf.Clamp(Screen.height * 0.055f, 44f, 64f);
+		Rect rect = new Rect(Screen.width - width - 24f, Screen.height - height - 24f, width, height);
+		if (GUI.Button(rect, "MOD MANAGER  [" + _toggleShortcut.Value + "]", _fallbackMenuButtonStyle))
+		{
+			OpenFromMainMenu();
+		}
+	}
+
+	private void DrawGameModeBadge()
+	{
+		ConfigEntryBase profile = GetGameplayProfileEntry();
+		if (profile == null)
+		{
+			return;
+		}
+
+		EnsureStyles();
+		Rect rect = new Rect(18f, 18f, 260f, 72f);
+		GUI.Box(rect, GUIContent.none, _modeBadgeStyle);
+		GUI.Label(new Rect(rect.x + 12f, rect.y + 8f, rect.width - 24f, 20f), "ACTIVE GAME MODE", _modeBadgeTitleStyle);
+		Rect valueRect = new Rect(rect.x + 12f, rect.y + 29f, rect.width - 24f, 34f);
+		string value = Nicify(profile.BoxedValue.ToString());
+		GUIContent content = new GUIContent(value);
+		int originalFontSize = _modeBadgeValueStyle.fontSize;
+		while (_modeBadgeValueStyle.fontSize > 14 && _modeBadgeValueStyle.CalcSize(content).x > valueRect.width)
+		{
+			_modeBadgeValueStyle.fontSize--;
+		}
+		GUI.Label(valueRect, content, _modeBadgeValueStyle);
+		_modeBadgeValueStyle.fontSize = originalFontSize;
+	}
+
+	private ConfigEntryBase GetGameplayProfileEntry()
+	{
+		if (_gameplayProfileEntry != null)
+		{
+			return _gameplayProfileEntry;
+		}
+
+		BaseChainloader<BaseUnityPlugin> chainloader = UnityChainloader.Instance;
+		if (chainloader != null && chainloader.Plugins.TryGetValue("com.edi.pnc", out PluginInfo info))
+		{
+			BaseUnityPlugin plugin = info.Instance as BaseUnityPlugin;
+			_gameplayProfileEntry = plugin?.Config.Values.FirstOrDefault(IsGameplayProfile);
+		}
+		return _gameplayProfileEntry;
+	}
+
+	private void EnsureStyles()
+	{
+		if (_titleStyle != null)
+		{
+			return;
+		}
+
+		_titleStyle = new GUIStyle(GUI.skin.label)
+		{
+			fontSize = 18,
+			fontStyle = FontStyle.Bold,
+			wordWrap = true
+		};
+		_sectionStyle = new GUIStyle(GUI.skin.box)
+		{
+			alignment = TextAnchor.MiddleLeft,
+			fontStyle = FontStyle.Bold,
+			fontSize = 14,
+			stretchWidth = true
+		};
+		_descriptionStyle = new GUIStyle(GUI.skin.label)
+		{
+			wordWrap = true,
+			fontSize = 11
+		};
+		_selectedButtonStyle = new GUIStyle(GUI.skin.button)
+		{
+			fontStyle = FontStyle.Bold,
+			alignment = TextAnchor.MiddleLeft
+		};
+		_errorStyle = new GUIStyle(_descriptionStyle);
+		_errorStyle.normal.textColor = new Color(1f, 0.45f, 0.4f);
+		_fallbackMenuButtonStyle = new GUIStyle(GUI.skin.button)
+		{
+			fontSize = 16,
+			fontStyle = FontStyle.Bold,
+			alignment = TextAnchor.MiddleCenter
+		};
+		_profilePanelStyle = new GUIStyle(GUI.skin.box)
+		{
+			padding = new RectOffset(12, 12, 10, 12)
+		};
+		_profileHeadingStyle = new GUIStyle(_sectionStyle)
+		{
+			alignment = TextAnchor.MiddleCenter,
+			fontSize = 16
+		};
+		_collapsibleHeaderStyle = new GUIStyle(_profileHeadingStyle);
+		_collapsibleHeaderStyle.hover.textColor = new Color(0.55f, 1f, 0.65f);
+		_collapsibleHeaderStyle.active.textColor = new Color(0.35f, 0.85f, 0.45f);
+		_activeProfileButtonStyle = new GUIStyle(GUI.skin.button)
+		{
+			fontStyle = FontStyle.Bold,
+			fontSize = 14,
+			alignment = TextAnchor.MiddleCenter
+		};
+		_activeProfileButtonStyle.normal.textColor = new Color(0.45f, 1f, 0.55f);
+		_activeProfileButtonStyle.hover.textColor = new Color(0.55f, 1f, 0.65f);
+		_modeBadgeStyle = new GUIStyle(GUI.skin.box)
+		{
+			padding = new RectOffset(12, 12, 8, 8)
+		};
+		_modeBadgeTitleStyle = new GUIStyle(GUI.skin.label)
+		{
+			fontSize = 11,
+			fontStyle = FontStyle.Bold,
+			alignment = TextAnchor.UpperLeft
+		};
+		_modeBadgeTitleStyle.normal.textColor = new Color(0.72f, 0.72f, 0.72f);
+		_modeBadgeValueStyle = new GUIStyle(GUI.skin.label)
+		{
+			fontSize = 22,
+			fontStyle = FontStyle.Bold,
+			alignment = TextAnchor.MiddleLeft,
+			wordWrap = false,
+			clipping = TextClipping.Clip
+		};
+		_modeBadgeValueStyle.normal.textColor = new Color(0.45f, 1f, 0.55f);
+	}
+
+	private void DrawWindow(int windowId)
+	{
+		GUILayout.BeginVertical();
+		GUILayout.BeginHorizontal();
+		GUILayout.Label("Loaded mods", _titleStyle, GUILayout.Width(240f));
+		GUILayout.FlexibleSpace();
+		if (GUILayout.Button("Refresh", GUILayout.Width(90f)))
+		{
+			RefreshPlugins();
+		}
+		if (GUILayout.Button("Save all", GUILayout.Width(90f)))
+		{
+			SaveAll();
+		}
+		if (GUILayout.Button("Close (" + _toggleShortcut.Value + ")", GUILayout.Width(130f)))
+		{
+			SetVisible(false);
+		}
+		GUILayout.EndHorizontal();
+
+		GUILayout.Space(5f);
+		GUILayout.BeginHorizontal();
+		DrawPluginList();
+		GUILayout.Space(8f);
+		DrawSettings();
+		GUILayout.EndHorizontal();
+
+		GUILayout.Space(4f);
+		GUILayout.Label(_status, _descriptionStyle);
+		GUILayout.EndVertical();
+
+		GUI.DragWindow(new Rect(0f, 0f, _windowRect.width - 300f, 24f));
+	}
+
+	private void DrawPluginList()
+	{
+		GUILayout.BeginVertical(GUI.skin.box, GUILayout.Width(250f), GUILayout.ExpandHeight(true));
+		_pluginScroll = GUILayout.BeginScrollView(_pluginScroll);
+		for (int index = 0; index < _plugins.Count; index++)
+		{
+			PluginView plugin = _plugins[index];
+			string label = plugin.Info.Metadata.Name + "\n" + plugin.Info.Metadata.Version + "  •  " + plugin.Config.Count + " settings";
+			GUIStyle style = index == _selectedPlugin ? _selectedButtonStyle : GUI.skin.button;
+			if (GUILayout.Button(label, style, GUILayout.MinHeight(46f)))
+			{
+				_selectedPlugin = index;
+				_settingsScroll = Vector2.zero;
+				_search = string.Empty;
+			}
+		}
+		GUILayout.EndScrollView();
+		GUILayout.EndVertical();
+	}
+
+	private void DrawSettings()
+	{
+		GUILayout.BeginVertical(GUI.skin.box, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
+		if (_plugins.Count == 0)
+		{
+			GUILayout.Label("No loaded BepInEx plugins were found.", _titleStyle);
+			GUILayout.EndVertical();
+			return;
+		}
+
+		_selectedPlugin = Mathf.Clamp(_selectedPlugin, 0, _plugins.Count - 1);
+		PluginView plugin = _plugins[_selectedPlugin];
+		GUILayout.Label(plugin.Info.Metadata.Name + " " + plugin.Info.Metadata.Version, _titleStyle);
+		GUILayout.Label(plugin.Info.Metadata.GUID, _descriptionStyle);
+		ConfigEntryBase profileEntry = plugin.Config.Values.FirstOrDefault(IsGameplayProfile);
+		if (profileEntry != null)
+		{
+			DrawGameplayProfileSelector(plugin, profileEntry);
+		}
+		if (plugin.Info.Metadata.GUID.Equals(PncEditPluginGuid, StringComparison.OrdinalIgnoreCase))
+		{
+			DrawGalleryActions(plugin);
+		}
+		DrawCustomEnemiesPanel(plugin);
+		GUILayout.BeginHorizontal();
+		GUILayout.Label("Search", GUILayout.Width(55f));
+		_search = GUILayout.TextField(_search ?? string.Empty);
+		if (!string.IsNullOrEmpty(_search) && GUILayout.Button("×", GUILayout.Width(28f)))
+		{
+			_search = string.Empty;
+		}
+		GUILayout.EndHorizontal();
+
+		_settingsScroll = GUILayout.BeginScrollView(_settingsScroll, GUILayout.ExpandHeight(true));
+		IEnumerable<ConfigEntryBase> visibleEntries = plugin.Config.Values
+			.Where(entry => !IsGameplayProfile(entry))
+			.Where(entry => !IsCustomEnemyToggle(entry))
+			.Where(EntryMatchesSearch)
+			.Where(entry => _showSettingsWithoutDescriptions.Value || !string.IsNullOrWhiteSpace(entry.Description.Description))
+			.OrderBy(entry => entry.Definition.Section, StringComparer.OrdinalIgnoreCase)
+			.ThenBy(entry => entry.Definition.Key.Equals("Profile", StringComparison.OrdinalIgnoreCase) ? 0 : 1)
+			.ThenBy(entry => entry.Definition.Key, StringComparer.OrdinalIgnoreCase);
+
+		string currentSection = null;
+		int shown = 0;
+		foreach (ConfigEntryBase entry in visibleEntries)
+		{
+			if (!string.Equals(currentSection, entry.Definition.Section, StringComparison.Ordinal))
+			{
+				currentSection = entry.Definition.Section;
+				GUILayout.Space(shown == 0 ? 4f : 12f);
+				GUILayout.Label(currentSection, _sectionStyle, GUILayout.Height(28f));
+			}
+			DrawEntry(plugin, entry);
+			shown++;
+		}
+
+		if (shown == 0)
+		{
+			GUILayout.Label(plugin.Config.Count == 0 ? "This mod has no registered settings." : "No settings match the search.");
+		}
+		GUILayout.EndScrollView();
+		GUILayout.EndVertical();
+	}
+
+	private static bool IsGameplayProfile(ConfigEntryBase entry)
+	{
+		return entry.SettingType.IsEnum
+			&& entry.Definition.Section.Equals("Gameplay", StringComparison.OrdinalIgnoreCase)
+			&& entry.Definition.Key.Equals("Profile", StringComparison.OrdinalIgnoreCase);
+	}
+
+	private static bool IsCustomEnemyToggle(ConfigEntryBase entry)
+	{
+		return entry.SettingType == typeof(bool)
+			&& entry.Definition.Section.Equals("Custom Enemies", StringComparison.OrdinalIgnoreCase);
+	}
+
+	private void DrawGalleryActions(PluginView plugin)
+	{
+		ConfigEntryBase unlockAll = plugin.Config.Values.FirstOrDefault(entry =>
+			entry.SettingType == typeof(bool)
+			&& entry.Definition.Section.Equals("Gallery", StringComparison.OrdinalIgnoreCase)
+			&& entry.Definition.Key.Equals("UnlockAll", StringComparison.OrdinalIgnoreCase));
+		if (unlockAll == null)
+		{
+			return;
+		}
+
+		bool enabled = (bool)unlockAll.BoxedValue;
+		GUILayout.Space(8f);
+		GUILayout.BeginVertical(_profilePanelStyle);
+		if (DrawPanelHeader("GALLERY PROGRESS", plugin.Info.Metadata.GUID + "|Panel|Gallery", enabled ? "Everything unlocked" : "Normal progress"))
+		{
+			GUILayout.Label("Unlock all applies immediately. Reset disables it and clears saved gallery discoveries.", _descriptionStyle);
+			GUILayout.BeginHorizontal();
+			if (GUILayout.Button(enabled ? "Everything unlocked" : "Unlock everything", GUILayout.MinHeight(36f), GUILayout.ExpandWidth(true)))
+			{
+				string id = plugin.Info.Metadata.GUID + "|Gallery|UnlockAll";
+				ApplyValue(unlockAll, true, id);
+				RefreshGalleryDisplays();
+				_confirmGalleryReset = false;
+				_status = "All gallery entries are unlocked";
+			}
+
+			if (!_confirmGalleryReset)
+			{
+				if (GUILayout.Button("Reset unlocked", GUILayout.MinHeight(36f), GUILayout.ExpandWidth(true)))
+				{
+					_confirmGalleryReset = true;
+				}
+			}
+			else
+			{
+				if (GUILayout.Button("Confirm reset", GUILayout.MinHeight(36f), GUILayout.ExpandWidth(true)))
+				{
+					ResetGalleryProgress(unlockAll, plugin);
+				}
+				if (GUILayout.Button("Cancel", GUILayout.Width(70f), GUILayout.MinHeight(36f)))
+				{
+					_confirmGalleryReset = false;
+				}
+			}
+			GUILayout.EndHorizontal();
+		}
+		GUILayout.EndVertical();
+	}
+
+	private void ResetGalleryProgress(ConfigEntryBase unlockAll, PluginView plugin)
+	{
+		try
+		{
+			string id = plugin.Info.Metadata.GUID + "|Gallery|UnlockAll";
+			ApplyValue(unlockAll, false, id);
+			GalleryProgressManager progress = GalleryProgressManager.Instance;
+			if (progress == null)
+			{
+				throw new InvalidOperationException("Gallery progress is not loaded yet. Return to the main menu and try again.");
+			}
+			if (progress.CheatUnlockAll)
+			{
+				progress.ToggleCheatUnlockAll();
+			}
+			progress.ResetAllProgress();
+			RefreshGalleryDisplays();
+			_confirmGalleryReset = false;
+			_status = "Gallery unlock progress reset";
+		}
+		catch (Exception exception)
+		{
+			_status = "Could not reset gallery progress: " + exception.Message;
+			Logger.LogError("Could not reset gallery progress: " + exception);
+		}
+	}
+
+	private static void RefreshGalleryDisplays()
+	{
+		foreach (EnemyGalleryUI gallery in UnityEngine.Object.FindObjectsByType<EnemyGalleryUI>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+		{
+			gallery.RefreshDisplay();
+		}
+		foreach (PeekScenesUI gallery in UnityEngine.Object.FindObjectsByType<PeekScenesUI>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+		{
+			gallery.RefreshDisplay();
+		}
+		foreach (DioramaGalleryUI gallery in UnityEngine.Object.FindObjectsByType<DioramaGalleryUI>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+		{
+			gallery.RefreshDisplay();
+		}
+	}
+
+	private void DrawCustomEnemiesPanel(PluginView plugin)
+	{
+		List<ConfigEntryBase> enemies = plugin.Config.Values
+			.Where(IsCustomEnemyToggle)
+			.OrderBy(entry => entry.Definition.Key, StringComparer.OrdinalIgnoreCase)
+			.ToList();
+		if (enemies.Count == 0)
+		{
+			return;
+		}
+
+		int enabledCount = enemies.Count(entry => (bool)entry.BoxedValue);
+		GUILayout.Space(8f);
+		GUILayout.BeginVertical(_profilePanelStyle);
+		if (DrawPanelHeader("CUSTOM ENEMIES", plugin.Info.Metadata.GUID + "|Panel|CustomEnemies", enabledCount + " of " + enemies.Count + " enabled"))
+		{
+			GUILayout.Label("Installed custom enemy packages. Each switch applies immediately to future spawns and the custom gallery.", _descriptionStyle);
+			foreach (ConfigEntryBase entry in enemies)
+			{
+				string id = plugin.Info.Metadata.GUID + "|" + entry.Definition.Section + "|" + entry.Definition.Key;
+				bool enabled = (bool)entry.BoxedValue;
+				GUILayout.BeginHorizontal(GUI.skin.box);
+				GUILayout.BeginVertical(GUILayout.ExpandWidth(true));
+				GUILayout.Label(CustomEnemyTitle(entry), _titleStyle);
+				GUILayout.Label(entry.Definition.Key, _descriptionStyle);
+				GUILayout.EndVertical();
+				GUIStyle toggleStyle = enabled ? _activeProfileButtonStyle : GUI.skin.button;
+				if (GUILayout.Button(enabled ? "Enabled" : "Disabled", toggleStyle, GUILayout.Width(120f), GUILayout.MinHeight(44f)))
+				{
+					ApplyValue(entry, !enabled, id);
+				}
+				GUILayout.EndHorizontal();
+			}
+		}
+		GUILayout.EndVertical();
+	}
+
+	private static string CustomEnemyTitle(ConfigEntryBase entry)
+	{
+		string description = entry.Description.Description ?? string.Empty;
+		if (description.StartsWith("Enable ", StringComparison.OrdinalIgnoreCase))
+		{
+			int end = description.IndexOf('.');
+			if (end > 7)
+			{
+				return description.Substring(7, end - 7).Trim();
+			}
+		}
+		return Nicify(entry.Definition.Key.Replace('_', ' '));
+	}
+
+	private bool DrawPanelHeader(string title, string key, string collapsedSummary)
+	{
+		bool collapsed = _collapsedPanels.Contains(key);
+		string label = (collapsed ? "\u25BA " : "\u25BC ") + title;
+		if (collapsed && !string.IsNullOrEmpty(collapsedSummary))
+		{
+			label += "  \u2022  " + collapsedSummary;
+		}
+		if (GUILayout.Button(label, _collapsibleHeaderStyle, GUILayout.Height(28f)))
+		{
+			if (collapsed)
+			{
+				_collapsedPanels.Remove(key);
+			}
+			else
+			{
+				_collapsedPanels.Add(key);
+			}
+			collapsed = !collapsed;
+		}
+		return !collapsed;
+	}
+
+	private void DrawGameplayProfileSelector(PluginView plugin, ConfigEntryBase entry)
+	{
+		string id = plugin.Info.Metadata.GUID + "|" + entry.Definition.Section + "|" + entry.Definition.Key;
+		object current = entry.BoxedValue;
+
+		GUILayout.Space(8f);
+		GUILayout.BeginVertical(_profilePanelStyle);
+		if (DrawPanelHeader("GAME MODE", plugin.Info.Metadata.GUID + "|Panel|GameMode", Nicify(current.ToString())))
+		{
+			GUILayout.Label("Current: " + Nicify(current.ToString()), _titleStyle);
+			GUILayout.Label(GetProfileDescription(current.ToString()), _descriptionStyle);
+			GUILayout.Space(6f);
+			GUILayout.BeginHorizontal();
+			foreach (object value in Enum.GetValues(entry.SettingType))
+			{
+				bool selected = Equals(value, current);
+				GUIStyle style = selected ? _activeProfileButtonStyle : GUI.skin.button;
+				string label = (selected ? "[ACTIVE]  " : string.Empty) + Nicify(value.ToString());
+				if (GUILayout.Button(label, style, GUILayout.MinHeight(42f), GUILayout.ExpandWidth(true)) && !selected)
+				{
+					ApplyValue(entry, value, id);
+				}
+			}
+			GUILayout.EndHorizontal();
+		}
+		GUILayout.EndVertical();
+		GUILayout.Space(5f);
+	}
+
+	private static string GetProfileDescription(string profile)
+	{
+		switch (profile)
+		{
+			case "Vanilla":
+				return "Original game combat, health, heat and spawning.";
+			case "PressureAndRelease":
+				return "Balanced pressure progression with persistent locks and stronger enemies.";
+			case "GodMode":
+				return "No damage or death; intended for exploration and gallery discovery.";
+			case "Custom":
+				return "Uses the detailed gameplay settings below.";
+			default:
+				return "Select the ruleset used for gameplay.";
+		}
+	}
+
+	private bool EntryMatchesSearch(ConfigEntryBase entry)
+	{
+		if (string.IsNullOrWhiteSpace(_search))
+		{
+			return true;
+		}
+
+		string needle = _search.Trim();
+		return Contains(entry.Definition.Section, needle)
+			|| Contains(entry.Definition.Key, needle)
+			|| Contains(entry.Description.Description, needle)
+			|| Contains(entry.GetSerializedValue(), needle);
+	}
+
+	private static bool Contains(string haystack, string needle)
+	{
+		return !string.IsNullOrEmpty(haystack)
+			&& haystack.IndexOf(needle, StringComparison.OrdinalIgnoreCase) >= 0;
+	}
+
+	private void DrawEntry(PluginView plugin, ConfigEntryBase entry)
+	{
+		string id = plugin.Info.Metadata.GUID + "|" + entry.Definition.Section + "|" + entry.Definition.Key;
+		GUILayout.BeginVertical(GUI.skin.box);
+		GUILayout.BeginHorizontal();
+		GUILayout.Label(entry.Definition.Key, GUILayout.Width(245f));
+
+		if (entry.SettingType == typeof(bool))
+		{
+			bool oldValue = (bool)entry.BoxedValue;
+			bool newValue = GUILayout.Toggle(oldValue, oldValue ? "Enabled" : "Disabled", GUILayout.Width(110f));
+			if (newValue != oldValue)
+			{
+				ApplyValue(entry, newValue, id);
+			}
+			GUILayout.FlexibleSpace();
+		}
+		else if (entry.SettingType.IsEnum)
+		{
+			object current = entry.BoxedValue;
+			if (GUILayout.Button(Nicify(current.ToString()), GUILayout.MinWidth(180f)))
+			{
+				Array values = Enum.GetValues(entry.SettingType);
+				int currentIndex = Array.IndexOf(values, current);
+				ApplyValue(entry, values.GetValue((currentIndex + 1) % values.Length), id);
+			}
+			GUILayout.FlexibleSpace();
+		}
+		else
+		{
+			string serialized = entry.GetSerializedValue();
+			if (!_draftValues.ContainsKey(id) || !_dirtyValues.Contains(id))
+			{
+				_draftValues[id] = serialized;
+			}
+			string oldDraft = _draftValues[id];
+			string newDraft = GUILayout.TextField(oldDraft, GUILayout.MinWidth(180f));
+			if (newDraft != oldDraft)
+			{
+				_draftValues[id] = newDraft;
+				_dirtyValues.Add(id);
+				_errors.Remove(id);
+			}
+			GUI.enabled = _dirtyValues.Contains(id);
+			if (GUILayout.Button("Apply", GUILayout.Width(58f)))
+			{
+				ApplySerialized(entry, id);
+			}
+			GUI.enabled = true;
+		}
+
+		if (GUILayout.Button("Reset", GUILayout.Width(58f)))
+		{
+			ApplyValue(entry, entry.DefaultValue, id);
+		}
+		GUILayout.EndHorizontal();
+
+		if (!string.IsNullOrWhiteSpace(entry.Description.Description))
+		{
+			GUILayout.Label(entry.Description.Description, _descriptionStyle);
+		}
+		GUILayout.Label("Type: " + entry.SettingType.Name + "  •  Default: " + SerializeDefault(entry), _descriptionStyle);
+		if (_errors.TryGetValue(id, out string error))
+		{
+			GUILayout.Label(error, _errorStyle);
+		}
+		GUILayout.EndVertical();
+	}
+
+	private static string SerializeDefault(ConfigEntryBase entry)
+	{
+		try
+		{
+			return TomlTypeConverter.ConvertToString(entry.DefaultValue, entry.SettingType);
+		}
+		catch
+		{
+			return entry.DefaultValue?.ToString() ?? "null";
+		}
+	}
+
+	private static string Nicify(string value)
+	{
+		if (string.IsNullOrEmpty(value))
+		{
+			return value;
+		}
+		System.Text.StringBuilder builder = new System.Text.StringBuilder(value.Length + 8);
+		for (int index = 0; index < value.Length; index++)
+		{
+			char current = value[index];
+			if (index > 0 && char.IsUpper(current) && !char.IsUpper(value[index - 1]))
+			{
+				builder.Append(' ');
+			}
+			builder.Append(current);
+		}
+		return builder.ToString();
+	}
+
+	private void ApplySerialized(ConfigEntryBase entry, string id)
+	{
+		try
+		{
+			object parsed = TomlTypeConverter.ConvertToValue(_draftValues[id], entry.SettingType);
+			ApplyValue(entry, parsed, id);
+		}
+		catch (Exception exception)
+		{
+			_errors[id] = "Invalid value: " + exception.Message;
+			_status = "Could not apply " + entry.Definition;
+		}
+	}
+
+	private void ApplyValue(ConfigEntryBase entry, object value, string id)
+	{
+		try
+		{
+			entry.BoxedValue = value;
+			entry.ConfigFile.Save();
+			_draftValues[id] = entry.GetSerializedValue();
+			_dirtyValues.Remove(id);
+			_errors.Remove(id);
+			_status = "Saved " + entry.Definition.Section + " / " + entry.Definition.Key;
+			if (entry.Definition.Section.Equals("Gallery", StringComparison.OrdinalIgnoreCase)
+				&& entry.Definition.Key.Equals("UnlockAll", StringComparison.OrdinalIgnoreCase))
+			{
+				RefreshGalleryDisplays();
+			}
+		}
+		catch (Exception exception)
+		{
+			_errors[id] = "Could not save: " + exception.Message;
+			_status = "Could not save " + entry.Definition;
+			Logger.LogError("Could not save " + entry.Definition + ": " + exception);
+		}
+	}
+
+	private void SaveAll()
+	{
+		int saved = 0;
+		foreach (PluginView plugin in _plugins)
+		{
+			try
+			{
+				plugin.Config.Save();
+				saved++;
+			}
+			catch (Exception exception)
+			{
+				Logger.LogError("Could not save " + plugin.Info.Metadata.Name + ": " + exception);
+			}
+		}
+		_status = "Saved configuration files for " + saved + " mod(s)";
+	}
+
+	private sealed class PluginView
+	{
+		internal PluginInfo Info { get; }
+		internal ConfigFile Config { get; }
+
+		internal PluginView(PluginInfo info, ConfigFile config)
+		{
+			Info = info;
+			Config = config;
+		}
+	}
+
+}

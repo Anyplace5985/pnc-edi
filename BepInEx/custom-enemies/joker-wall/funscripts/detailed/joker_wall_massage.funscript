@@ -1,0 +1,12 @@
+{
+  "actions": [
+    { "at": 0, "pos": 25 },
+    { "at": 130, "pos": 70 },
+    { "at": 260, "pos": 30 },
+    { "at": 390, "pos": 75 },
+    { "at": 520, "pos": 25 }
+  ],
+  "metadata": {
+    "description": "Joker Wall massage loop, synchronized to the four-frame 7.7 fps animation."
+  }
+}

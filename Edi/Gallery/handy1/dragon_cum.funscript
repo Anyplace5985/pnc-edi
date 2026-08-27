@@ -1,0 +1,53 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 81
+    },
+    {
+      "at": 111,
+      "pos": 69
+    },
+    {
+      "at": 222,
+      "pos": 29
+    },
+    {
+      "at": 333,
+      "pos": 0
+    },
+    {
+      "at": 444,
+      "pos": 40
+    },
+    {
+      "at": 556,
+      "pos": 81
+    },
+    {
+      "at": 667,
+      "pos": 69
+    },
+    {
+      "at": 778,
+      "pos": 29
+    },
+    {
+      "at": 889,
+      "pos": 0
+    },
+    {
+      "at": 1000,
+      "pos": 40
+    },
+    {
+      "at": 1111,
+      "pos": 81
+    }
+  ],
+  "metadata": {
+    "duration": 1,
+    "title": "Dragon_Cum",
+    "description": "handy1 variant of 'detailed': slew-limited to 364 units/s (400 mm/s over 110 mm). Timing identical; only strokes the device could not complete are shortened."
+  }
+}

@@ -1,0 +1,7 @@
+# Do not touch line endings. They are load-bearing in this project:
+#   - BepInEx/config/com.edi.pnc.cfg is CRLF in the game tree and LF in mod/single-mod, and
+#     that difference is deliberate and documented (code/README.md).
+#   - Edi/Gallery/Definitions.csv is CRLF, and the tools that rewrite it preserve that.
+# Normalising on checkin would erase the first and silently rewrite the second, so every file
+# is treated as binary for the purpose of EOL conversion.
+* -text

@@ -1,0 +1,82 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <AssemblyName>PncEdi.Tests</AssemblyName>
+    <RootNamespace>PncEdi.Tests</RootNamespace>
+    <RepoDir>$(MSBuildThisFileDirectory)..\..\</RepoDir>
+    <!-- Same two reference roots the mod builds against. BepInEx comes from the pinned pack in
+         the repo; UnityEngine is the only thing here that needs a game checked out.           -->
+    <BepInExDir>$(RepoDir)code\dist\bepinex\core\</BepInExDir>
+    <GameDir Condition="'$(GameDir)' == ''">$(RepoDir)game-windows\</GameDir>
+    <ManagedDir>$(GameDir)Post Nut Calamity_Data\Managed\</ManagedDir>
+  </PropertyGroup>
+
+  <!-- Versions are the ones already in the local NuGet cache (the Edi clone uses them), so a
+       restore works with no network. -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
+    <PackageReference Include="xunit.v3" Version="3.2.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <!-- The mod's REAL source, referenced and never copied - the same rule slugharness follows.
+       A test that runs against a copy tests the copy. Anything added here has to be reachable
+       without a Unity runtime; the rest of the mod is Harmony patches over live game objects
+       and is not unit-testable, which is what the audits in code/ and a play session are for. -->
+  <ItemGroup>
+    <Compile Include="../edimod/PncEdi/ConfigMap.cs" />
+    <Compile Include="../edimod/PncEdi/GameplayProfileRules.cs" />
+    <Compile Include="../edimod/PncEdi/NameRemap.cs" />
+    <Compile Include="../edimod/PncEdi/GalleryTable.cs" />
+    <Compile Include="../edimod/PncEdi/GalleryRegistry.cs" />
+    <Compile Include="../edimod/PncEdi/GalleryAliases.cs" />
+    <Compile Include="../edimod/PncEdi/DioramaGalleryMap.cs" />
+    <Compile Include="../edimod/PncEdi/PeekGalleryMap.cs" />
+    <Compile Include="../edimod/PncEdi/ClassHeatMultipliers.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Copied to the test output, unlike the mod build: there is no BepInEx runtime here to
+         provide it, and `GalleryRegistry` touches `BepInEx.Paths` on its first lookup. -->
+    <Reference Include="BepInEx.Core">
+      <HintPath>$(BepInExDir)BepInEx.Core.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>$(ManagedDir)Assembly-CSharp.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(ManagedDir)UnityEngine.CoreModule.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+  </ItemGroup>
+
+  <!-- GalleryRegistry's last candidate path is `AppContext.BaseDirectory/Edi/Gallery/`, which is
+       how the tests get it to load the real 104-row table without a game running. -->
+  <ItemGroup>
+    <None Include="$(RepoDir)Edi\Gallery\Definitions.csv"
+          Link="Edi\Gallery\Definitions.csv"
+          CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <Target Name="CheckTestRefs" BeforeTargets="ResolveAssemblyReferences">
+    <Error Condition="!Exists('$(BepInExDir)BepInEx.Core.dll')"
+           Text="No BepInEx to compile against at $(BepInExDir). Run: python3 code/deploy.py --refs-only" />
+    <Error Condition="!Exists('$(ManagedDir)UnityEngine.CoreModule.dll')"
+           Text="No game to compile against at $(ManagedDir). Check the game-windows symlink, or pass -p:GameDir=..." />
+  </Target>
+
+</Project>

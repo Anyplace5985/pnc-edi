@@ -1,0 +1,208 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 0
+    },
+    {
+      "at": 124,
+      "pos": 34
+    },
+    {
+      "at": 253,
+      "pos": 82
+    },
+    {
+      "at": 402,
+      "pos": 14
+    },
+    {
+      "at": 536,
+      "pos": 92
+    },
+    {
+      "at": 686,
+      "pos": 8
+    },
+    {
+      "at": 804,
+      "pos": 58
+    },
+    {
+      "at": 933,
+      "pos": 24
+    },
+    {
+      "at": 1067,
+      "pos": 88
+    },
+    {
+      "at": 1216,
+      "pos": 0
+    },
+    {
+      "at": 1361,
+      "pos": 70
+    },
+    {
+      "at": 1459,
+      "pos": 72
+    },
+    {
+      "at": 1557,
+      "pos": 18
+    },
+    {
+      "at": 1675,
+      "pos": 96
+    },
+    {
+      "at": 1820,
+      "pos": 12
+    },
+    {
+      "at": 1938,
+      "pos": 48
+    },
+    {
+      "at": 2036,
+      "pos": 6
+    },
+    {
+      "at": 2160,
+      "pos": 84
+    },
+    {
+      "at": 2309,
+      "pos": 30
+    },
+    {
+      "at": 2438,
+      "pos": 100
+    },
+    {
+      "at": 2582,
+      "pos": 0
+    },
+    {
+      "at": 2722,
+      "pos": 62
+    },
+    {
+      "at": 2809,
+      "pos": 38
+    },
+    {
+      "at": 2897,
+      "pos": 76
+    },
+    {
+      "at": 3015,
+      "pos": 12
+    },
+    {
+      "at": 3144,
+      "pos": 94
+    },
+    {
+      "at": 3294,
+      "pos": 4
+    },
+    {
+      "at": 3407,
+      "pos": 52
+    },
+    {
+      "at": 3505,
+      "pos": 20
+    },
+    {
+      "at": 3624,
+      "pos": 88
+    },
+    {
+      "at": 3768,
+      "pos": 0
+    },
+    {
+      "at": 3928,
+      "pos": 44
+    },
+    {
+      "at": 4031,
+      "pos": 68
+    },
+    {
+      "at": 4149,
+      "pos": 28
+    },
+    {
+      "at": 4278,
+      "pos": 98
+    },
+    {
+      "at": 4428,
+      "pos": 16
+    },
+    {
+      "at": 4546,
+      "pos": 86
+    },
+    {
+      "at": 4696,
+      "pos": 0
+    },
+    {
+      "at": 4845,
+      "pos": 60
+    },
+    {
+      "at": 5000,
+      "pos": 0
+    }
+  ],
+  "inverted": false,
+  "metadata": {
+    "bookmarks": [],
+    "chapters": [
+      {
+        "endTime": "00:00:01.180",
+        "name": "imp2 uneven build",
+        "startTime": "00:00:00.000"
+      },
+      {
+        "endTime": "00:00:02.505",
+        "name": "imp2 mixed strokes",
+        "startTime": "00:00:01.180"
+      },
+      {
+        "endTime": "00:00:03.655",
+        "name": "imp2 syncopated",
+        "startTime": "00:00:02.505"
+      },
+      {
+        "endTime": "00:00:04.850",
+        "name": "imp2 finish",
+        "startTime": "00:00:03.655"
+      }
+    ],
+    "creator": "PncEdi",
+    "description": "Generated imp grapple funscript tier. Higher tiers use more varied timing and stroke depth.",
+    "duration": 5,
+    "license": "",
+    "notes": "",
+    "performers": [],
+    "script_url": "",
+    "tags": [
+      "imp",
+      "grapple",
+      "imp2",
+      "varied"
+    ],
+    "title": "imp2",
+    "type": "basic",
+    "video_url": ""
+  },
+  "range": 100,
+  "version": "1.0"
+}

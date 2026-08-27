@@ -1,0 +1,82 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 64
+    },
+    {
+      "at": 111,
+      "pos": 72
+    },
+    {
+      "at": 222,
+      "pos": 32
+    },
+    {
+      "at": 311,
+      "pos": 64
+    },
+    {
+      "at": 400,
+      "pos": 32
+    },
+    {
+      "at": 489,
+      "pos": 64
+    },
+    {
+      "at": 578,
+      "pos": 32
+    },
+    {
+      "at": 667,
+      "pos": 64
+    },
+    {
+      "at": 778,
+      "pos": 72
+    },
+    {
+      "at": 889,
+      "pos": 32
+    },
+    {
+      "at": 978,
+      "pos": 64
+    },
+    {
+      "at": 1067,
+      "pos": 32
+    },
+    {
+      "at": 1156,
+      "pos": 64
+    },
+    {
+      "at": 1244,
+      "pos": 32
+    },
+    {
+      "at": 1333,
+      "pos": 64
+    }
+  ],
+  "inverted": false,
+  "range": 100,
+  "version": "1.0",
+  "metadata": {
+    "bookmarks": [],
+    "chapters": [],
+    "creator": "",
+    "performers": [],
+    "tags": [],
+    "notes": "",
+    "license": "",
+    "script_url": "",
+    "video_url": "",
+    "type": "basic",
+    "duration": 1,
+    "title": "goonshroom_3_Gallery",
+    "description": "handy1 variant of 'detailed': slew-limited to 364 units/s (400 mm/s over 110 mm). Timing identical; only strokes the device could not complete are shortened."
+  }
+}

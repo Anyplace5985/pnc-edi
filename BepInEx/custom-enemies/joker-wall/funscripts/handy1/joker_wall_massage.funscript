@@ -1,0 +1,12 @@
+{
+  "actions": [
+    { "at": 0, "pos": 25 },
+    { "at": 130, "pos": 70 },
+    { "at": 260, "pos": 30 },
+    { "at": 390, "pos": 72 },
+    { "at": 520, "pos": 25 }
+  ],
+  "metadata": {
+    "description": "Handy 1-safe Joker Wall massage loop; all transitions remain below 364 units/s."
+  }
+}

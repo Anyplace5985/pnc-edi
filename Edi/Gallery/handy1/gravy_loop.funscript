@@ -1,0 +1,93 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 56
+    },
+    {
+      "at": 84,
+      "pos": 26
+    },
+    {
+      "at": 235,
+      "pos": 50
+    },
+    {
+      "at": 318,
+      "pos": 80
+    },
+    {
+      "at": 402,
+      "pos": 50
+    },
+    {
+      "at": 485,
+      "pos": 80
+    },
+    {
+      "at": 568,
+      "pos": 50
+    },
+    {
+      "at": 737,
+      "pos": 20
+    },
+    {
+      "at": 819,
+      "pos": 50
+    },
+    {
+      "at": 903,
+      "pos": 20
+    },
+    {
+      "at": 997,
+      "pos": 54
+    },
+    {
+      "at": 1081,
+      "pos": 24
+    },
+    {
+      "at": 1231,
+      "pos": 50
+    },
+    {
+      "at": 1315,
+      "pos": 81
+    },
+    {
+      "at": 1398,
+      "pos": 50
+    },
+    {
+      "at": 1482,
+      "pos": 81
+    },
+    {
+      "at": 1566,
+      "pos": 50
+    },
+    {
+      "at": 1732,
+      "pos": 20
+    },
+    {
+      "at": 1816,
+      "pos": 51
+    },
+    {
+      "at": 1900,
+      "pos": 20
+    },
+    {
+      "at": 2000,
+      "pos": 56
+    }
+  ],
+  "metadata": {
+    "duration": 2,
+    "title": "Gravy_Loop",
+    "description": "handy1 variant of 'detailed': slew-limited to 364 units/s (400 mm/s over 110 mm). Timing identical; only strokes the device could not complete are shortened."
+  }
+}

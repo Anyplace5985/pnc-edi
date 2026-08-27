@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <AssemblyName>slugharness</AssemblyName>
+    <RootNamespace>PncEdi</RootNamespace>
+  </PropertyGroup>
+
+  <!-- Compile the mod's real NameRemap.cs, so the harness cannot drift from actual behaviour. -->
+  <ItemGroup>
+    <Compile Include="../edimod/PncEdi/ConfigMap.cs" />
+    <Compile Include="../edimod/PncEdi/NameRemap.cs" />
+    <Compile Include="../edimod/PncEdi/GalleryTable.cs" />
+  </ItemGroup>
+</Project>

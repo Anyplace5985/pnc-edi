@@ -1,0 +1,146 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 0
+    },
+    {
+      "at": 111,
+      "pos": 100
+    },
+    {
+      "at": 222,
+      "pos": 72
+    },
+    {
+      "at": 333,
+      "pos": 40
+    },
+    {
+      "at": 444,
+      "pos": 18
+    },
+    {
+      "at": 556,
+      "pos": 0
+    },
+    {
+      "at": 667,
+      "pos": 100
+    },
+    {
+      "at": 778,
+      "pos": 72
+    },
+    {
+      "at": 889,
+      "pos": 40
+    },
+    {
+      "at": 1000,
+      "pos": 18
+    },
+    {
+      "at": 1111,
+      "pos": 0
+    },
+    {
+      "at": 1222,
+      "pos": 100
+    },
+    {
+      "at": 1333,
+      "pos": 72
+    },
+    {
+      "at": 1444,
+      "pos": 40
+    },
+    {
+      "at": 1556,
+      "pos": 18
+    },
+    {
+      "at": 1667,
+      "pos": 0
+    },
+    {
+      "at": 1778,
+      "pos": 100
+    },
+    {
+      "at": 1889,
+      "pos": 72
+    },
+    {
+      "at": 2000,
+      "pos": 40
+    },
+    {
+      "at": 2111,
+      "pos": 18
+    },
+    {
+      "at": 2222,
+      "pos": 0
+    },
+    {
+      "at": 2333,
+      "pos": 100
+    },
+    {
+      "at": 2444,
+      "pos": 72
+    },
+    {
+      "at": 2556,
+      "pos": 40
+    },
+    {
+      "at": 2667,
+      "pos": 18
+    },
+    {
+      "at": 2778,
+      "pos": 0
+    },
+    {
+      "at": 2889,
+      "pos": 100
+    },
+    {
+      "at": 3000,
+      "pos": 72
+    },
+    {
+      "at": 3111,
+      "pos": 40
+    },
+    {
+      "at": 3222,
+      "pos": 18
+    },
+    {
+      "at": 3333,
+      "pos": 0
+    }
+  ],
+  "inverted": false,
+  "range": 100,
+  "version": "1.0",
+  "metadata": {
+    "bookmarks": [],
+    "chapters": [],
+    "creator": "",
+    "performers": [],
+    "tags": [],
+    "notes": "",
+    "license": "",
+    "script_url": "",
+    "video_url": "",
+    "type": "basic",
+    "duration": 3,
+    "title": "peek_werewolf_ride",
+    "description": "Derived from the 0.3.1 animation; see code/scenes031.py for the reasoning."
+  }
+}

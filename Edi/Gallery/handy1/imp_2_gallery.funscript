@@ -1,0 +1,182 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 0
+    },
+    {
+      "at": 165,
+      "pos": 34
+    },
+    {
+      "at": 337,
+      "pos": 82
+    },
+    {
+      "at": 536,
+      "pos": 14
+    },
+    {
+      "at": 715,
+      "pos": 79
+    },
+    {
+      "at": 915,
+      "pos": 8
+    },
+    {
+      "at": 1072,
+      "pos": 58
+    },
+    {
+      "at": 1244,
+      "pos": 24
+    },
+    {
+      "at": 1423,
+      "pos": 88
+    },
+    {
+      "at": 1621,
+      "pos": 16
+    },
+    {
+      "at": 1815,
+      "pos": 70
+    },
+    {
+      "at": 1945,
+      "pos": 72
+    },
+    {
+      "at": 2076,
+      "pos": 24
+    },
+    {
+      "at": 2233,
+      "pos": 81
+    },
+    {
+      "at": 2427,
+      "pos": 12
+    },
+    {
+      "at": 2584,
+      "pos": 48
+    },
+    {
+      "at": 2715,
+      "pos": 6
+    },
+    {
+      "at": 2880,
+      "pos": 66
+    },
+    {
+      "at": 3079,
+      "pos": 30
+    },
+    {
+      "at": 3251,
+      "pos": 93
+    },
+    {
+      "at": 3443,
+      "pos": 23
+    },
+    {
+      "at": 3630,
+      "pos": 62
+    },
+    {
+      "at": 3746,
+      "pos": 38
+    },
+    {
+      "at": 3863,
+      "pos": 76
+    },
+    {
+      "at": 4020,
+      "pos": 19
+    },
+    {
+      "at": 4192,
+      "pos": 81
+    },
+    {
+      "at": 4392,
+      "pos": 9
+    },
+    {
+      "at": 4543,
+      "pos": 52
+    },
+    {
+      "at": 4674,
+      "pos": 20
+    },
+    {
+      "at": 4832,
+      "pos": 77
+    },
+    {
+      "at": 5024,
+      "pos": 8
+    },
+    {
+      "at": 5238,
+      "pos": 44
+    },
+    {
+      "at": 5375,
+      "pos": 68
+    },
+    {
+      "at": 5532,
+      "pos": 28
+    },
+    {
+      "at": 5704,
+      "pos": 91
+    },
+    {
+      "at": 5904,
+      "pos": 18
+    },
+    {
+      "at": 6062,
+      "pos": 75
+    },
+    {
+      "at": 6262,
+      "pos": 3
+    },
+    {
+      "at": 6460,
+      "pos": 60
+    },
+    {
+      "at": 6667,
+      "pos": 0
+    }
+  ],
+  "inverted": false,
+  "range": 100,
+  "version": "1.0",
+  "metadata": {
+    "bookmarks": [],
+    "chapters": [],
+    "creator": "",
+    "performers": [],
+    "tags": [],
+    "notes": "",
+    "license": "",
+    "script_url": "",
+    "video_url": "",
+    "type": "basic",
+    "duration": 7,
+    "title": "imp_2_Gallery",
+    "description": "handy1 variant of 'detailed': slew-limited to 364 units/s (400 mm/s over 110 mm). Timing identical; only strokes the device could not complete are shortened."
+  }
+}

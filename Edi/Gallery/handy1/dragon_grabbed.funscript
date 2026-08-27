@@ -1,0 +1,33 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 0
+    },
+    {
+      "at": 3938,
+      "pos": 100
+    },
+    {
+      "at": 4264,
+      "pos": 100
+    },
+    {
+      "at": 4626,
+      "pos": 0
+    },
+    {
+      "at": 4816,
+      "pos": 0
+    },
+    {
+      "at": 4833,
+      "pos": 0
+    }
+  ],
+  "metadata": {
+    "duration": 5,
+    "title": "Dragon_Grabbed",
+    "description": "handy1 variant of 'detailed': slew-limited to 364 units/s (400 mm/s over 110 mm). Timing identical; only strokes the device could not complete are shortened."
+  }
+}

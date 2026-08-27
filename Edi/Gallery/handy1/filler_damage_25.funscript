@@ -1,0 +1,58 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 0
+    },
+    {
+      "at": 170,
+      "pos": 45
+    },
+    {
+      "at": 360,
+      "pos": 8
+    },
+    {
+      "at": 560,
+      "pos": 52
+    },
+    {
+      "at": 770,
+      "pos": 2
+    },
+    {
+      "at": 1010,
+      "pos": 55
+    },
+    {
+      "at": 1270,
+      "pos": 13
+    },
+    {
+      "at": 1580,
+      "pos": 48
+    },
+    {
+      "at": 2000,
+      "pos": 0
+    }
+  ],
+  "inverted": false,
+  "range": 100,
+  "version": "1.0",
+  "metadata": {
+    "bookmarks": [],
+    "chapters": [],
+    "creator": "",
+    "performers": [],
+    "tags": [],
+    "notes": "",
+    "license": "",
+    "script_url": "",
+    "video_url": "",
+    "type": "basic",
+    "duration": 2,
+    "title": "filler_damage_25",
+    "description": "handy1 variant of 'detailed': slew-limited to 364 units/s (400 mm/s over 110 mm). Timing identical; only strokes the device could not complete are shortened."
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 0
+    },
+    {
+      "at": 68,
+      "pos": 0
+    },
+    {
+      "at": 288,
+      "pos": 80
+    },
+    {
+      "at": 475,
+      "pos": 12
+    },
+    {
+      "at": 712,
+      "pos": 0
+    },
+    {
+      "at": 929,
+      "pos": 79
+    },
+    {
+      "at": 1115,
+      "pos": 11
+    },
+    {
+      "at": 1217,
+      "pos": 0
+    },
+    {
+      "at": 1250,
+      "pos": 0
+    }
+  ],
+  "metadata": {
+    "duration": 1,
+    "title": "Baphomet_Loop2",
+    "description": "handy1 variant of 'detailed': slew-limited to 364 units/s (400 mm/s over 110 mm). Timing identical; only strokes the device could not complete are shortened."
+  }
+}

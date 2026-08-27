@@ -1,0 +1,233 @@
+Post Nut Calamity - Edi device integration
+
+  mod version    PncEdi @VERSION@
+  built for      Post Nut Calamity @GAME@
+
+Plays a funscript on your stroker that matches whatever is happening on screen: grab scenes,
+peepholes, the dioramas in the world, and every entry in the gallery. @ROWS@ scenes, each one
+timed against the game's own animation rather than scripted to video, in two device variants.
+
+Works on the Windows build (directly or under Proton) and on the native Linux build, from these
+same files.
+
+
+------------------------------------------------------------------------------------------------
+HOW IT WORKS
+------------------------------------------------------------------------------------------------
+
+The mod does not talk to your device. It tells Edi which scene just started, and Edi plays the
+matching funscript. So Edi has to be running whenever you play.
+
+Edi @EDITAG@ is included in this archive - you do not need to download anything else.
+
+The bundled Edi is Edi v1.0.4 with one fix applied that has not been released upstream yet.
+Without it, the device stalls and drifts out of time whenever a looping scene is resumed - which
+includes every pause and unpause - and stays that way until the next scene change. The fix is
+NoGRo/Edi pull request #15 (https://github.com/NoGRo/Edi/pull/15), reported as issue #14; nothing
+else about Edi is changed. Once it is in a released Edi, this archive will simply ship that
+instead.
+
+If you would rather run stock Edi, or already have Edi installed, see "Already have Edi
+installed" below - the mod works with any Edi, it just plays worse on an unpatched one.
+
+------------------------------------------------------------------------------------------------
+INSTALL
+------------------------------------------------------------------------------------------------
+
+1. Extract this archive into your Post Nut Calamity folder - the one holding the game executable
+   and the "Post Nut Calamity_Data" folder. Keep the layout; say yes to merging folders.
+
+2. Run Edi\Edi.exe. It opens a window and a local web UI; leave it running while you play.
+
+   Everything it needs is already beside it: Edi\EdiConfig.json is set up, and the funscripts
+   are in Edi\Gallery, which is exactly where that config points. Nothing to configure.
+
+   Your device appears in the config the first time Edi sees it. That is the one thing you do
+   have to touch - see step 4.
+
+   Already have Edi installed elsewhere and would rather keep it? Run that one instead, and copy
+   this archive's Edi\Gallery folder next to its EdiConfig.json.
+
+3. Start the game:
+
+   Windows, and the Windows build under Proton
+       Just launch the game as usual. Nothing else to do - winhttp.dll loads the mod.
+
+   Native Linux build
+       ./start-pnc-linux.sh
+
+       (Or BepInEx's own script if you prefer: ./run_bepinex.sh ./<the game>.x86_64)
+
+       Note that Edi itself is a Windows program. Run it under Wine/Proton, or on another
+       machine and point [EDI] Url in the config at it - the mod only needs to reach it over
+       HTTP.
+
+4. In Edi, set your device's "Variant" to "detailed". A device left on "None" is muted, which
+   looks exactly like the mod not working. See "DEVICE VARIANTS" below.
+
+You should now see a BepInEx console line on startup, and BepInEx/LogOutput.log should fill with
+[EDI] lines as scenes play.
+
+
+------------------------------------------------------------------------------------------------
+DEVICE VARIANTS
+------------------------------------------------------------------------------------------------
+
+Two sets of the same scripts are included. Edi picks one by the "Variant" set on the device in
+EdiConfig.json, and the variant name is the folder name:
+
+  detailed    The masters. For a Handy 2, overclocked or not, and anything of that class.
+              This is the default and what you want unless the strokes feel mushy.
+
+  handy1      Speed-limited for a Handy 1 (110 mm at 400 mm/s). Slow strokes keep their full
+              range; only transitions the device cannot physically reach are shortened.
+
+Set it like this in EdiConfig.json:
+
+    "The Handy [xxxxxxxx]": { "Variant": "detailed", "Channel": null, "Min": 0, "Max": 100 }
+
+
+------------------------------------------------------------------------------------------------
+CONFIGURATION
+------------------------------------------------------------------------------------------------
+
+Press F11 in game, or use the MOD MANAGER button on the main menu. It lists every loaded BepInEx
+plugin, searches, and saves as you edit. Most settings take effect immediately; the ones that do
+not say so in their own description.
+
+The same settings live in BepInEx/config/com.edi.pnc.cfg, one comment per setting saying what it
+does and what its default is. BepInEx rewrites that file on each launch, which reorders entries
+but keeps your values.
+
+A few worth knowing about:
+
+  [Gameplay] Profile               One coherent set of rules instead of the individual switches
+                                   having to agree. See GAMEPLAY PROFILES below.
+  [Gameplay] EnableHeatLocks       Horny locks replace vanilla's survivability: your heat cannot
+                                   drop below a floor until a peephole or diorama releases it.
+  [Gameplay] GodMode               Off by default here, because heat locks replace it. Turn it on
+                                   if you want to browse rather than play.
+  [Gameplay] EndGrabDelaySeconds   How long a scene runs before you can leave it (Q).
+  [EDI]      Url                   Where Edi is listening. Default http://127.0.0.1:5000.
+
+
+------------------------------------------------------------------------------------------------
+GAMEPLAY PROFILES
+------------------------------------------------------------------------------------------------
+
+[Gameplay] Profile picks one of four, and can be switched mid-run from the mod manager:
+
+  Vanilla              The game's own combat, health, heat and spawning, untouched. Scene
+                       detection and device playback stay on - the mod still plays every scene.
+  PressureAndRelease   Heat locks, class heat scaling and lock-scaled spawn pressure, together.
+                       Each qualifying scene adds a lock; your heat cannot fall below what those
+                       locks hold until a peephole or diorama releases them, and waves grow from
+                       vanilla size at no locks to 2.5x at full lock. The intended way to play.
+  GodMode              Damage and death blocked, locks off. For exploring and filling the gallery.
+  Custom               The default, and what an existing config keeps doing: the individual
+                       Gameplay settings are read exactly as they were before profiles existed.
+
+Switching clears transient locks and reapplies the vanilla player stats it observed at startup,
+so a switch out of God Mode cannot leave you with its health.
+
+[EDI] HandyIntensitySource decides which figure drives the idle filler scripts (filler_cum_25 /
+_50 / _75): Automatic uses heat under Vanilla and God Mode and the stronger of heat and lock
+pressure under Pressure and Release; Heat and ReleasePressure force one or the other; Highest
+always takes whichever is stronger.
+
+
+------------------------------------------------------------------------------------------------
+CUSTOM ENEMIES AND WALL TRAPS
+------------------------------------------------------------------------------------------------
+
+The mod can load enemy packages that are pure data - a manifest, PNG sprite sheets and funscripts
+in a folder. No Unity Editor needed for the 2D kind. They get their own gallery tab, their own
+Edi rows, and a switch each in the mod manager.
+
+Drop a package into BepInEx/custom-enemies/ and restart. The format, both kinds, is documented in:
+
+  BepInEx/custom-enemies/README.md               which kind is which
+  BepInEx/custom-enemies/CUSTOM-ENEMIES.md       roaming enemies, artwork, the witch boss
+  BepInEx/custom-enemies/WALL-PICTURE-TRAPS.md   pictures that pull you off the wall
+
+No packages ship in this archive - the format does.
+
+
+------------------------------------------------------------------------------------------------
+IF IT DOES NOT WORK
+------------------------------------------------------------------------------------------------
+
+Nothing happens at all
+    Check BepInEx/LogOutput.log exists. If it does not, BepInEx never loaded: on Windows confirm
+    winhttp.dll sits beside the game executable; on Linux launch through start-pnc-linux.sh
+    rather than the executable directly.
+
+The log fills with [EDI] lines but the device is silent
+    Edi is not running, is on a different port, or the device's Variant is "None" (which mutes
+    it). Set it to "detailed".
+
+One scene does nothing
+    grep the log for ALIAS-GAP:
+
+        grep "\[ALIAS-GAP\]" BepInEx/LogOutput.log
+
+    That names any animation the mod saw and had no script for. Please report it with the line.
+
+To remove the mod
+    Delete winhttp.dll, doorstop_config.ini, .doorstop_version, libdoorstop.so, run_bepinex.sh,
+    start-pnc-linux.sh, the BepInEx folder and the Edi folder. The game is untouched otherwise -
+    nothing in this archive overwrites a game file.
+
+
+------------------------------------------------------------------------------------------------
+WHAT IS IN HERE
+------------------------------------------------------------------------------------------------
+
+  BepInEx/plugins/PncEdi.dll        the mod
+  BepInEx/plugins/PncModManager.dll the in-game settings window (F11)
+  BepInEx/plugins/PncCustomEnemies.dll
+                                    the custom-enemy framework - loads the packages below
+  BepInEx/config/com.edi.pnc.cfg    its settings
+  BepInEx/custom-enemies/           the custom-enemy format: documentation and a template
+  BepInEx/core/                     BepInEx @BEPINEX@ (unmodified)
+  winhttp.dll, doorstop_config.ini  Windows loader (Unity Doorstop @DOORSTOP@, unmodified)
+  libdoorstop.so, run_bepinex.sh    Linux loader (same, unmodified)
+  start-pnc-linux.sh                launcher that points run_bepinex.sh at the game
+  Edi/Edi.exe                       Edi @EDITAG@ - see HOW IT WORKS above
+  Edi/EdiConfig.json                Edi's settings, pointed at the gallery beside it
+  Edi/Gallery/                      the funscripts, @SCRIPTS@ per variant
+  PncEdi-CHANGELOG.txt              what changed, in detail
+  PncEdi-CREDITS.txt                who made what this is built on
+
+No game files are included in this archive.
+
+
+------------------------------------------------------------------------------------------------
+CREDITS
+------------------------------------------------------------------------------------------------
+
+Post Nut Calamity is by ShoeStrangNBoydy. Nothing of the game is in this archive.
+
+Edi is by NoGRo: https://github.com/NoGRo/Edi. Which build is bundled, and whether anything is
+changed in it, is stated under HOW IT WORKS above.
+
+This mod continues the PncEdi mod from its Eroscripts thread, which by then was every release on
+that thread pasted over each other in order: everydayhandyuser's original integration, edale's
+gallery-unlock keys, overkeks' 0.2.1 edit, and Dupli9d's patch and horny-system build. The mod
+manager, the gameplay profiles and the custom-enemy framework came from Dupli9d's
+PncEdi-portable-patch.
+
+The gallery started as funscripts written by other people, and some rows still descend from them:
+everydayhandyuser's original gallery scripts and the OpenFunscripter-authored zombie and plantasha
+scripts that shipped with them, Dupli9d's new.funscript, mr_spunky's imp scripts and play-through
+captures, and AniFS's ambient and peek scripts.
+
+The thread, and where releases of this mod are posted:
+https://discuss.eroscripts.com/t/game-integration-post-nut-calamity-0-1-0-edi/315695
+
+PncEdi-CREDITS.txt has the full version.
+
+BepInEx is LGPL-2.1 and is redistributed unmodified: https://github.com/BepInEx/BepInEx
+Unity Doorstop is licensed under CC0: https://github.com/NeighTools/UnityDoorstop
+
+Built @BUILT@ from @COMMIT@.

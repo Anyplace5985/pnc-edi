@@ -1,0 +1,32 @@
+{
+  "id": "armored_zombie",
+  "displayName": "Armored Zombie",
+  "description": "Example custom variant made by cloning a vanilla zombie.",
+  "enabled": true,
+  "alwaysUnlocked": false,
+  "includeInRandomSpawns": true,
+  "spawnWeight": 1.0,
+  "baseEnemy": "zombie",
+  "nameAliases": ["ArmoredZombie"],
+  "galleryAnimations": ["Idle", "Walk", "Attack"],
+  "fields": [
+    { "component": "ChargingEnemyAI", "field": "maxHealth", "value": "150" },
+    { "component": "ChargingEnemyAI", "field": "attackDamage", "value": "20" }
+  ],
+  "scenes": [
+    {
+      "animation": "Loop",
+      "gallery": "armored_zombie_loop",
+      "file": "armored_zombie_loop",
+      "endTime": 0,
+      "oneShot": false
+    },
+    {
+      "animation": "Cum",
+      "gallery": "armored_zombie_cum",
+      "file": "armored_zombie_cum",
+      "endTime": 0,
+      "oneShot": false
+    }
+  ]
+}

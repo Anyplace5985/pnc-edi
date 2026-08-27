@@ -1,0 +1,74 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 100
+    },
+    {
+      "at": 250,
+      "pos": 100
+    },
+    {
+      "at": 375,
+      "pos": 70
+    },
+    {
+      "at": 500,
+      "pos": 100
+    },
+    {
+      "at": 625,
+      "pos": 70
+    },
+    {
+      "at": 750,
+      "pos": 100
+    },
+    {
+      "at": 875,
+      "pos": 70
+    },
+    {
+      "at": 1000,
+      "pos": 100
+    },
+    {
+      "at": 1125,
+      "pos": 70
+    },
+    {
+      "at": 1250,
+      "pos": 100
+    },
+    {
+      "at": 1375,
+      "pos": 100
+    },
+    {
+      "at": 1750,
+      "pos": 0
+    },
+    {
+      "at": 2500,
+      "pos": 0
+    }
+  ],
+  "inverted": false,
+  "range": 100,
+  "version": "1.0",
+  "metadata": {
+    "bookmarks": [],
+    "chapters": [],
+    "creator": "",
+    "performers": [],
+    "tags": [],
+    "notes": "",
+    "license": "",
+    "script_url": "",
+    "video_url": "",
+    "type": "basic",
+    "duration": 2,
+    "title": "Baphomet_Start",
+    "description": "Gallery_Baphomet_Grabbed_BJ_Start - 20 frames @8fps = 2500 ms. Hand-authored from the feel-pass cue; see code/authored.py for the reasoning."
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 0
+    },
+    {
+      "at": 111,
+      "pos": 8
+    },
+    {
+      "at": 222,
+      "pos": 65
+    },
+    {
+      "at": 333,
+      "pos": 98
+    },
+    {
+      "at": 444,
+      "pos": 100
+    },
+    {
+      "at": 556,
+      "pos": 78
+    },
+    {
+      "at": 667,
+      "pos": 51
+    },
+    {
+      "at": 778,
+      "pos": 9
+    },
+    {
+      "at": 889,
+      "pos": 0
+    }
+  ],
+  "inverted": false,
+  "range": 100,
+  "version": "1.0",
+  "metadata": {
+    "bookmarks": [],
+    "chapters": [],
+    "creator": "",
+    "performers": [],
+    "tags": [],
+    "notes": "",
+    "license": "",
+    "script_url": "",
+    "video_url": "",
+    "type": "basic",
+    "duration": 1,
+    "title": "Plantasha_Start_Gallery",
+    "description": "Re-derived from the animation; see code/rederive.py for the reasoning."
+  }
+}

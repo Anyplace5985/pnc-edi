@@ -1,0 +1,82 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 91
+    },
+    {
+      "at": 111,
+      "pos": 81
+    },
+    {
+      "at": 222,
+      "pos": 33
+    },
+    {
+      "at": 333,
+      "pos": 0
+    },
+    {
+      "at": 444,
+      "pos": 16
+    },
+    {
+      "at": 556,
+      "pos": 74
+    },
+    {
+      "at": 667,
+      "pos": 100
+    },
+    {
+      "at": 778,
+      "pos": 91
+    },
+    {
+      "at": 889,
+      "pos": 81
+    },
+    {
+      "at": 1000,
+      "pos": 33
+    },
+    {
+      "at": 1111,
+      "pos": 0
+    },
+    {
+      "at": 1222,
+      "pos": 16
+    },
+    {
+      "at": 1333,
+      "pos": 74
+    },
+    {
+      "at": 1444,
+      "pos": 100
+    },
+    {
+      "at": 1556,
+      "pos": 91
+    }
+  ],
+  "inverted": false,
+  "range": 100,
+  "version": "1.0",
+  "metadata": {
+    "bookmarks": [],
+    "chapters": [],
+    "creator": "",
+    "performers": [],
+    "tags": [],
+    "notes": "",
+    "license": "",
+    "script_url": "",
+    "video_url": "",
+    "type": "basic",
+    "duration": 2,
+    "title": "imp_grab_loop_Gallery",
+    "description": "Re-derived from the animation; see code/rederive.py for the reasoning."
+  }
+}

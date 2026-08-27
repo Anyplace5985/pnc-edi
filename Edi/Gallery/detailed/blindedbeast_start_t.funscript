@@ -1,0 +1,74 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 0
+    },
+    {
+      "at": 125,
+      "pos": 13
+    },
+    {
+      "at": 250,
+      "pos": 65
+    },
+    {
+      "at": 375,
+      "pos": 100
+    },
+    {
+      "at": 500,
+      "pos": 80
+    },
+    {
+      "at": 625,
+      "pos": 59
+    },
+    {
+      "at": 750,
+      "pos": 0
+    },
+    {
+      "at": 875,
+      "pos": 13
+    },
+    {
+      "at": 1000,
+      "pos": 65
+    },
+    {
+      "at": 1125,
+      "pos": 100
+    },
+    {
+      "at": 1250,
+      "pos": 80
+    },
+    {
+      "at": 1375,
+      "pos": 59
+    },
+    {
+      "at": 1500,
+      "pos": 0
+    }
+  ],
+  "inverted": false,
+  "range": 100,
+  "version": "1.0",
+  "metadata": {
+    "bookmarks": [],
+    "chapters": [],
+    "creator": "",
+    "performers": [],
+    "tags": [],
+    "notes": "",
+    "license": "",
+    "script_url": "",
+    "video_url": "",
+    "type": "basic",
+    "duration": 2,
+    "title": "BlindedBeast_Start_T",
+    "description": "Derived from the 0.3.1 grab screen; see code/grabs031.py for the reasoning."
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 0
+    },
+    {
+      "at": 959,
+      "pos": 50
+    },
+    {
+      "at": 1043,
+      "pos": 19
+    },
+    {
+      "at": 1126,
+      "pos": 50
+    },
+    {
+      "at": 1714,
+      "pos": 100
+    },
+    {
+      "at": 1965,
+      "pos": 9
+    },
+    {
+      "at": 2048,
+      "pos": 39
+    },
+    {
+      "at": 2132,
+      "pos": 8
+    },
+    {
+      "at": 2500,
+      "pos": 0
+    }
+  ],
+  "metadata": {
+    "duration": 2,
+    "title": "Baphomet_Start2",
+    "description": "handy1 variant of 'detailed': slew-limited to 364 units/s (400 mm/s over 110 mm). Timing identical; only strokes the device could not complete are shortened."
+  }
+}

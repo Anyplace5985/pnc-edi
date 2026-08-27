@@ -1,0 +1,100 @@
+{
+  "actions": [
+    {
+      "at": 1,
+      "pos": 0
+    },
+    {
+      "at": 118,
+      "pos": 43
+    },
+    {
+      "at": 236,
+      "pos": 0
+    },
+    {
+      "at": 304,
+      "pos": 25
+    },
+    {
+      "at": 370,
+      "pos": 1
+    },
+    {
+      "at": 438,
+      "pos": 25
+    },
+    {
+      "at": 505,
+      "pos": 1
+    },
+    {
+      "at": 942,
+      "pos": 0
+    },
+    {
+      "at": 1060,
+      "pos": 43
+    },
+    {
+      "at": 1177,
+      "pos": 0
+    },
+    {
+      "at": 1245,
+      "pos": 25
+    },
+    {
+      "at": 1312,
+      "pos": 1
+    },
+    {
+      "at": 1379,
+      "pos": 25
+    },
+    {
+      "at": 1447,
+      "pos": 0
+    },
+    {
+      "at": 2337,
+      "pos": 0
+    },
+    {
+      "at": 2456,
+      "pos": 43
+    },
+    {
+      "at": 2574,
+      "pos": 0
+    },
+    {
+      "at": 2640,
+      "pos": 24
+    },
+    {
+      "at": 2708,
+      "pos": 0
+    },
+    {
+      "at": 2776,
+      "pos": 25
+    },
+    {
+      "at": 2842,
+      "pos": 1
+    },
+    {
+      "at": 3734,
+      "pos": 0
+    },
+    {
+      "at": 3750,
+      "pos": 0
+    }
+  ],
+  "metadata": {
+    "title": "Mimic_Cum",
+    "description": "handy1 variant of 'detailed': slew-limited to 364 units/s (400 mm/s over 110 mm). Timing identical; only strokes the device could not complete are shortened."
+  }
+}

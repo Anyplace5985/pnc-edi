@@ -1,0 +1,110 @@
+# This directory is the mod, and only the mod. The game lives outside it, reached through the
+# `game-windows` / `game-linux` symlinks that `code/deploy.py` patches (CHANGELOG §62).
+#
+# It defaults to ignoring EVERYTHING and opts individual paths back in. That inversion is
+# deliberate: what is untracked here is third-party (the BepInEx runtime and the Edi application,
+# both fetched from pinned, checksummed upstream builds), not redistributable (the game itself,
+# now only reachable through the symlinks), or regenerable (the release zip, the capture videos).
+# A denylist would silently pick up the first new one that appeared - and the symlinks make that
+# a live risk, since a careless rule would follow one into a 2 GB game install.
+#
+# No binary is tracked, including our own three plugin DLLs. They are build output: one
+# `dotnet build code/edimod/PncEdi.csproj -c Release` produces all three. Building needs a game
+# install to compile against (every plugin references the game's own Assembly-CSharp.dll), so a
+# clone is a source tree rather than a runnable install - README.md says so, and players get the
+# built DLLs from the release archive instead.
+#
+# Note the allowlist: a new top-level directory is invisible to git until it is opted in here.
+# `learnings/` was, for exactly as long as it took to notice.
+
+/*
+!/.gitignore
+!/.gitattributes
+!/*.md
+!/learnings/
+!/code/
+!/BepInEx/
+!/Edi/
+
+# --- code: sources and tools, never build output or downloads -----------------------------
+code/**/bin/
+code/**/obj/
+code/**/.vs/
+code/__pycache__/
+code/dist/build/
+code/dist/cache/
+code/dist/bepinex/
+
+# --- BepInEx: our config and our plugin, and nothing of the runtime -----------------------
+#
+# The runtime is no longer here at all - it is deployed into the game directories from the
+# pinned pack. These two files are the whole of the mod's presence in a BepInEx tree.
+BepInEx/*
+!BepInEx/config/
+BepInEx/config/*
+!BepInEx/config/com.edi.pnc.cfg
+# plugins/ holds only build output, so nothing here is named back in. `deploy.py` writes the
+# three DLLs into it on every build and both game installs are patched from there.
+!BepInEx/plugins/
+BepInEx/plugins/*
+
+# --- custom-enemy packages: the text, not the media ---------------------------------------
+#
+# A package is data - a manifest, PNG sheets, funscripts and (for the witch) H.264/VP8 video.
+# The two real packages are 53 MB of that, almost all of it media, and media does not belong in
+# a source repo: git history is permanent, so a clone carries it forever and a takedown means
+# rewriting history rather than deleting a file. The media reaches players instead as its own
+# archive - `release.py --package <name>` - posted beside the release.
+#
+# What does belong here is the text, which is ~1 MB and three different things:
+#
+#   - the funscripts, which are **ours**. They were authored and measured by this project the
+#     same way Edi/Gallery/detailed/ was, and no third-party licence touches them. They used to
+#     be discarded by a blanket ignore aimed at the video beside them.
+#   - the manifests, which are mostly game-side tuning - maxHealth, detectionRange, pivot,
+#     scale, spawnWeight, captureDistance. Untracked, a tuning pass lived in the changelog and
+#     in two game installs and in no tracked file (§134 moved the witch's captureDistance and
+#     that is exactly what happened to it).
+#   - SOURCE.txt, which credits the artists and so is the one file with the least business
+#     existing only on one machine.
+#
+# The rule below is deny-by-default on purpose: everything under a package is ignored, and the
+# three kinds of text above are named back in. A new media format someone adds later is
+# therefore ignored without anyone having to remember to ignore it.
+#
+# A fresh clone gets a package's text with no media beside it, and the package will not load
+# until the media is restored from its archive. BepInEx/custom-enemies/CUSTOM-ENEMIES.md says so.
+#
+# `code/deploy.py` copies whatever packages are in the working tree into both game installs, so
+# dropping an untracked package in here and deploying still works.
+!BepInEx/custom-enemies/
+BepInEx/custom-enemies/*
+!BepInEx/custom-enemies/*.md
+!BepInEx/custom-enemies/_example/
+# Descend into a package (git cannot re-include below an excluded directory), ignore its
+# contents, then name back the text.
+!BepInEx/custom-enemies/*/
+BepInEx/custom-enemies/*/**
+!BepInEx/custom-enemies/*/**/
+!BepInEx/custom-enemies/*/*.json
+!BepInEx/custom-enemies/*/SOURCE.txt
+!BepInEx/custom-enemies/*/funscripts/**/*.funscript
+
+# --- Edi: the gallery and the source scripts, not the Edi application ---------------------
+#
+# EdiConfig.json is excluded ON PURPOSE and must stay excluded: its device names embed
+# per-user Handy connection keys ("The Handy [xxxxxxxx]"), which are effectively credentials
+# for controlling that hardware. It is also per-user by design (see PROJECT.md), so there is
+# nothing to gain by tracking it.
+Edi/*
+!Edi/Gallery/
+!Edi/_reference/
+Edi/_reference/*
+!Edi/_reference/source-scripts/
+
+# --- logs, scratch and release output -----------------------------------------------------
+#
+# /dist is where release.py writes the zip. It is reproducible from any commit, so it is
+# output, not source.
+*.log
+*.bak

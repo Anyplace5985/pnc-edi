@@ -1,0 +1,78 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 100
+    },
+    {
+      "at": 1300,
+      "pos": 100
+    },
+    {
+      "at": 1500,
+      "pos": 40
+    },
+    {
+      "at": 1800,
+      "pos": 100
+    },
+    {
+      "at": 2100,
+      "pos": 40
+    },
+    {
+      "at": 2400,
+      "pos": 100
+    },
+    {
+      "at": 2700,
+      "pos": 40
+    },
+    {
+      "at": 3000,
+      "pos": 100
+    },
+    {
+      "at": 3300,
+      "pos": 40
+    },
+    {
+      "at": 3650,
+      "pos": 85
+    },
+    {
+      "at": 4000,
+      "pos": 60
+    },
+    {
+      "at": 4350,
+      "pos": 90
+    },
+    {
+      "at": 4700,
+      "pos": 78
+    },
+    {
+      "at": 5167,
+      "pos": 100
+    }
+  ],
+  "inverted": false,
+  "range": 100,
+  "version": "1.0",
+  "metadata": {
+    "bookmarks": [],
+    "chapters": [],
+    "creator": "",
+    "performers": [],
+    "tags": [],
+    "notes": "",
+    "license": "",
+    "script_url": "",
+    "video_url": "",
+    "type": "basic",
+    "duration": 5,
+    "title": "Wendigo_Start",
+    "description": "Re-derived from the animation; see code/rederive.py for the reasoning."
+  }
+}

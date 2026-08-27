@@ -1,0 +1,58 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 0
+    },
+    {
+      "at": 170,
+      "pos": 16
+    },
+    {
+      "at": 360,
+      "pos": 3
+    },
+    {
+      "at": 560,
+      "pos": 19
+    },
+    {
+      "at": 770,
+      "pos": 1
+    },
+    {
+      "at": 1010,
+      "pos": 20
+    },
+    {
+      "at": 1270,
+      "pos": 5
+    },
+    {
+      "at": 1580,
+      "pos": 18
+    },
+    {
+      "at": 2000,
+      "pos": 0
+    }
+  ],
+  "inverted": false,
+  "range": 100,
+  "version": "1.0",
+  "metadata": {
+    "bookmarks": [],
+    "chapters": [],
+    "creator": "",
+    "performers": [],
+    "tags": [],
+    "notes": "",
+    "license": "",
+    "script_url": "",
+    "video_url": "",
+    "type": "basic",
+    "duration": 2,
+    "title": "filler",
+    "description": "One row of a switched ladder - shared grid, shared anchor, amplitude is the only difference. See code/ladders.py."
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 27
+    },
+    {
+      "at": 334,
+      "pos": 100
+    },
+    {
+      "at": 567,
+      "pos": 15
+    },
+    {
+      "at": 900,
+      "pos": 100
+    },
+    {
+      "at": 1134,
+      "pos": 15
+    },
+    {
+      "at": 1467,
+      "pos": 100
+    },
+    {
+      "at": 1667,
+      "pos": 27
+    },
+    {
+      "at": 2000,
+      "pos": 100
+    },
+    {
+      "at": 2234,
+      "pos": 15
+    },
+    {
+      "at": 2567,
+      "pos": 100
+    },
+    {
+      "at": 2800,
+      "pos": 15
+    },
+    {
+      "at": 3134,
+      "pos": 100
+    },
+    {
+      "at": 3334,
+      "pos": 27
+    }
+  ],
+  "metadata": {
+    "title": "peek_nuns_threeway",
+    "description": "handy1 variant of 'detailed': slew-limited to 364 units/s (400 mm/s over 110 mm). Timing identical; only strokes the device could not complete are shortened."
+  }
+}

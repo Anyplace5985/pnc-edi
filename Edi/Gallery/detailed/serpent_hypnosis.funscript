@@ -1,0 +1,42 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 0
+    },
+    {
+      "at": 250,
+      "pos": 90
+    },
+    {
+      "at": 500,
+      "pos": 0
+    },
+    {
+      "at": 750,
+      "pos": 90
+    },
+    {
+      "at": 1000,
+      "pos": 0
+    }
+  ],
+  "inverted": false,
+  "range": 100,
+  "version": "1.0",
+  "metadata": {
+    "bookmarks": [],
+    "chapters": [],
+    "creator": "",
+    "performers": [],
+    "tags": [],
+    "notes": "",
+    "license": "",
+    "script_url": "",
+    "video_url": "",
+    "type": "basic",
+    "duration": 1,
+    "title": "Serpent_Hypnosis",
+    "description": "The serpent's approach, played at an amplitude the mod moves with the distance. See code/ladders.py."
+  }
+}

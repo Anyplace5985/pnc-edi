@@ -1,0 +1,77 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 0
+    },
+    {
+      "at": 335,
+      "pos": 100
+    },
+    {
+      "at": 705,
+      "pos": 10
+    },
+    {
+      "at": 805,
+      "pos": 20
+    },
+    {
+      "at": 906,
+      "pos": 0
+    },
+    {
+      "at": 1241,
+      "pos": 100
+    },
+    {
+      "at": 1577,
+      "pos": 10
+    },
+    {
+      "at": 1678,
+      "pos": 20
+    },
+    {
+      "at": 1779,
+      "pos": 0
+    },
+    {
+      "at": 2114,
+      "pos": 100
+    },
+    {
+      "at": 2483,
+      "pos": 10
+    },
+    {
+      "at": 2584,
+      "pos": 20
+    },
+    {
+      "at": 2684,
+      "pos": 0
+    },
+    {
+      "at": 3020,
+      "pos": 100
+    },
+    {
+      "at": 3355,
+      "pos": 10
+    },
+    {
+      "at": 3455,
+      "pos": 20
+    },
+    {
+      "at": 3556,
+      "pos": 0
+    }
+  ],
+  "metadata": {
+    "duration": 4,
+    "title": "peek_nun_mimic",
+    "description": "handy1 variant of 'detailed': slew-limited to 364 units/s (400 mm/s over 110 mm). Timing identical; only strokes the device could not complete are shortened."
+  }
+}

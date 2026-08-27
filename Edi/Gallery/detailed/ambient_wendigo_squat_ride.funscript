@@ -1,0 +1,122 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 0
+    },
+    {
+      "at": 125,
+      "pos": 38
+    },
+    {
+      "at": 250,
+      "pos": 54
+    },
+    {
+      "at": 375,
+      "pos": 100
+    },
+    {
+      "at": 500,
+      "pos": 100
+    },
+    {
+      "at": 625,
+      "pos": 31
+    },
+    {
+      "at": 750,
+      "pos": 0
+    },
+    {
+      "at": 875,
+      "pos": 38
+    },
+    {
+      "at": 1000,
+      "pos": 54
+    },
+    {
+      "at": 1125,
+      "pos": 100
+    },
+    {
+      "at": 1250,
+      "pos": 100
+    },
+    {
+      "at": 1375,
+      "pos": 31
+    },
+    {
+      "at": 1500,
+      "pos": 0
+    },
+    {
+      "at": 1625,
+      "pos": 38
+    },
+    {
+      "at": 1750,
+      "pos": 54
+    },
+    {
+      "at": 1875,
+      "pos": 100
+    },
+    {
+      "at": 2000,
+      "pos": 100
+    },
+    {
+      "at": 2125,
+      "pos": 31
+    },
+    {
+      "at": 2250,
+      "pos": 0
+    },
+    {
+      "at": 2375,
+      "pos": 38
+    },
+    {
+      "at": 2500,
+      "pos": 54
+    },
+    {
+      "at": 2625,
+      "pos": 100
+    },
+    {
+      "at": 2750,
+      "pos": 100
+    },
+    {
+      "at": 2875,
+      "pos": 31
+    },
+    {
+      "at": 3000,
+      "pos": 0
+    }
+  ],
+  "inverted": false,
+  "range": 100,
+  "version": "1.0",
+  "metadata": {
+    "bookmarks": [],
+    "chapters": [],
+    "creator": "",
+    "performers": [],
+    "tags": [],
+    "notes": "",
+    "license": "",
+    "script_url": "",
+    "video_url": "",
+    "type": "basic",
+    "duration": 3,
+    "title": "ambient_wendigo_squat_ride",
+    "description": "Derived from the 0.3.1 animation; see code/scenes031.py for the reasoning."
+  }
+}

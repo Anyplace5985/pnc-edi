@@ -1,0 +1,82 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 100
+    },
+    {
+      "at": 111,
+      "pos": 72
+    },
+    {
+      "at": 222,
+      "pos": 0
+    },
+    {
+      "at": 311,
+      "pos": 90
+    },
+    {
+      "at": 400,
+      "pos": 5
+    },
+    {
+      "at": 489,
+      "pos": 92
+    },
+    {
+      "at": 578,
+      "pos": 6
+    },
+    {
+      "at": 667,
+      "pos": 100
+    },
+    {
+      "at": 778,
+      "pos": 72
+    },
+    {
+      "at": 889,
+      "pos": 0
+    },
+    {
+      "at": 978,
+      "pos": 90
+    },
+    {
+      "at": 1067,
+      "pos": 5
+    },
+    {
+      "at": 1156,
+      "pos": 92
+    },
+    {
+      "at": 1244,
+      "pos": 6
+    },
+    {
+      "at": 1333,
+      "pos": 100
+    }
+  ],
+  "inverted": false,
+  "range": 100,
+  "version": "1.0",
+  "metadata": {
+    "bookmarks": [],
+    "chapters": [],
+    "creator": "",
+    "performers": [],
+    "tags": [],
+    "notes": "",
+    "license": "",
+    "script_url": "",
+    "video_url": "",
+    "type": "basic",
+    "duration": 1,
+    "title": "goonshroom_3_Gallery",
+    "description": "Derived from the 0.3.1 grab screen; see code/grabs031.py for the reasoning."
+  }
+}

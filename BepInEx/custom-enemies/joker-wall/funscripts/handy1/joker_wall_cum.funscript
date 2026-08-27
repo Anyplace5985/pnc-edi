@@ -1,0 +1,16 @@
+{
+  "actions": [
+    { "at": 0, "pos": 10 },
+    { "at": 130, "pos": 57 },
+    { "at": 260, "pos": 20 },
+    { "at": 390, "pos": 67 },
+    { "at": 520, "pos": 20 },
+    { "at": 650, "pos": 67 },
+    { "at": 780, "pos": 25 },
+    { "at": 910, "pos": 72 },
+    { "at": 1040, "pos": 25 }
+  ],
+  "metadata": {
+    "description": "Handy 1-safe Joker Wall cum loop; transitions are slew-limited to 364 units/s."
+  }
+}

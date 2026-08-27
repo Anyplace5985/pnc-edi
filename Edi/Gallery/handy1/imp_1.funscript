@@ -1,0 +1,202 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 57
+    },
+    {
+      "at": 125,
+      "pos": 12
+    },
+    {
+      "at": 250,
+      "pos": 39
+    },
+    {
+      "at": 375,
+      "pos": 84
+    },
+    {
+      "at": 500,
+      "pos": 57
+    },
+    {
+      "at": 625,
+      "pos": 12
+    },
+    {
+      "at": 750,
+      "pos": 39
+    },
+    {
+      "at": 875,
+      "pos": 84
+    },
+    {
+      "at": 1000,
+      "pos": 57
+    },
+    {
+      "at": 1125,
+      "pos": 12
+    },
+    {
+      "at": 1250,
+      "pos": 39
+    },
+    {
+      "at": 1375,
+      "pos": 84
+    },
+    {
+      "at": 1500,
+      "pos": 57
+    },
+    {
+      "at": 1625,
+      "pos": 12
+    },
+    {
+      "at": 1750,
+      "pos": 39
+    },
+    {
+      "at": 1875,
+      "pos": 84
+    },
+    {
+      "at": 2000,
+      "pos": 57
+    },
+    {
+      "at": 2125,
+      "pos": 12
+    },
+    {
+      "at": 2250,
+      "pos": 39
+    },
+    {
+      "at": 2375,
+      "pos": 84
+    },
+    {
+      "at": 2500,
+      "pos": 57
+    },
+    {
+      "at": 2625,
+      "pos": 12
+    },
+    {
+      "at": 2750,
+      "pos": 39
+    },
+    {
+      "at": 2875,
+      "pos": 84
+    },
+    {
+      "at": 3000,
+      "pos": 57
+    },
+    {
+      "at": 3125,
+      "pos": 12
+    },
+    {
+      "at": 3250,
+      "pos": 39
+    },
+    {
+      "at": 3375,
+      "pos": 84
+    },
+    {
+      "at": 3500,
+      "pos": 57
+    },
+    {
+      "at": 3625,
+      "pos": 12
+    },
+    {
+      "at": 3750,
+      "pos": 39
+    },
+    {
+      "at": 3875,
+      "pos": 84
+    },
+    {
+      "at": 4000,
+      "pos": 57
+    },
+    {
+      "at": 4125,
+      "pos": 12
+    },
+    {
+      "at": 4250,
+      "pos": 39
+    },
+    {
+      "at": 4375,
+      "pos": 84
+    },
+    {
+      "at": 4500,
+      "pos": 57
+    },
+    {
+      "at": 4625,
+      "pos": 12
+    },
+    {
+      "at": 4750,
+      "pos": 39
+    },
+    {
+      "at": 4875,
+      "pos": 84
+    },
+    {
+      "at": 5000,
+      "pos": 57
+    },
+    {
+      "at": 5125,
+      "pos": 12
+    },
+    {
+      "at": 5250,
+      "pos": 39
+    },
+    {
+      "at": 5375,
+      "pos": 84
+    },
+    {
+      "at": 5500,
+      "pos": 57
+    }
+  ],
+  "inverted": false,
+  "range": 100,
+  "version": "1.0",
+  "metadata": {
+    "bookmarks": [],
+    "chapters": [],
+    "creator": "",
+    "performers": [],
+    "tags": [],
+    "notes": "",
+    "license": "",
+    "script_url": "",
+    "video_url": "",
+    "type": "basic",
+    "duration": 6,
+    "title": "imp_1",
+    "description": "handy1 variant of 'detailed': slew-limited to 364 units/s (400 mm/s over 110 mm). Timing identical; only strokes the device could not complete are shortened."
+  }
+}

@@ -1,0 +1,76 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 24
+    },
+    {
+      "at": 100,
+      "pos": 20
+    },
+    {
+      "at": 200,
+      "pos": 0
+    },
+    {
+      "at": 467,
+      "pos": 97
+    },
+    {
+      "at": 667,
+      "pos": 24
+    },
+    {
+      "at": 767,
+      "pos": 20
+    },
+    {
+      "at": 867,
+      "pos": 0
+    },
+    {
+      "at": 1134,
+      "pos": 97
+    },
+    {
+      "at": 1334,
+      "pos": 24
+    },
+    {
+      "at": 1434,
+      "pos": 20
+    },
+    {
+      "at": 1534,
+      "pos": 0
+    },
+    {
+      "at": 1800,
+      "pos": 97
+    },
+    {
+      "at": 2000,
+      "pos": 24
+    },
+    {
+      "at": 2100,
+      "pos": 20
+    },
+    {
+      "at": 2200,
+      "pos": 0
+    },
+    {
+      "at": 2467,
+      "pos": 97
+    },
+    {
+      "at": 2667,
+      "pos": 24
+    }
+  ],
+  "metadata": {
+    "title": "peek_wendigo_ride",
+    "description": "handy1 variant of 'detailed': slew-limited to 364 units/s (400 mm/s over 110 mm). Timing identical; only strokes the device could not complete are shortened."
+  }
+}

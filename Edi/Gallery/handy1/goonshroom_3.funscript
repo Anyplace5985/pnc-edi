@@ -1,0 +1,82 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 63
+    },
+    {
+      "at": 125,
+      "pos": 72
+    },
+    {
+      "at": 250,
+      "pos": 27
+    },
+    {
+      "at": 350,
+      "pos": 63
+    },
+    {
+      "at": 450,
+      "pos": 27
+    },
+    {
+      "at": 550,
+      "pos": 63
+    },
+    {
+      "at": 650,
+      "pos": 27
+    },
+    {
+      "at": 750,
+      "pos": 63
+    },
+    {
+      "at": 875,
+      "pos": 72
+    },
+    {
+      "at": 1000,
+      "pos": 27
+    },
+    {
+      "at": 1100,
+      "pos": 63
+    },
+    {
+      "at": 1200,
+      "pos": 27
+    },
+    {
+      "at": 1300,
+      "pos": 63
+    },
+    {
+      "at": 1400,
+      "pos": 27
+    },
+    {
+      "at": 1500,
+      "pos": 63
+    }
+  ],
+  "inverted": false,
+  "range": 100,
+  "version": "1.0",
+  "metadata": {
+    "bookmarks": [],
+    "chapters": [],
+    "creator": "",
+    "performers": [],
+    "tags": [],
+    "notes": "",
+    "license": "",
+    "script_url": "",
+    "video_url": "",
+    "type": "basic",
+    "duration": 2,
+    "title": "goonshroom_3",
+    "description": "handy1 variant of 'detailed': slew-limited to 364 units/s (400 mm/s over 110 mm). Timing identical; only strokes the device could not complete are shortened."
+  }
+}

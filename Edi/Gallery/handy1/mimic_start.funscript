@@ -1,0 +1,28 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 0
+    },
+    {
+      "at": 467,
+      "pos": 100
+    },
+    {
+      "at": 1250,
+      "pos": 100
+    },
+    {
+      "at": 1734,
+      "pos": 0
+    },
+    {
+      "at": 1750,
+      "pos": 0
+    }
+  ],
+  "metadata": {
+    "title": "Mimic_Start",
+    "description": "handy1 variant of 'detailed': slew-limited to 364 units/s (400 mm/s over 110 mm). Timing identical; only strokes the device could not complete are shortened."
+  }
+}

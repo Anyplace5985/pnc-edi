@@ -1,0 +1,82 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 91
+    },
+    {
+      "at": 125,
+      "pos": 81
+    },
+    {
+      "at": 250,
+      "pos": 33
+    },
+    {
+      "at": 375,
+      "pos": 0
+    },
+    {
+      "at": 500,
+      "pos": 16
+    },
+    {
+      "at": 625,
+      "pos": 74
+    },
+    {
+      "at": 750,
+      "pos": 100
+    },
+    {
+      "at": 875,
+      "pos": 91
+    },
+    {
+      "at": 1000,
+      "pos": 81
+    },
+    {
+      "at": 1125,
+      "pos": 33
+    },
+    {
+      "at": 1250,
+      "pos": 0
+    },
+    {
+      "at": 1375,
+      "pos": 16
+    },
+    {
+      "at": 1500,
+      "pos": 74
+    },
+    {
+      "at": 1625,
+      "pos": 100
+    },
+    {
+      "at": 1750,
+      "pos": 91
+    }
+  ],
+  "inverted": false,
+  "range": 100,
+  "version": "1.0",
+  "metadata": {
+    "bookmarks": [],
+    "chapters": [],
+    "creator": "",
+    "performers": [],
+    "tags": [],
+    "notes": "",
+    "license": "",
+    "script_url": "",
+    "video_url": "",
+    "type": "basic",
+    "duration": 2,
+    "title": "imp_grab_loop",
+    "description": "Rebuilt from Imp_Grab_Loop by code/impgrab.py. Stroke follows the imp on the tip, one point per frame (125ms). No buzz - the balls imp bobs at the same 875ms as the stroke here, so a second rhythm would only fight it. 1750ms."
+  }
+}

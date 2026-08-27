@@ -1,0 +1,82 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 0
+    },
+    {
+      "at": 125,
+      "pos": 12
+    },
+    {
+      "at": 250,
+      "pos": 49
+    },
+    {
+      "at": 375,
+      "pos": 65
+    },
+    {
+      "at": 500,
+      "pos": 92
+    },
+    {
+      "at": 625,
+      "pos": 100
+    },
+    {
+      "at": 750,
+      "pos": 18
+    },
+    {
+      "at": 875,
+      "pos": 0
+    },
+    {
+      "at": 1000,
+      "pos": 12
+    },
+    {
+      "at": 1125,
+      "pos": 49
+    },
+    {
+      "at": 1250,
+      "pos": 65
+    },
+    {
+      "at": 1375,
+      "pos": 92
+    },
+    {
+      "at": 1500,
+      "pos": 100
+    },
+    {
+      "at": 1625,
+      "pos": 18
+    },
+    {
+      "at": 1750,
+      "pos": 0
+    }
+  ],
+  "inverted": false,
+  "range": 100,
+  "version": "1.0",
+  "metadata": {
+    "bookmarks": [],
+    "chapters": [],
+    "creator": "",
+    "performers": [],
+    "tags": [],
+    "notes": "",
+    "license": "",
+    "script_url": "",
+    "video_url": "",
+    "type": "basic",
+    "duration": 2,
+    "title": "Serpent_Loop",
+    "description": "Derived from the 0.3.1 grab screen; see code/grabs031.py for the reasoning."
+  }
+}

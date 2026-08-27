@@ -1,0 +1,110 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 100
+    },
+    {
+      "at": 100,
+      "pos": 95
+    },
+    {
+      "at": 200,
+      "pos": 48
+    },
+    {
+      "at": 300,
+      "pos": 10
+    },
+    {
+      "at": 500,
+      "pos": 0
+    },
+    {
+      "at": 900,
+      "pos": 40
+    },
+    {
+      "at": 1025,
+      "pos": 0
+    },
+    {
+      "at": 1150,
+      "pos": 40
+    },
+    {
+      "at": 1275,
+      "pos": 0
+    },
+    {
+      "at": 2100,
+      "pos": 40
+    },
+    {
+      "at": 2225,
+      "pos": 0
+    },
+    {
+      "at": 2350,
+      "pos": 40
+    },
+    {
+      "at": 2475,
+      "pos": 0
+    },
+    {
+      "at": 4000,
+      "pos": 40
+    },
+    {
+      "at": 4125,
+      "pos": 0
+    },
+    {
+      "at": 4250,
+      "pos": 40
+    },
+    {
+      "at": 4375,
+      "pos": 0
+    },
+    {
+      "at": 5100,
+      "pos": 0
+    },
+    {
+      "at": 5200,
+      "pos": 13
+    },
+    {
+      "at": 5300,
+      "pos": 60
+    },
+    {
+      "at": 5400,
+      "pos": 78
+    },
+    {
+      "at": 5500,
+      "pos": 100
+    }
+  ],
+  "inverted": false,
+  "range": 100,
+  "version": "1.0",
+  "metadata": {
+    "bookmarks": [],
+    "chapters": [],
+    "creator": "",
+    "performers": [],
+    "tags": [],
+    "notes": "",
+    "license": "",
+    "script_url": "",
+    "video_url": "",
+    "type": "basic",
+    "duration": 6,
+    "title": "Nun_Cum_Gallery",
+    "description": "Re-derived from the animation; see code/rederive.py for the reasoning."
+  }
+}

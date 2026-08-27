@@ -1,0 +1,82 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 0
+    },
+    {
+      "at": 111,
+      "pos": 100
+    },
+    {
+      "at": 222,
+      "pos": 80
+    },
+    {
+      "at": 333,
+      "pos": 29
+    },
+    {
+      "at": 444,
+      "pos": 0
+    },
+    {
+      "at": 555,
+      "pos": 25
+    },
+    {
+      "at": 666,
+      "pos": 0
+    },
+    {
+      "at": 778,
+      "pos": 0
+    },
+    {
+      "at": 889,
+      "pos": 100
+    },
+    {
+      "at": 1000,
+      "pos": 80
+    },
+    {
+      "at": 1111,
+      "pos": 29
+    },
+    {
+      "at": 1222,
+      "pos": 0
+    },
+    {
+      "at": 1333,
+      "pos": 25
+    },
+    {
+      "at": 1444,
+      "pos": 0
+    },
+    {
+      "at": 1556,
+      "pos": 0
+    }
+  ],
+  "inverted": false,
+  "range": 100,
+  "version": "1.0",
+  "metadata": {
+    "bookmarks": [],
+    "chapters": [],
+    "creator": "",
+    "performers": [],
+    "tags": [],
+    "notes": "",
+    "license": "",
+    "script_url": "",
+    "video_url": "",
+    "type": "basic",
+    "duration": 2,
+    "title": "Gravy_Loop2",
+    "description": "Gallery_Gravy_Grabbed_Loop2 - 7 frames @9fps = 778 ms, script is 2 cycles. Hand-authored from the feel-pass cue; see code/authored.py for the reasoning."
+  }
+}

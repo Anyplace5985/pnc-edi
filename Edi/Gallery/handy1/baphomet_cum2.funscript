@@ -1,0 +1,77 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 0
+    },
+    {
+      "at": 100,
+      "pos": 0
+    },
+    {
+      "at": 165,
+      "pos": 24
+    },
+    {
+      "at": 232,
+      "pos": 0
+    },
+    {
+      "at": 298,
+      "pos": 24
+    },
+    {
+      "at": 364,
+      "pos": 0
+    },
+    {
+      "at": 430,
+      "pos": 24
+    },
+    {
+      "at": 496,
+      "pos": 0
+    },
+    {
+      "at": 1328,
+      "pos": 0
+    },
+    {
+      "at": 1394,
+      "pos": 24
+    },
+    {
+      "at": 1460,
+      "pos": 0
+    },
+    {
+      "at": 1526,
+      "pos": 24
+    },
+    {
+      "at": 1592,
+      "pos": 0
+    },
+    {
+      "at": 1658,
+      "pos": 24
+    },
+    {
+      "at": 1724,
+      "pos": 0
+    },
+    {
+      "at": 2484,
+      "pos": 0
+    },
+    {
+      "at": 2500,
+      "pos": 0
+    }
+  ],
+  "metadata": {
+    "duration": 2,
+    "title": "Baphomet_Cum2",
+    "description": "handy1 variant of 'detailed': slew-limited to 364 units/s (400 mm/s over 110 mm). Timing identical; only strokes the device could not complete are shortened."
+  }
+}

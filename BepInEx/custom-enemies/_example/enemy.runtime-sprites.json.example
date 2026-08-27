@@ -1,0 +1,31 @@
+{
+  "id": "sprite_raider",
+  "displayName": "Sprite Raider",
+  "description": "A custom animated enemy loaded entirely from PNG files.",
+  "enabled": true,
+  "alwaysUnlocked": true,
+  "includeInRandomSpawns": true,
+  "spawnWeight": 0.5,
+  "baseEnemy": "zombie",
+  "nameAliases": ["SpriteRaider"],
+  "fields": [
+    { "component": "ChargingEnemyAI", "field": "maxHealth", "value": "150" },
+    { "component": "ChargingEnemyAI", "field": "attackDamage", "value": "20" }
+  ],
+  "spriteVisual": {
+    "pixelsPerUnit": 100,
+    "pivot": "0.5,0",
+    "offset": "0,0,0",
+    "scale": "1,1,1",
+    "hideOriginalRenderers": true,
+    "defaultAnimation": "idle",
+    "animations": [
+      { "name": "idle", "file": "idle.png", "fps": 8, "loop": true, "columns": 6, "rows": 1, "frameCount": 6, "aliases": ["idle"] },
+      { "name": "walk", "file": "walk.png", "fps": 12, "loop": true, "columns": 8, "rows": 1, "frameCount": 8, "aliases": ["walk", "run", "move"] },
+      { "name": "attack", "file": "attack.png", "fps": 12, "loop": false, "columns": 6, "rows": 1, "frameCount": 6, "aliases": ["attack", "charge", "hit"] },
+      { "name": "hurt", "file": "hurt.png", "fps": 10, "loop": false, "columns": 3, "rows": 1, "frameCount": 3, "aliases": ["hurt", "damage", "stun"] },
+      { "name": "death", "file": "death.png", "fps": 10, "loop": false, "columns": 8, "rows": 1, "frameCount": 8, "aliases": ["death", "die"] }
+    ]
+  },
+  "galleryAnimations": ["Idle", "Walk", "Attack"]
+}

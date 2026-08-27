@@ -1,0 +1,180 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>PncEdi</AssemblyName>
+    <GenerateAssemblyInfo>False</GenerateAssemblyInfo>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <CheckForOverflowUnderflow>False</CheckForOverflowUnderflow>
+    <RepoDir>$(MSBuildThisFileDirectory)..\..\</RepoDir>
+    <!-- The build machine's absolute paths must not reach a shipped binary: the PDB path lands in
+         the PE debug directory and every source path lands in the PDB, so an unmapped Release
+         build publishes a username and a directory layout (§143). PathMap rewrites both to a
+         repo-relative root, which also makes the output reproducible across machines.        -->
+    <PathMap>$([System.IO.Path]::GetFullPath('$(RepoDir)'))=./</PathMap>
+    <!-- The game is outside this repo and reached through the symlink. Override to build against
+         a different install:  dotnet build ... -p:GameDir="../Archive/PNC 0.2.1 Win/"           -->
+    <GameDir Condition="'$(GameDir)' == ''">$(RepoDir)game-windows\</GameDir>
+    <ManagedDir>$(GameDir)Post Nut Calamity_Data\Managed\</ManagedDir>
+    <!-- BepInEx to compile against comes from the pinned pack, not from a game directory, so a
+         build never depends on a deploy having happened. `code/deploy.py` extracts it.        -->
+    <BepInExDir>$(RepoDir)code\dist\bepinex\core\</BepInExDir>
+    <PluginDeployDir>$(RepoDir)BepInEx\plugins\</PluginDeployDir>
+    <!-- Patch the game installs after every build. Off with -p:DeployToGames=false.           -->
+    <DeployToGames Condition="'$(DeployToGames)' == ''">true</DeployToGames>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="assembly_csharp_21_code\**" />
+    <Compile Remove="assembly_csharp_code\**" />
+    <Compile Remove="assembly_csharp_code_old_version\**" />
+    <EmbeddedResource Remove="assembly_csharp_21_code\**" />
+    <EmbeddedResource Remove="assembly_csharp_code\**" />
+    <EmbeddedResource Remove="assembly_csharp_code_old_version\**" />
+    <None Remove="assembly_csharp_21_code\**" />
+    <None Remove="assembly_csharp_code\**" />
+    <None Remove="assembly_csharp_code_old_version\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The in-game settings window is a second, independent BepInEx plugin: it configures
+         whatever plugins are loaded, so neither assembly references the other (the link is one
+         late-bound property read - see PncEdi/ModManagerBridge.cs). It is built from here anyway
+         so that `dotnet build PncEdi.csproj` stays the one command that produces and deploys
+         everything, and so the two DLLs in BepInEx/plugins/ can never be from different eras.
+         ReferenceOutputAssembly=false says "build it, do not link it"; the property scrub keeps
+         release.py's per-project OutputPath/PluginDeployDir from leaking across into it.      -->
+    <ProjectReference Include="..\modmanager\PncModManager.csproj"
+                      ReferenceOutputAssembly="false"
+                      GlobalPropertiesToRemove="OutputPath;PluginDeployDir" />
+    <Reference Include="0Harmony">
+      <HintPath>$(BepInExDir)0Harmony.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="BepInEx.Core">
+      <HintPath>$(BepInExDir)BepInEx.Core.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="BepInEx.Unity.Mono">
+      <HintPath>$(BepInExDir)BepInEx.Unity.Mono.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Assembly-CSharp-firstpass">
+      <HintPath>$(ManagedDir)Assembly-CSharp-firstpass.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.IMGUIModule">
+      <HintPath>$(ManagedDir)UnityEngine.IMGUIModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>$(ManagedDir)Assembly-CSharp.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine">
+      <HintPath>$(ManagedDir)UnityEngine.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(ManagedDir)UnityEngine.CoreModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.AnimationModule">
+      <HintPath>$(ManagedDir)UnityEngine.AnimationModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.PhysicsModule">
+      <HintPath>$(ManagedDir)UnityEngine.PhysicsModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.AudioModule">
+      <HintPath>$(ManagedDir)UnityEngine.AudioModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.InputLegacyModule">
+      <HintPath>$(ManagedDir)UnityEngine.InputLegacyModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>$(ManagedDir)UnityEngine.UI.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.TextRenderingModule">
+      <HintPath>$(ManagedDir)UnityEngine.TextRenderingModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <!-- Added for the custom-enemy framework: AssetBundle for full prefab packages, Video for
+         the witch's dream-cloud overlays, ImageConversion for PNG sprite sheets, Particle for the
+         base-enemy strip, and the pathfinder for the witch's teleport landing checks.        -->
+    <Reference Include="UnityEngine.AssetBundleModule">
+      <HintPath>$(ManagedDir)UnityEngine.AssetBundleModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.VideoModule">
+      <HintPath>$(ManagedDir)UnityEngine.VideoModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.ImageConversionModule">
+      <HintPath>$(ManagedDir)UnityEngine.ImageConversionModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.ParticleSystemModule">
+      <HintPath>$(ManagedDir)UnityEngine.ParticleSystemModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.AIModule">
+      <HintPath>$(ManagedDir)UnityEngine.AIModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="AstarPathfindingProject">
+      <HintPath>$(ManagedDir)AstarPathfindingProject.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <!-- The pathfinder's own base type, needed only because AstarPath's API surfaces it. -->
+    <Reference Include="Drawing">
+      <HintPath>$(ManagedDir)Drawing.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="PackageTools">
+      <HintPath>$(ManagedDir)PackageTools.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.JSONSerializeModule">
+      <HintPath>$(ManagedDir)UnityEngine.JSONSerializeModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UIModule">
+      <HintPath>$(ManagedDir)UnityEngine.UIModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+  </ItemGroup>
+
+  <Target Name="CheckBepInExRefs" BeforeTargets="ResolveAssemblyReferences">
+    <Error Condition="!Exists('$(BepInExDir)BepInEx.Core.dll')"
+           Text="No BepInEx to compile against at $(BepInExDir). Run: python3 code/deploy.py --refs-only" />
+  </Target>
+
+  <Target Name="DeployPlugin" AfterTargets="Build">
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(PluginDeployDir)" SkipUnchangedFiles="true" />
+    <Message Importance="high" Text="Deployed $(TargetFileName) -&gt; $(PluginDeployDir)" />
+  </Target>
+
+  <!-- The mod is useless in this repo; it has to be in a game. Runs on the DLL just built, so
+       "I forgot to deploy" cannot cost another round of testing (PROJECT.md, working practice).
+       Never fatal: a machine with no game checked out still builds.                            -->
+  <!-- The custom-enemy framework is a third plugin, and unlike PncModManager it genuinely depends
+       on this assembly - so the reference runs that way and it cannot be a ProjectReference here
+       without making a cycle. Building it from this target instead keeps `dotnet build
+       PncEdi.csproj` the one command that produces every DLL, and running after DeployPlugin
+       means the PncEdi.dll it compiles against is the one just built.                          -->
+  <Target Name="BuildCustomEnemies" AfterTargets="DeployPlugin">
+    <MSBuild Projects="..\customenemies\PncCustomEnemies.csproj"
+             Properties="Configuration=$(Configuration)"
+             RemoveProperties="OutputPath;PluginDeployDir;TargetFramework" />
+  </Target>
+
+  <Target Name="PatchGameInstalls" AfterTargets="BuildCustomEnemies" Condition="'$(DeployToGames)' == 'true'">
+    <Exec Command="python3 &quot;$(RepoDir)code/deploy.py&quot; --dll-only"
+          WorkingDirectory="$(RepoDir)" ContinueOnError="WarnAndContinue" />
+  </Target>
+</Project>

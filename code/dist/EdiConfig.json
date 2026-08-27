@@ -1,0 +1,72 @@
+{
+  "Gallery": {
+    "GalleryPath": ".\\Gallery",
+    "GenerateDefinitionFromChapters": true,
+    "GenerateChaptersFromDefinition": false,
+    "InproveLoopDetection": true
+  },
+  "GalleryBundler": {
+    "MinRepeatDuration": 14000,
+    "RepeatDuration": 2000,
+    "SpacerDuration": 5000
+  },
+  "Devices": {
+    "Devices": {
+      "Preview Device": {
+        "Variant": "detailed",
+        "Channel": null,
+        "Min": 0,
+        "Max": 100,
+        "OffsetMS": null
+      }
+    }
+  },
+  "Buttplug": {
+    "Url": "ws://localhost:12345",
+    "MinCommandDelay": 60,
+    "MotorInercialDelay": 50
+  },
+  "Handy": {
+    "Key": null
+  },
+  "OSR": {
+    "COMPort": null,
+    "EnableMultiAxis": false,
+    "RangeLimits": {
+      "Linear": {
+        "LowerLimit": 0,
+        "UpperLimit": 100
+      },
+      "Roll": {
+        "LowerLimit": 0,
+        "UpperLimit": 100
+      },
+      "Pitch": {
+        "LowerLimit": 0,
+        "UpperLimit": 100
+      },
+      "Twist": {
+        "LowerLimit": 0,
+        "UpperLimit": 100
+      },
+      "Sway": {
+        "LowerLimit": 0,
+        "UpperLimit": 100
+      },
+      "Surge": {
+        "LowerLimit": 0,
+        "UpperLimit": 100
+      }
+    }
+  },
+  "EStim": {
+    "DeviceId": -1
+  },
+  "Edi": {
+    "Filler": true,
+    "Gallery": true,
+    "Reactive": true,
+    "UseHttps": false,
+    "ExecuteOnReady": ""
+  }
+}

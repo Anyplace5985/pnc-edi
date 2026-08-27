@@ -1,0 +1,41 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 0
+    },
+    {
+      "at": 358,
+      "pos": 100
+    },
+    {
+      "at": 2239,
+      "pos": 100
+    },
+    {
+      "at": 2457,
+      "pos": 21
+    },
+    {
+      "at": 2524,
+      "pos": 30
+    },
+    {
+      "at": 2591,
+      "pos": 6
+    },
+    {
+      "at": 2843,
+      "pos": 0
+    },
+    {
+      "at": 2875,
+      "pos": 0
+    }
+  ],
+  "metadata": {
+    "duration": 3,
+    "title": "Gravy_Start2",
+    "description": "handy1 variant of 'detailed': slew-limited to 364 units/s (400 mm/s over 110 mm). Timing identical; only strokes the device could not complete are shortened."
+  }
+}

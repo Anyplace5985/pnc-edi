@@ -1,0 +1,64 @@
+{
+  "id": "example_wall",
+  "displayName": "Example Wall Picture",
+  "enabled": true,
+
+  "portrait": "portrait.png",
+  "portraitPixelsPerUnit": 300,
+  "portraitBrightness": 0.35,
+  "portraitScale": "1,1,1",
+
+  "autoPlace": true,
+  "spawnCount": 1,
+  "maxActiveCount": 6,
+  "roamingSpawnBatch": 1,
+  "roamingSpawnInterval": 12,
+  "roamingSpawnDistance": 12,
+  "preferCorners": true,
+  "minimumSpawnSeparation": 8,
+  "placementDelay": 3,
+
+  "armDelay": 5,
+  "pullRadius": 7.5,
+  "frontArc": 0.15,
+  "pullStrength": 24,
+  "maxPullSpeed": 5,
+  "captureDistance": 1.5,
+  "cooldown": 10,
+
+  "maxHealth": 120,
+  "colliderDepth": 0.06,
+
+  "minimumSceneSeconds": 20,
+  "captureBackdropAlpha": 0.2,
+  "captureSound": "capture.wav",
+  "captureSoundVolume": 0.8,
+  "captureSoundLoop": true,
+
+  "animations": [
+    {
+      "name": "loop",
+      "file": "loop.png",
+      "gallery": "example_wall_loop",
+      "funscript": "example_wall_loop",
+      "fps": 8,
+      "loop": true,
+      "columns": 2,
+      "rows": 2,
+      "frameCount": 4,
+      "seconds": 10
+    },
+    {
+      "name": "cum",
+      "file": "cum.png",
+      "gallery": "example_wall_cum",
+      "funscript": "example_wall_cum",
+      "fps": 8,
+      "loop": true,
+      "columns": 4,
+      "rows": 2,
+      "frameCount": 8,
+      "seconds": 4
+    }
+  ]
+}

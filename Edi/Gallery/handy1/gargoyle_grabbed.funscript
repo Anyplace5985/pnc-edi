@@ -1,0 +1,73 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 69
+    },
+    {
+      "at": 67,
+      "pos": 93
+    },
+    {
+      "at": 134,
+      "pos": 100
+    },
+    {
+      "at": 352,
+      "pos": 21
+    },
+    {
+      "at": 461,
+      "pos": 50
+    },
+    {
+      "at": 562,
+      "pos": 13
+    },
+    {
+      "at": 678,
+      "pos": 50
+    },
+    {
+      "at": 796,
+      "pos": 7
+    },
+    {
+      "at": 1014,
+      "pos": 86
+    },
+    {
+      "at": 1147,
+      "pos": 100
+    },
+    {
+      "at": 1365,
+      "pos": 21
+    },
+    {
+      "at": 1482,
+      "pos": 50
+    },
+    {
+      "at": 1599,
+      "pos": 7
+    },
+    {
+      "at": 1717,
+      "pos": 50
+    },
+    {
+      "at": 1833,
+      "pos": 8
+    },
+    {
+      "at": 2000,
+      "pos": 69
+    }
+  ],
+  "metadata": {
+    "duration": 2,
+    "title": "Gargoyle_Grabbed",
+    "description": "handy1 variant of 'detailed': slew-limited to 364 units/s (400 mm/s over 110 mm). Timing identical; only strokes the device could not complete are shortened."
+  }
+}

@@ -1,0 +1,126 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 55
+    },
+    {
+      "at": 125,
+      "pos": 25
+    },
+    {
+      "at": 250,
+      "pos": 0
+    },
+    {
+      "at": 375,
+      "pos": 9
+    },
+    {
+      "at": 500,
+      "pos": 15
+    },
+    {
+      "at": 625,
+      "pos": 49
+    },
+    {
+      "at": 750,
+      "pos": 93
+    },
+    {
+      "at": 875,
+      "pos": 77
+    },
+    {
+      "at": 1000,
+      "pos": 35
+    },
+    {
+      "at": 1125,
+      "pos": 11
+    },
+    {
+      "at": 1250,
+      "pos": 21
+    },
+    {
+      "at": 1375,
+      "pos": 34
+    },
+    {
+      "at": 1500,
+      "pos": 54
+    },
+    {
+      "at": 1625,
+      "pos": 72
+    },
+    {
+      "at": 1750,
+      "pos": 98
+    },
+    {
+      "at": 1875,
+      "pos": 100
+    },
+    {
+      "at": 2000,
+      "pos": 95
+    },
+    {
+      "at": 2125,
+      "pos": 83
+    },
+    {
+      "at": 2250,
+      "pos": 72
+    },
+    {
+      "at": 2375,
+      "pos": 42
+    },
+    {
+      "at": 2500,
+      "pos": 16
+    },
+    {
+      "at": 2625,
+      "pos": 3
+    },
+    {
+      "at": 2750,
+      "pos": 4
+    },
+    {
+      "at": 2875,
+      "pos": 2
+    },
+    {
+      "at": 3000,
+      "pos": 10
+    },
+    {
+      "at": 3125,
+      "pos": 55
+    }
+  ],
+  "inverted": false,
+  "range": 100,
+  "version": "1.0",
+  "metadata": {
+    "bookmarks": [],
+    "chapters": [],
+    "creator": "",
+    "performers": [],
+    "tags": [],
+    "notes": "",
+    "license": "",
+    "script_url": "",
+    "video_url": "",
+    "type": "basic",
+    "duration": 3,
+    "title": "GoonShroom_Cum",
+    "description": "handy1 variant of 'detailed': slew-limited to 364 units/s (400 mm/s over 110 mm). Timing identical; only strokes the device could not complete are shortened."
+  }
+}

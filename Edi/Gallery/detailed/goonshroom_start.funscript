@@ -1,0 +1,74 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 100
+    },
+    {
+      "at": 125,
+      "pos": 31
+    },
+    {
+      "at": 250,
+      "pos": 0
+    },
+    {
+      "at": 375,
+      "pos": 10
+    },
+    {
+      "at": 500,
+      "pos": 22
+    },
+    {
+      "at": 625,
+      "pos": 61
+    },
+    {
+      "at": 750,
+      "pos": 100
+    },
+    {
+      "at": 875,
+      "pos": 31
+    },
+    {
+      "at": 1000,
+      "pos": 0
+    },
+    {
+      "at": 1125,
+      "pos": 10
+    },
+    {
+      "at": 1250,
+      "pos": 22
+    },
+    {
+      "at": 1375,
+      "pos": 61
+    },
+    {
+      "at": 1500,
+      "pos": 100
+    }
+  ],
+  "inverted": false,
+  "range": 100,
+  "version": "1.0",
+  "metadata": {
+    "bookmarks": [],
+    "chapters": [],
+    "creator": "",
+    "performers": [],
+    "tags": [],
+    "notes": "",
+    "license": "",
+    "script_url": "",
+    "video_url": "",
+    "type": "basic",
+    "duration": 2,
+    "title": "GoonShroom_Start",
+    "description": "Derived from the 0.3.1 grab screen; see code/grabs031.py for the reasoning."
+  }
+}

@@ -1,0 +1,66 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 2
+    },
+    {
+      "at": 111,
+      "pos": 0
+    },
+    {
+      "at": 222,
+      "pos": 40
+    },
+    {
+      "at": 333,
+      "pos": 81
+    },
+    {
+      "at": 444,
+      "pos": 40
+    },
+    {
+      "at": 556,
+      "pos": 2
+    },
+    {
+      "at": 667,
+      "pos": 0
+    },
+    {
+      "at": 778,
+      "pos": 40
+    },
+    {
+      "at": 889,
+      "pos": 81
+    },
+    {
+      "at": 1000,
+      "pos": 40
+    },
+    {
+      "at": 1111,
+      "pos": 2
+    }
+  ],
+  "inverted": false,
+  "range": 100,
+  "version": "1.0",
+  "metadata": {
+    "bookmarks": [],
+    "chapters": [],
+    "creator": "",
+    "performers": [],
+    "tags": [],
+    "notes": "",
+    "license": "",
+    "script_url": "",
+    "video_url": "",
+    "type": "basic",
+    "duration": 1,
+    "title": "BlindedBeast_Start",
+    "description": "handy1 variant of 'detailed': slew-limited to 364 units/s (400 mm/s over 110 mm). Timing identical; only strokes the device could not complete are shortened."
+  }
+}

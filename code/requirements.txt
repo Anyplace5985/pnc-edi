@@ -1,0 +1,14 @@
+# Third-party Python the tools in code/ need. Install into the repo's own venv:
+#
+#     python3 -m venv .venv && .venv/bin/pip install -r code/requirements.txt
+#
+# Versions are pinned so a figure measured today can be reproduced later: UnityPy's asset
+# reader and Pillow's decoders both decide what a sprite's pixels are, and animsweep,
+# gallerydiff and refvideo --verify all compare against those pixels.
+#
+# .venv/ is untracked - .gitignore is an allowlist, so it is invisible to git without a rule.
+# Only these four are imported directly; everything else pip pulls in is transitive.
+UnityPy==1.25.3          # reads the game's asset bundles (sprites, clips, MonoBehaviour fields)
+numpy==2.5.2             # every proxy in proxies.py, and the frame differencing
+pillow==12.3.0           # sprite decode and the reference-video frames
+TypeTreeGeneratorAPI==0.0.10  # spawntables.py only: MonoBehaviour fields are not in the shipped type trees

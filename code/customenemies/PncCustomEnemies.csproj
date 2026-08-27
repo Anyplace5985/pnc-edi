@@ -1,0 +1,158 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>PncCustomEnemies</AssemblyName>
+    <RootNamespace>PncCustomEnemies</RootNamespace>
+    <GenerateAssemblyInfo>False</GenerateAssemblyInfo>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <Deterministic>true</Deterministic>
+    <RepoDir>$(MSBuildThisFileDirectory)..\..\</RepoDir>
+    <!-- The build machine's absolute paths must not reach a shipped binary: the PDB path lands in
+         the PE debug directory and every source path lands in the PDB, so an unmapped Release
+         build publishes a username and a directory layout (§143). PathMap rewrites both to a
+         repo-relative root, which also makes the output reproducible across machines.        -->
+    <PathMap>$([System.IO.Path]::GetFullPath('$(RepoDir)'))=./</PathMap>
+    <!-- Same two roots the other two projects use, for the same reasons: the game is outside the
+         repo and reached through the symlink, and BepInEx comes from the pinned pack rather than
+         from a game directory, so a build never depends on a deploy having happened.          -->
+    <GameDir Condition="'$(GameDir)' == ''">$(RepoDir)game-windows\</GameDir>
+    <ManagedDir>$(GameDir)Post Nut Calamity_Data\Managed\</ManagedDir>
+    <BepInExDir>$(RepoDir)code\dist\bepinex\core\</BepInExDir>
+    <PluginDeployDir>$(RepoDir)BepInEx\plugins\</PluginDeployDir>
+    <!-- The PncEdi to compile against. Separate from PluginDeployDir on purpose: a release build
+         redirects that to a scratch directory per plugin (release.py), and the reference must
+         still point at a real PncEdi.dll - the freshly built one, which release.py passes in. -->
+    <PncEdiRefPath Condition="'$(PncEdiRefPath)' == ''">$(RepoDir)BepInEx\plugins\PncEdi.dll</PncEdiRefPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- PncEdi is referenced as a built DLL rather than as a ProjectReference, because
+         PncEdi.csproj is what builds *this* project (see its BuildCustomEnemies target) and a
+         ProjectReference back would be a cycle. The check target below turns "you built this one
+         on its own, first" into a sentence rather than a missing-type error.                   -->
+    <Reference Include="PncEdi">
+      <HintPath>$(PncEdiRefPath)</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="0Harmony">
+      <HintPath>$(BepInExDir)0Harmony.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="BepInEx.Core">
+      <HintPath>$(BepInExDir)BepInEx.Core.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="BepInEx.Unity.Mono">
+      <HintPath>$(BepInExDir)BepInEx.Unity.Mono.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="SemanticVersioning">
+      <HintPath>$(BepInExDir)SemanticVersioning.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="BepInEx.Unity.Common">
+      <HintPath>$(BepInExDir)BepInEx.Unity.Common.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>$(ManagedDir)Assembly-CSharp.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Assembly-CSharp-firstpass">
+      <HintPath>$(ManagedDir)Assembly-CSharp-firstpass.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine">
+      <HintPath>$(ManagedDir)UnityEngine.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(ManagedDir)UnityEngine.CoreModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.AnimationModule">
+      <HintPath>$(ManagedDir)UnityEngine.AnimationModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.PhysicsModule">
+      <HintPath>$(ManagedDir)UnityEngine.PhysicsModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.AudioModule">
+      <HintPath>$(ManagedDir)UnityEngine.AudioModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.InputLegacyModule">
+      <HintPath>$(ManagedDir)UnityEngine.InputLegacyModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>$(ManagedDir)UnityEngine.UI.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UIModule">
+      <HintPath>$(ManagedDir)UnityEngine.UIModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.TextRenderingModule">
+      <HintPath>$(ManagedDir)UnityEngine.TextRenderingModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.IMGUIModule">
+      <HintPath>$(ManagedDir)UnityEngine.IMGUIModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <!-- AssetBundle for full prefab packages, Video for the witch's dream-cloud overlays,
+         ImageConversion for PNG sprite sheets, Particle for the base-enemy strip, and the two
+         pathfinders for her teleport landing checks.                                          -->
+    <Reference Include="UnityEngine.AssetBundleModule">
+      <HintPath>$(ManagedDir)UnityEngine.AssetBundleModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.VideoModule">
+      <HintPath>$(ManagedDir)UnityEngine.VideoModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.ImageConversionModule">
+      <HintPath>$(ManagedDir)UnityEngine.ImageConversionModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.ParticleSystemModule">
+      <HintPath>$(ManagedDir)UnityEngine.ParticleSystemModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.AIModule">
+      <HintPath>$(ManagedDir)UnityEngine.AIModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="AstarPathfindingProject">
+      <HintPath>$(ManagedDir)AstarPathfindingProject.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="PackageTools">
+      <HintPath>$(ManagedDir)PackageTools.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Drawing">
+      <HintPath>$(ManagedDir)Drawing.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.JSONSerializeModule">
+      <HintPath>$(ManagedDir)UnityEngine.JSONSerializeModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+  </ItemGroup>
+
+  <Target Name="CheckRefs" BeforeTargets="ResolveAssemblyReferences">
+    <Error Condition="!Exists('$(BepInExDir)BepInEx.Core.dll')"
+           Text="No BepInEx to compile against at $(BepInExDir). Run: python3 code/deploy.py --refs-only" />
+    <Error Condition="!Exists('$(PncEdiRefPath)')"
+           Text="No PncEdi.dll at $(PncEdiRefPath) to compile against. Build the core mod first: dotnet build code/edimod/PncEdi.csproj -c Release (which builds this project too)." />
+  </Target>
+
+  <Target Name="DeployPlugin" AfterTargets="Build">
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(PluginDeployDir)" SkipUnchangedFiles="true" />
+    <Message Importance="high" Text="Deployed $(TargetFileName) -&gt; $(PluginDeployDir)" />
+  </Target>
+</Project>

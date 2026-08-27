@@ -1,0 +1,154 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 0
+    },
+    {
+      "at": 750,
+      "pos": 51
+    },
+    {
+      "at": 875,
+      "pos": 6
+    },
+    {
+      "at": 1000,
+      "pos": 51
+    },
+    {
+      "at": 1125,
+      "pos": 6
+    },
+    {
+      "at": 2125,
+      "pos": 51
+    },
+    {
+      "at": 2250,
+      "pos": 6
+    },
+    {
+      "at": 2375,
+      "pos": 51
+    },
+    {
+      "at": 2500,
+      "pos": 6
+    },
+    {
+      "at": 3000,
+      "pos": 52
+    },
+    {
+      "at": 3125,
+      "pos": 89
+    },
+    {
+      "at": 3250,
+      "pos": 100
+    },
+    {
+      "at": 3375,
+      "pos": 79
+    },
+    {
+      "at": 3500,
+      "pos": 51
+    },
+    {
+      "at": 3625,
+      "pos": 9
+    },
+    {
+      "at": 3750,
+      "pos": 6
+    },
+    {
+      "at": 3875,
+      "pos": 0
+    },
+    {
+      "at": 4625,
+      "pos": 51
+    },
+    {
+      "at": 4750,
+      "pos": 6
+    },
+    {
+      "at": 4875,
+      "pos": 51
+    },
+    {
+      "at": 5000,
+      "pos": 6
+    },
+    {
+      "at": 6000,
+      "pos": 51
+    },
+    {
+      "at": 6125,
+      "pos": 6
+    },
+    {
+      "at": 6250,
+      "pos": 51
+    },
+    {
+      "at": 6375,
+      "pos": 6
+    },
+    {
+      "at": 6875,
+      "pos": 52
+    },
+    {
+      "at": 7000,
+      "pos": 89
+    },
+    {
+      "at": 7125,
+      "pos": 100
+    },
+    {
+      "at": 7250,
+      "pos": 79
+    },
+    {
+      "at": 7375,
+      "pos": 51
+    },
+    {
+      "at": 7500,
+      "pos": 9
+    },
+    {
+      "at": 7625,
+      "pos": 6
+    },
+    {
+      "at": 7750,
+      "pos": 0
+    }
+  ],
+  "inverted": false,
+  "range": 100,
+  "version": "1.0",
+  "metadata": {
+    "bookmarks": [],
+    "chapters": [],
+    "creator": "",
+    "performers": [],
+    "tags": [],
+    "notes": "",
+    "license": "",
+    "script_url": "",
+    "video_url": "",
+    "type": "basic",
+    "duration": 8,
+    "title": "Plantasha_Cum",
+    "description": "handy1 variant of 'detailed': slew-limited to 364 units/s (400 mm/s over 110 mm). Timing identical; only strokes the device could not complete are shortened."
+  }
+}

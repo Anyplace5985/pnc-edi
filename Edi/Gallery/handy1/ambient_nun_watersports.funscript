@@ -1,0 +1,90 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 0
+    },
+    {
+      "at": 167,
+      "pos": 29
+    },
+    {
+      "at": 333,
+      "pos": 71
+    },
+    {
+      "at": 500,
+      "pos": 100
+    },
+    {
+      "at": 667,
+      "pos": 100
+    },
+    {
+      "at": 833,
+      "pos": 71
+    },
+    {
+      "at": 1000,
+      "pos": 29
+    },
+    {
+      "at": 1167,
+      "pos": 0
+    },
+    {
+      "at": 1333,
+      "pos": 0
+    },
+    {
+      "at": 1500,
+      "pos": 29
+    },
+    {
+      "at": 1667,
+      "pos": 71
+    },
+    {
+      "at": 1833,
+      "pos": 100
+    },
+    {
+      "at": 2000,
+      "pos": 100
+    },
+    {
+      "at": 2167,
+      "pos": 71
+    },
+    {
+      "at": 2333,
+      "pos": 29
+    },
+    {
+      "at": 2500,
+      "pos": 0
+    },
+    {
+      "at": 2667,
+      "pos": 0
+    }
+  ],
+  "inverted": false,
+  "range": 100,
+  "version": "1.0",
+  "metadata": {
+    "bookmarks": [],
+    "chapters": [],
+    "creator": "",
+    "performers": [],
+    "tags": [],
+    "notes": "",
+    "license": "",
+    "script_url": "",
+    "video_url": "",
+    "type": "basic",
+    "duration": 3,
+    "title": "ambient_nun_watersports",
+    "description": "handy1 variant of 'detailed': slew-limited to 364 units/s (400 mm/s over 110 mm). Timing identical; only strokes the device could not complete are shortened."
+  }
+}

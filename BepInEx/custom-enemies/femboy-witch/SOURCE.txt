@@ -1,0 +1,21 @@
+Femboy Witch source media
+
+Idle animation:
+https://rule34.xxx/index.php?page=post&s=view&id=10906658
+
+Dream/capture clips, in manifest order:
+https://rule34.xxx/index.php?page=post&s=view&id=15729782
+https://rule34.xxx/index.php?page=post&s=view&id=16876757
+https://rule34.xxx/index.php?page=post&s=view&id=17196574
+https://rule34.xxx/index.php?page=post&s=view&id=16936784
+https://rule34.xxx/index.php?page=post&s=view&id=12364382
+
+The GIF was converted to a transparent 10x8 PNG atlas (76 frames at 360x428).
+The five MP4s were resized to at most 640 pixels on the longest side, normalized
+to 24 fps, encoded as H.264/yuv420p, and retain stereo 48kHz AAC audio for synchronized
+in-game audio playback during dream and capture overlays.
+
+Charm-circle lock sound: Pixabay, "Magical Whoosh" by u_hyed0v3ux9.
+Page: https://pixabay.com/sound-effects/magical-whoosh-148459/
+Free for use under the Pixabay Content License. The 1.12-second MP3 download was
+converted locally to mono 16-bit PCM WAV for Unity playback on 2026-08-19.

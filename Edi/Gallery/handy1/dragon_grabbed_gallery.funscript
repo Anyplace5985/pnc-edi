@@ -1,0 +1,46 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 0
+    },
+    {
+      "at": 3771,
+      "pos": 100
+    },
+    {
+      "at": 4097,
+      "pos": 100
+    },
+    {
+      "at": 4459,
+      "pos": 0
+    },
+    {
+      "at": 4649,
+      "pos": 0
+    },
+    {
+      "at": 4667,
+      "pos": 0
+    }
+  ],
+  "inverted": false,
+  "range": 100,
+  "version": "1.0",
+  "metadata": {
+    "bookmarks": [],
+    "chapters": [],
+    "creator": "",
+    "performers": [],
+    "tags": [],
+    "notes": "",
+    "license": "",
+    "script_url": "",
+    "video_url": "",
+    "type": "basic",
+    "duration": 5,
+    "title": "Dragon_Grabbed_Gallery",
+    "description": "handy1 variant of 'detailed': slew-limited to 364 units/s (400 mm/s over 110 mm). Timing identical; only strokes the device could not complete are shortened."
+  }
+}
