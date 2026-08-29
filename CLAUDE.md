@@ -47,10 +47,10 @@ Then, depending on what you are doing:
   and recording the outcome feel like the same action, and the file you are editing is the obvious
   place for both. It is not: the outcome goes to `CHANGELOG.md`, the rule it produced goes to
   `learnings/`, and what is left here is what is still open.
-- **`CHANGELOG.md`** — the narrative record, `§1`-`§143`. Go here for the reasoning behind a rule, or
-  to check whether something was already tried and rejected. **It is narrative, not rules** — a
-  generalised rule written into a `§n` entry is invisible to the grep above, because nobody greps a
-  9,000-line history for a rule. State it in `learnings/` and have the entry point at it.
+- **`CHANGELOG.md`** — the narrative record, numbered `§1` upward. Go here for the reasoning behind
+  a rule, or to check whether something was already tried and rejected. **It is narrative, not
+  rules** — a generalised rule written into a `§n` entry is invisible to the grep above, because
+  nobody greps a 9,000-line history for a rule. State it in `learnings/` and have the entry point at it.
 - **`code/README.md`** — build, release and tool reference for the `code/` tree.
 - **`CREDITS.md`** — whose work this is built on: the game, Edi, the PncEdi mod this one
   continues, the fork the custom-enemy framework came from, and the funscripts the gallery started

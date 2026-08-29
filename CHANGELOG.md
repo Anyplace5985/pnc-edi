@@ -9947,6 +9947,18 @@ person to clone the repo hits a dead end that reads as a broken repo rather than
 `README.md` says the absence is deliberate, in the same list as the game, the DLLs and the device
 keys.
 
+**A sweep over the rest of the documentation** for claims §144-§146 had made stale, and for two
+that had been stale longer. Three documents gave the CHANGELOG's range as `§1`-`§143` or `§1`-`§144`
+— a number that goes wrong at the next entry and had already gone wrong twice — so all three now say
+"numbered `§1` upward", which cannot. `.gitattributes` explained its `* -text` rule by citing
+`mod/single-mod`, deleted in §58, and a CRLF/LF split in two files that no longer have one; the rule
+is still right and its reason is now the real one, `deploy.py`'s per-line preservation for the
+Windows install's mixed `BepInEx.cfg`. `code/README.md` needed nothing: "nothing binary is tracked
+here" was written of the `code/` tree and is now true of the repo.
+
+The pattern in both: a document that pins a moving number, or names a file to explain a rule, goes
+stale silently and is only found by someone reading it for another reason.
+
 
 ## Tried and reverted — do not redo
 

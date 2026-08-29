@@ -1,7 +1,9 @@
 # Do not touch line endings. They are load-bearing in this project:
-#   - BepInEx/config/com.edi.pnc.cfg is CRLF in the game tree and LF in mod/single-mod, and
-#     that difference is deliberate and documented (code/README.md).
-#   - Edi/Gallery/Definitions.csv is CRLF, and the tools that rewrite it preserve that.
-# Normalising on checkin would erase the first and silently rewrite the second, so every file
-# is treated as binary for the purpose of EOL conversion.
+#   - The Windows install's BepInEx.cfg is mixed CRLF/LF, and `deploy.py`'s `set_config_key`
+#     preserves them per line so a deploy is not a diff on every run (see its docstring).
+#   - `Edi/Gallery/Definitions.csv` is rewritten by the gallery tools, which preserve whatever
+#     separators the file already has rather than imposing one.
+# Normalising on checkin would make git the thing that decides, silently, for files whose
+# endings several tools deliberately leave alone. So every file is treated as binary for the
+# purpose of EOL conversion - this says nothing about content, only about conversion.
 * -text

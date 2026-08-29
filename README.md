@@ -122,7 +122,7 @@ config with an undeclared local tweak in it. Custom-enemy packages are their own
 | **[PROJECT.md](PROJECT.md)** | The map: what this is, how the repo is laid out, how a funscript actually gets played. Read it first. |
 | **[learnings/README.md](learnings/README.md)** | Everything learned the hard way, indexed by topic. Read before doing anything non-obvious — and grep it for a symptom before diagnosing one. |
 | **[code/README.md](code/README.md)** | Build, release and tool reference for the `code/` tree. |
-| **[CHANGELOG.md](CHANGELOG.md)** | The narrative record, `§1`–`§144`: every change, why, and what was tried and rejected. |
+| **[CHANGELOG.md](CHANGELOG.md)** | The narrative record, numbered `§1` upward: every change, why, and what was tried and rejected. |
 | **[CREDITS.md](CREDITS.md)** | Whose work this is built on. |
 
 ## What is not in this repo
