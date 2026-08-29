@@ -31,6 +31,9 @@ Then, depending on what you are doing:
   worked at all because this tree happens to be commented unusually well at that exact spot. A rule
   that lives in no single source file — which is most of what `learnings/` holds — has no such
   safety net.
+- **`README.md`** — the public front door, and the only document written for someone who owns none
+  of this context: requirements, setup, build, deploy, check, release. It is what a stranger reads
+  first, so when any of those commands or prerequisites change, it changes too.
 - **`TODO.md`** — only what is still open. Start here to pick up work.
 
   **And when you finish something, delete it from here.** Not a strikethrough, not a "confirmed in

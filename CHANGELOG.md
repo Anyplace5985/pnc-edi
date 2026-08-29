@@ -9868,6 +9868,56 @@ tuning; the deletion takes the mod's only patch on `ChargingEnemyAI.Start` with 
 `check.py` 9/9, `dotnet test` clean, both installs deployed and current. The tree is now at the point
 `release.py` was waiting for.
 
+## 145. The plugin DLLs untracked, and a README for strangers
+
+The three plugin DLLs under `BepInEx/plugins/` had been tracked since the repo began, on a reason
+written into `.gitignore`'s own header: they are what `release.py --no-build` ships, and the only
+artefacts a clone cannot rebuild without a game to compile against. That reason is true and it was
+still the wrong call for a repo about to go public.
+
+**What settled it was practice rather than size.** The repo is 1.4 MB, of which the DLLs are 560 KB
+in a single copy, so the storage argument reaches nothing at this scale — it only bites if binaries
+are committed on every source change rather than at releases. The argument that does reach is that
+"do not commit build output" is close to universal in open source and is what the BepInEx/Unity
+modding scene does: `bin/`, `obj/` ignored, the DLL distributed through a release rather than the
+tree. Anyone who edits the source has to rebuild anyway (the build is one command and deploys
+itself), and anyone who does not is a player, who gets the DLLs from the release archive. The
+tracked copy was serving neither.
+
+The half of that convention this project cannot follow is "the binary lives in Releases instead":
+the archive goes to the eroscripts thread, and there is no CI. So the honest statement is that a
+clone is a **source tree, not a runnable install** — which is now the first thing `README.md` says
+after the download link.
+
+**It cost one `git commit --amend`,** because the history was still one unpushed commit. That is the
+whole reason this was decided now rather than later: after the first push it is a rewrite of a
+history other people hold, and the same question becomes expensive to answer. `.gitignore` keeps its
+deny-by-default shape — the `!BepInEx/plugins/` opt-in stays so the directory's rule is visible, with
+nothing named back in under it — and the header comment now says why no binary is tracked instead of
+why one was.
+
+Three stale claims went with it: `.gitignore`'s header (which still said "the one binary", written
+before the split into three plugins in §131), `deploy.py`'s comment on `plugin_dll` ("the one git
+tracks"), and PROJECT.md's layout tree, which now labels `plugins/` as build output.
+
+**And the repo had no `README.md` at all.** Every document in it is written for someone who already
+owns the context — `PROJECT.md` is a map for a returning session, `code/README.md` a reference for
+someone already building. Nothing was written for a stranger who has just cloned it, which is now
+the only kind of reader the repo is about to acquire. The new file is the front door: what the mod
+is, the release link for players who want none of this, requirements, the two symlinks, the
+`--refs-only` bootstrap, the venv, and one section each for build, deploy, check and release. It
+closes on what is deliberately absent and why — the game, the DLLs, BepInEx and Edi (pinned and
+fetched), `EdiConfig.json` (device keys are credentials), and package media.
+
+Two gotchas are in it because they are not guessable from the tree: **`game-windows` must point at a
+Windows install**, since `ManagedDir` is hardcoded to `Post Nut Calamity_Data\Managed\` and the
+Linux build names its data folder after the version; and `game-linux` is optional, because
+`resolve_targets` skips a missing target with a printed reason rather than failing. `PROJECT.md`'s
+"where to look for what" table and `CLAUDE.md`'s document list both gained a row for it — a public
+README that drifts is worse than none, so the obligation to keep it current is written where
+sessions read.
+
+
 ## Tried and reverted — do not redo
 
 - **Trimming loop seams.** 14 galleries end on a different position than they start.

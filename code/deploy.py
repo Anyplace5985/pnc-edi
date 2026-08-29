@@ -305,8 +305,8 @@ def plugin_dll(no_build: bool, name: str = "PncEdi") -> Path:
             R.fail(f"{dll} does not exist; drop --no-build or build once")
         return dll
     dll = R.build_plugin(name)
-    # The repo's own copy is the one release.py --no-build reads and the one git tracks, so keep
-    # it in step with what was just deployed rather than letting the two eras diverge.
+    # The repo's own copy is the one release.py --no-build reads, so keep it in step with what
+    # was just deployed rather than letting the two eras diverge. It is untracked build output.
     write_if_changed(ROOT / f"BepInEx/plugins/{name}.dll", dll.read_bytes(), check=False)
     return dll
 

@@ -55,10 +55,11 @@ a `git worktree` of master before believing otherwise.
 ## Where to look for what
 
 This file is the map. It covers what the project is, how it is laid out, and how to build, deploy
-and release it. Everything else lives in one of five places:
+and release it. Everything else lives in one of six places:
 
 | | what it is | when to open it |
 |---|---|---|
+| **[README.md](README.md)** | The public front door: what this is, requirements, setup, build, deploy, check, release. Written for someone who has just cloned it and owns none of this context. | When it drifts. It is the one document strangers read, and the only one that has to stand on its own. |
 | **[learnings/README.md](learnings/README.md)** | Everything learned the hard way, split by topic with an index. | Before doing anything non-obvious. The index alone tells you which file you need, so you do not have to load them all. |
 | **[TODO.md](TODO.md)** | Only what is still **open** — pending work, open questions, known-unfinished things. | Start of a session, to pick up work. Nothing resolved lives here; it moves to the CHANGELOG. |
 | **[CHANGELOG.md](CHANGELOG.md)** | The narrative record, `§1`-`§143`. Every change, why it was made, what was tried and rejected. | You need the full story behind a rule, or want to know whether something was already tried. The learnings files cite `§n` back into it. |
@@ -78,6 +79,8 @@ inside that game directory.
 ```
 pnc-edi/                                  the repo: nothing here belongs to the game
 ├── BepInEx/
+│   ├── plugins/                          build output, untracked: one `dotnet build` writes all
+│   │                                      three DLLs here and into both game installs
 │   ├── plugins/PncEdi.dll                the mod (v2.6.0, rebuilt from recovered source)
 │   ├── plugins/PncModManager.dll         the in-game settings window - F11 (§127)
 │   ├── plugins/PncCustomEnemies.dll      the custom-enemy framework (§131) - delete it and the
