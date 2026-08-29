@@ -58,7 +58,7 @@ The DLL is only part of an install. Everything else goes through:
     python3 code/deploy.py --refs-only     extract BepInEx for the build to reference
     python3 code/deploy.py --target DIR    patch some other install instead
 
-**Run it after touching the config or the gallery.** Editing `Edi/Gallery/detailed/` or
+**Run it after touching the config or the gallery.** Editing `Edi/Gallery/handy2pro/` or
 `com.edi.pnc.cfg` changes nothing a running game can see until it is deployed.
 
 The payload is `release.py`'s — `deploy.py` imports `bepinex_payload()`, `gallery_files()` and
@@ -315,7 +315,7 @@ safest-looking direction, because the default usually matches what the file alre
 `Edi/Gallery/Definitions.csv` at runtime and registers every row name, so new
 scenes/characters need only:
 
-  1. a funscript in `Edi/Gallery/detailed/`
+  1. a funscript in `Edi/Gallery/handy2pro/`
   2. a row in `Edi/Gallery/Definitions.csv`
   3. animation-state aliases in `BepInEx/config/com.edi.pnc.cfg` (GalleryAliases,
      DioramaGalleryMap, PeekGalleryMap, Patterns)
@@ -470,7 +470,7 @@ deliberate and the two halves have different reasons:
   it forever, and a takedown would mean rewriting history rather than deleting a file. It reaches
   players as its own archive instead (below).
 - **The text** — the manifest, `SOURCE.txt`, and `funscripts/` — is tracked. The funscripts are
-  *ours*, authored and measured the same way `Edi/Gallery/detailed/` was, and a blanket ignore
+  *ours*, authored and measured the same way `Edi/Gallery/handy2pro/` was, and a blanket ignore
   aimed at the video beside them used to discard them. The manifest is mostly game-side tuning
   (`maxHealth`, `detectionRange`, `captureDistance`, `spawnWeight`), which otherwise lived in the
   changelog and in two game installs and in no tracked file.
@@ -567,7 +567,7 @@ there.**
 
     dotnet test code/tests/PncEdi.Tests.csproj
 
-103 tests over the naming, alias and config layer, compiling the **real** source files rather
+112 tests over the naming, alias and config layer, compiling the **real** source files rather
 than copies. `code/tests/README.md` has the detail: what is testable and why the rest is not,
 the mutation testing the suite was checked with, and how to bring another file under test.
 
@@ -607,14 +607,19 @@ that one 1846-line file held three unrelated jobs:
 
 | file | what is in it |
 |---|---|
-| `Plugin.cs` | the runtime: `Awake`, `Update`, `SendPlay`, the filler ladder, the pause/resume markers |
+| `Plugin.cs` | the runtime: `Awake`, `Update`, `SendPlay`, the filler ladder and its menu variant, the pause/resume markers |
 | `PluginConfig.cs` | all 150 `ConfigEntry` fields and `BindConfig()`, the one run of `Bind` calls |
 | `PluginPatches.cs` | `ApplyPatches()` — the Harmony registration list, and nothing else |
 
 `Awake` is now thirteen lines and reads as the startup order it is:
 
     Instance = this; Log = base.Logger;
-    BindConfig();  ... Reload();  SceneManager.activeSceneChanged += ...;  ApplyPatches();  GoFiller();
+    BindConfig();  ... Reload();  SceneManager.activeSceneChanged += ...;
+    _inMenuScene = ...;  ApplyPatches();  GoFiller();
+
+The menu flag is seeded from the active scene rather than left to the callback: `Awake` runs inside
+whatever scene the game booted into and *before* the first `activeSceneChanged`, so without it the
+`GoFiller` on the last line reads the boot menu as gameplay (§148).
 
 **Why the patch list is its own file.** Patches are registered per class, not by an assembly-wide
 `PatchAll()`, so a new patch class does nothing until it is named there — and the failure is
@@ -632,26 +637,63 @@ silent, which cost §109 a whole run. Two things follow from giving it a file:
 
 ## Device variants
 
-`Edi/Gallery/` holds two variant folders. **Edi selects a script by variant and the variant is the
-folder name**, so per-device versions need no mod change and no config setting — set `"Variant"`
-on the device in `Edi/EdiConfig.json`:
+`Edi/Gallery/` holds three variant folders. **Edi selects a script by variant and the variant is
+the folder name**, so per-device versions need no mod change and no config setting — set
+`"Variant"` on the device in `Edi/EdiConfig.json`:
 
-| variant | for | ceiling | differs from `detailed` |
+| variant | for | ceiling | differs from `handy2pro` |
 |---|---|---|---|
-| `detailed` | Handy 2 Pro, overclocked or not — **the default** | none | — |
-| `handy1` | Handy 1, or any device you are unsure about | 364 u/s (110 mm @ 400 mm/s) | 79/101 |
+| `handy2pro` | Handy 2 Pro with the slider overclock up — **the master and the default** | none | — |
+| `handy2` | Handy 2, OSR/SR6, or a 2 Pro overclocked part-way or not at all where the loud rows are too much | 600 u/s sustained, 700 peak | 16/102 |
+| `handy1` | Handy 1, or any device you are unsure about | 364 u/s (110 mm @ 400 mm/s) | 79/102 |
+
+**The folders were called `detailed` and `handy1` until §149**, and `detailed` is what every
+release up to 2.5.2 shipped. It was renamed because it named a quality tier rather than a device,
+which is the one thing a variant name has to do — a player picks it off their hardware. A config
+still saying `"Variant": "detailed"` finds no folder, so the archive README says so at the point
+where it tells you to set it, and the troubleshooting section names the old value.
 
 ```json
 "The Handy [xxxxxxxx]": { "Variant": "handy1", "Channel": null, "Min": 0, "Max": 100 }
 ```
 
-**There is deliberately no second stroker variant.** One was generated and removed. A
-max-overclocked Handy 2 Pro does 1200 mm/s = **960 u/s** (its own overclock menu; review articles say 800 and are
-low). Against that, `detailed` runs p95 872 u/s — *under* the cap — and only a single script
-(`imp_3`, median 1041) is sustained beyond it; eleven others exceeded only on isolated accents. Scripters write those on purpose —
-`shared_zombie` has a 1538 u/s (1923 mm/s) jolt no device can literally reach, which renders as a
-snap — so clipping them would strip intended punch from the one device fast enough to enjoy it.
-`detailed` **is** the Handy 2 Pro script.
+**The master is not limited, and that is still the decision.** A max-overclocked Handy 2 Pro does
+1200 mm/s = **960 u/s** (its own overclock menu; review articles say 800 and are low). Against
+that, `handy2pro` runs p95 901 u/s — *under* the cap — and only a single script (`imp_3`, median
+1041) is sustained beyond it; eleven others exceed only on isolated accents. Scripters write those
+on purpose — `shared_zombie` has a 1538 u/s (1923 mm/s) jolt no device can literally reach, which
+renders as a snap — so clipping them would strip intended punch from the one device fast enough to
+enjoy it. `handy2pro` **is** the Handy 2 Pro script.
+
+**`handy2` is generated to a *pair* of caps, which is new (§149).** The eroscripts multi-axis
+guide quotes a soft and a hard figure for every device — 600 and 700 units/s for a Handy 2 — and
+the two mean different things: soft is what a script should *sustain*, hard is a
+wall. A single-cap limiter cannot express that. Set it to 700 and every deliberate accent is
+flattened; set it to 800 and almost nothing is limited at all. So `variants.py`'s limiter carries
+a **token bucket** between the two: each transition earns `soft × dt` units of credit and spends
+what it travels, the balance capped at `budget` (20 units) and never negative, and a transition may
+cover up to `min(hard × dt, soft × dt + bucket)`. A script that has been idling can spend a full
+bucket on one accent at the hard cap; a script already running flat out has an empty bucket and is
+held at the soft cap for every further transition. 20 units is about 0.2 s of accent before the
+soft cap takes over — a snap rather than a section. The result satisfies the guide's contract
+exactly: `speedcheck --variant handy2` reports **0 rows over 600 by median and 0 transitions over
+700**.
+
+**The guide's next row up, "The Handy 2 Overclocked" (700/800), is deliberately not what this
+folder uses.** Overclocking is a 2 Pro feature, so that row is most likely describing the same
+device the master is authored for — and its author says outright he owns neither device and took
+the figures from forum searching. A folder named for a device should carry that device's own row,
+and the more conservative of two hearsay figures is the right way to be wrong. A 2 Pro overclocked
+part-way sits between this folder and the master; there is no fourth folder for it, because the
+choice between 600/700 and unlimited is exactly the choice the slider itself offers.
+
+**The guide has no Handy 2 Pro row**, and the one figure its comments offer for that device — 1200
+*units*/s — is higher than the 960 read off the device's own menu, so nothing there argues for
+limiting the master. (A stock, un-overclocked 2 Pro is 450 mm/s = **360 u/s**, which is `handy1`'s
+territory rather than `handy2`'s — the middle folder is for a device that is genuinely between the
+two, not for a 2 Pro with the slider down.) Its Handy 1 pair (400/500 units/s) is likewise above that device's 364 u/s
+firmware ceiling. `handy1` therefore stays a single-cap limit: 364 is hardware, not taste, so
+there is no softer figure to sustain and nothing to bank.
 
 **The 125 mm figures were always the 2 Pro's; only the key name was wrong.** `speedcheck.py`'s
 `DEV` called them `handy2` and `handy2_oc` because early notes recorded the device as a Handy 2,
@@ -660,8 +702,8 @@ but the numbers were read off the 2 Pro's own overclock menu and never changed. 
 Corrected in §103, which also gave the tool the two summary lines it lacked: how many rows exceed
 the 2 Pro's overclock ceiling (5) and how many fall under its 15 mm/s floor (5). Until then only
 the Handy 1 tally was summarised, so the per-row `>Proc` column had no total and nobody read it.
-The stale `--variant handy2pro` in the docstring is gone; the gallery has `detailed/` and
-`handy1/` and nothing else.
+The stale `--variant handy2pro` in the docstring is gone; the gallery has `handy2pro/`, `handy2/`
+and `handy1/`.
 
 The Handy 1 case is different and does warrant limiting: the median transition across the whole
 set is 363 u/s, i.e. half of everything sits at or above that device's cap. That is sustained
@@ -703,13 +745,19 @@ through the frames they **share by sprite name** — so a viewer clip that inser
 stretches only that segment. Sanity-check any new twin against the invariant: same length means
 the remap is the identity, different length means it must move more than the closing point (§71).
 
-The `handy1` variant is regenerated from *all* of them, so run `variants.py --write` last.
+The generated variants are rebuilt from *all* of them, so run `variants.py --write` last.
 
-`detailed` is the master and `handy1` is **generated from it** — author there, then:
+`handy2pro` is the master and `handy2` and `handy1` are **generated from it** — author there, then:
 
-    .venv/bin/python code/variants.py --write     # rewrites handy1/ from detailed/
+    .venv/bin/python code/variants.py --write     # rewrites handy2/ and handy1/ from handy2pro/
 
-Never hand-edit `handy1/`; the next regeneration discards it. Check playability with
+The same command also emits `handy2/` for every custom-enemy package, from that package's own
+`funscripts/handy2pro/` masters. A device pointed at a variant a package does not carry plays
+nothing for that enemy, which is the parity failure §5567 found for per-axis files. Package
+`handy1/` folders are **not** regenerated: those were authored by hand against the Handy 1 rather
+than slew-limited, and overwriting them would throw that work away.
+
+Never hand-edit `handy2/` or `handy1/` in the main gallery; the next regeneration discards it. Check playability with
 `code/speedcheck.py [--variant <name>]`, which reports point spacing and the speed each transition
 demands. See CHANGELOG §36 for why slew limiting rather than scaling, and PROJECT.md for the
 scripting conventions the masters follow.
@@ -753,7 +801,7 @@ scene is really `peek_wendigo_ride`.
 
 ## Gallery naming conventions
 
-Applied 2026-08-17 to everything under `Edi/Gallery/detailed/`.
+Applied 2026-08-17 to everything under `Edi/Gallery/handy2pro/`.
 
 **One scene, one file, named after its row.** 71 rows, 71 funscripts (59 at the time of this pass;
 §52–§53 added twelve `*_Gallery` variants), every `FileName` equal to
@@ -763,7 +811,7 @@ another.
 
 Filenames are **lowercase snake_case** and must avoid Edi's magic tokens: a `.` in the stem sets
 the *variant* or an *axis*, and `[loop]` / `[nonLoop]` / `[Gallery]` / `[Filler]` / `[Reaction]` set
-flags (`Edi.Core/Gallery/Discover.cs`). The variant comes from the **folder** name (`detailed/`).
+flags (`Edi.Core/Gallery/Discover.cs`). The variant comes from the **folder** name (`handy2pro/`).
 
 ### Multi-axis
 
@@ -948,7 +996,7 @@ else lives in `BepInEx/config/com.edi.pnc.cfg`. Config settings named below are 
 | new peephole | `PeekClipMap` (clip-name substring -> `peek_*`) | no |
 | new diorama D-slot | `DioramaAmbientMap` (`D10=…`) | no *(since §33)* |
 | new ambient audio | `Patterns` — only a *fallback* since §65; the unlock box identifies it | no |
-| the funscript itself | `Edi/Gallery/Definitions.csv` + a file in `detailed/` | no |
+| the funscript itself | `Edi/Gallery/Definitions.csv` + a file in `handy2pro/` | no |
 | **a new grappler** | `GrapplePrefixMap` (family -> cling prefix) | no *(since §66)* |
 | a new grappler's *reinforcement pacing* | `GrappleReinforcement.TryResolvePlan` — **rebuild** | **yes** |
 | **two grab screens with identical state names** | `GrabVariantSuffixes` (controller substring -> suffix) | no *(since §66)* |

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Device-compliance check: is a script physically playable, and by what?
 
-    .venv/bin/python code/speedcheck.py [--variant detailed|handy1]
+    .venv/bin/python code/speedcheck.py [--variant handy2pro|handy2|handy1]
 
 Funscript positions are 0-100 over the device's full stroke, so the speed a transition demands is
   |dpos| / dt  ->  units/s,  and  units/s * stroke_mm / 100 -> mm/s.
@@ -51,6 +51,17 @@ AXES = ["default", "surge", "sway", "twist", "roll", "pitch", "vibrate", "valve"
 # nothing on an axis measured in degrees, so only these two are checked against a device ceiling.
 LINEAR_AXES = {"default", "surge"}
 DEV = {"handy1": (110, 400), "handy2pro": (125, 450), "handy2pro_oc": (125, 1200)}
+# The eroscripts multi-axis guide quotes a soft and a hard cap per device, in units/s directly
+# rather than as a travel in mm - a speed to SUSTAIN and a wall never to cross. Its "Handy 2
+# Handy 2" row is what the `handy2` variant is generated against. Its "Handy 2 Overclocked" row
+# (700/800) is deliberately NOT used: overclocking is a 2 Pro feature, so that row is most likely
+# about the same device the master is authored for - and the guide's author says he owns neither
+# and took the figures from forum searching. It has no Handy 2 Pro row at all, and the one figure
+# its comments offer for that device (1200 units/s) is *higher* than the 960 read off the 2 Pro's
+# own overclocking menu, so nothing there changes the master.
+# <https://discuss.eroscripts.com/t/multi-axis-scripting-in-ofs-tutorial-tips-and-resources/328979>
+GUIDE = {"handy1": (400, 500), "handy2": (600, 700), "handy2_oc": (700, 800), "osr_sr6": (600, 700)}
+GUIDE_VARIANT = "handy2"        # the pair the `handy2` gallery folder is limited to
 DEV_MIN = {"handy1": 32, "handy2pro": 32, "handy2pro_oc": 15}   # mm/s floor, same menu
 MIN_GAP = 100
 # Positions are integers, so a transition can land a shade over the cap purely from rounding -
@@ -110,7 +121,7 @@ def analyse(acts):
 
 
 def main():
-    variant = "detailed"
+    variant = "handy2pro"
     if "--variant" in sys.argv:
         variant = sys.argv[sys.argv.index("--variant") + 1]
     rows = P.definitions_rows()
@@ -145,7 +156,18 @@ def main():
     bad_oc = [n for n, _, s in out if s["over"]["handy2pro_oc"]]
     slow_oc = [n for n, _, s in out if s["under"]["handy2pro_oc"]]
     bad_gap = [n for n, _, s in (out + extra) if s["short"]]
+    # The guide's pair, which is what the `handy2` variant is generated to. Soft is a speed to
+    # sustain, so what matters is how many rows sit above it by MEDIAN; hard is a wall, so what
+    # matters there is any segment at all.
+    soft, hard = GUIDE[GUIDE_VARIANT]
+    med_over_soft = [n for n, _, s in out
+                     if sorted(x[3] for x in s["segs"])[len(s["segs"]) // 2] > soft * TOL]
+    any_over_hard = [n for n, _, s in out if any(x[3] > hard * TOL for x in s["segs"])]
     print(f"exceed Handy 1     : {len(bad_h1)}/{len(out)}  {bad_h1[:12]}")
+    print(f"median over {soft:>4}    : {len(med_over_soft)}/{len(out)}  {med_over_soft[:12]}"
+          f"   (guide soft cap, {GUIDE_VARIANT})")
+    print(f"any over    {hard:>4}    : {len(any_over_hard)}/{len(out)}  {any_over_hard[:12]}"
+          f"   (guide hard cap, {GUIDE_VARIANT})")
     # The line that matters for the device this project is authored against. It was missing until
     # the 2 Pro was identified, so the per-row `>Proc` column had no summary and nobody read it.
     print(f"exceed 2 Pro OC    : {len(bad_oc)}/{len(out)}  {bad_oc[:12]}")

@@ -1,0 +1,41 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 0
+    },
+    {
+      "at": 358,
+      "pos": 100
+    },
+    {
+      "at": 2239,
+      "pos": 100
+    },
+    {
+      "at": 2457,
+      "pos": 0
+    },
+    {
+      "at": 2524,
+      "pos": 30
+    },
+    {
+      "at": 2591,
+      "pos": 0
+    },
+    {
+      "at": 2843,
+      "pos": 0
+    },
+    {
+      "at": 2875,
+      "pos": 0
+    }
+  ],
+  "metadata": {
+    "duration": 3,
+    "title": "Gravy_Start2",
+    "description": "handy2 variant of 'handy2pro': slew-limited to 600 units/s sustained, 700 peak (bucket 20 units). eroscripts multi-axis guide, The Handy 2. Timing identical; only strokes the device could not complete are shortened."
+  }
+}

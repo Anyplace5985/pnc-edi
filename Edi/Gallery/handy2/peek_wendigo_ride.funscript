@@ -1,0 +1,76 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 0
+    },
+    {
+      "at": 100,
+      "pos": 20
+    },
+    {
+      "at": 200,
+      "pos": 0
+    },
+    {
+      "at": 467,
+      "pos": 100
+    },
+    {
+      "at": 667,
+      "pos": 0
+    },
+    {
+      "at": 767,
+      "pos": 20
+    },
+    {
+      "at": 867,
+      "pos": 0
+    },
+    {
+      "at": 1134,
+      "pos": 100
+    },
+    {
+      "at": 1334,
+      "pos": 0
+    },
+    {
+      "at": 1434,
+      "pos": 20
+    },
+    {
+      "at": 1534,
+      "pos": 0
+    },
+    {
+      "at": 1800,
+      "pos": 100
+    },
+    {
+      "at": 2000,
+      "pos": 0
+    },
+    {
+      "at": 2100,
+      "pos": 20
+    },
+    {
+      "at": 2200,
+      "pos": 0
+    },
+    {
+      "at": 2467,
+      "pos": 100
+    },
+    {
+      "at": 2667,
+      "pos": 0
+    }
+  ],
+  "metadata": {
+    "title": "peek_wendigo_ride",
+    "description": "handy2 variant of 'handy2pro': slew-limited to 600 units/s sustained, 700 peak (bucket 20 units). eroscripts multi-axis guide, The Handy 2. Timing identical; only strokes the device could not complete are shortened."
+  }
+}

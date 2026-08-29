@@ -297,6 +297,6 @@
     "type": "basic",
     "duration": 7,
     "title": "imp_3_Gallery",
-    "description": "handy1 variant of 'detailed': slew-limited to 364 units/s (400 mm/s over 110 mm). Timing identical; only strokes the device could not complete are shortened."
+    "description": "handy1 variant of 'handy2pro': slew-limited to 364 units/s. 110 mm @ 400 mm/s firmware cap. Timing identical; only strokes the device could not complete are shortened."
   }
 }

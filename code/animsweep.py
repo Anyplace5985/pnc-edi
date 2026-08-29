@@ -104,7 +104,7 @@ def main():
   for name,clip in MAP.items():
     sprites,dur,fps=A.clip_frames(env,clip)
     stem=name.lower()
-    fp=os.path.join("Edi/Gallery/detailed",stem+".funscript")
+    fp=os.path.join("Edi/Gallery/handy2pro",stem+".funscript")
     if not sprites or not os.path.exists(fp):
         rows.append((name,clip,None,None,None,None,"no clip/script")); continue
     period,reps=A.stroke_period(sprites,dur)

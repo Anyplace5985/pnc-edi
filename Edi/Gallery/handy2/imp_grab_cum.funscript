@@ -1,0 +1,154 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 96
+    },
+    {
+      "at": 125,
+      "pos": 91
+    },
+    {
+      "at": 250,
+      "pos": 73
+    },
+    {
+      "at": 375,
+      "pos": 57
+    },
+    {
+      "at": 500,
+      "pos": 38
+    },
+    {
+      "at": 625,
+      "pos": 0
+    },
+    {
+      "at": 729,
+      "pos": 42
+    },
+    {
+      "at": 833,
+      "pos": 0
+    },
+    {
+      "at": 937,
+      "pos": 38
+    },
+    {
+      "at": 1041,
+      "pos": 0
+    },
+    {
+      "at": 1145,
+      "pos": 42
+    },
+    {
+      "at": 1249,
+      "pos": 0
+    },
+    {
+      "at": 1353,
+      "pos": 47
+    },
+    {
+      "at": 1457,
+      "pos": 0
+    },
+    {
+      "at": 1561,
+      "pos": 42
+    },
+    {
+      "at": 1665,
+      "pos": 0
+    },
+    {
+      "at": 1769,
+      "pos": 38
+    },
+    {
+      "at": 1873,
+      "pos": 0
+    },
+    {
+      "at": 1977,
+      "pos": 40
+    },
+    {
+      "at": 2081,
+      "pos": 0
+    },
+    {
+      "at": 2185,
+      "pos": 45
+    },
+    {
+      "at": 2289,
+      "pos": 0
+    },
+    {
+      "at": 2393,
+      "pos": 43
+    },
+    {
+      "at": 2497,
+      "pos": 0
+    },
+    {
+      "at": 2601,
+      "pos": 39
+    },
+    {
+      "at": 2705,
+      "pos": 0
+    },
+    {
+      "at": 2809,
+      "pos": 40
+    },
+    {
+      "at": 2913,
+      "pos": 0
+    },
+    {
+      "at": 3017,
+      "pos": 45
+    },
+    {
+      "at": 3125,
+      "pos": 60
+    },
+    {
+      "at": 3250,
+      "pos": 88
+    },
+    {
+      "at": 3375,
+      "pos": 100
+    },
+    {
+      "at": 3500,
+      "pos": 96
+    }
+  ],
+  "inverted": false,
+  "range": 100,
+  "version": "1.0",
+  "metadata": {
+    "bookmarks": [],
+    "chapters": [],
+    "creator": "",
+    "performers": [],
+    "tags": [],
+    "notes": "",
+    "license": "",
+    "script_url": "",
+    "video_url": "",
+    "type": "basic",
+    "duration": 4,
+    "title": "imp_grab_cum",
+    "description": "handy2 variant of 'handy2pro': slew-limited to 600 units/s sustained, 700 peak (bucket 20 units). eroscripts multi-axis guide, The Handy 2. Timing identical; only strokes the device could not complete are shortened."
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 100
+    },
+    {
+      "at": 111,
+      "pos": 69
+    },
+    {
+      "at": 222,
+      "pos": 18
+    },
+    {
+      "at": 333,
+      "pos": 0
+    },
+    {
+      "at": 444,
+      "pos": 72
+    },
+    {
+      "at": 556,
+      "pos": 100
+    },
+    {
+      "at": 667,
+      "pos": 69
+    },
+    {
+      "at": 778,
+      "pos": 18
+    },
+    {
+      "at": 889,
+      "pos": 0
+    },
+    {
+      "at": 1000,
+      "pos": 72
+    },
+    {
+      "at": 1111,
+      "pos": 100
+    }
+  ],
+  "metadata": {
+    "duration": 1,
+    "title": "Dragon_Cum",
+    "description": "handy2 variant of 'handy2pro': slew-limited to 600 units/s sustained, 700 peak (bucket 20 units). eroscripts multi-axis guide, The Handy 2. Timing identical; only strokes the device could not complete are shortened."
+  }
+}

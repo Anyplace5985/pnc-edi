@@ -1,0 +1,73 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 70
+    },
+    {
+      "at": 67,
+      "pos": 100
+    },
+    {
+      "at": 134,
+      "pos": 100
+    },
+    {
+      "at": 352,
+      "pos": 0
+    },
+    {
+      "at": 461,
+      "pos": 50
+    },
+    {
+      "at": 562,
+      "pos": 0
+    },
+    {
+      "at": 678,
+      "pos": 50
+    },
+    {
+      "at": 796,
+      "pos": 0
+    },
+    {
+      "at": 1014,
+      "pos": 100
+    },
+    {
+      "at": 1147,
+      "pos": 100
+    },
+    {
+      "at": 1365,
+      "pos": 0
+    },
+    {
+      "at": 1482,
+      "pos": 50
+    },
+    {
+      "at": 1599,
+      "pos": 0
+    },
+    {
+      "at": 1717,
+      "pos": 50
+    },
+    {
+      "at": 1833,
+      "pos": 0
+    },
+    {
+      "at": 2000,
+      "pos": 70
+    }
+  ],
+  "metadata": {
+    "duration": 2,
+    "title": "Gargoyle_Grabbed",
+    "description": "handy2 variant of 'handy2pro': slew-limited to 600 units/s sustained, 700 peak (bucket 20 units). eroscripts multi-axis guide, The Handy 2. Timing identical; only strokes the device could not complete are shortened."
+  }
+}

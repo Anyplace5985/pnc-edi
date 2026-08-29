@@ -1,0 +1,108 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 30
+    },
+    {
+      "at": 233,
+      "pos": 90
+    },
+    {
+      "at": 333,
+      "pos": 100
+    },
+    {
+      "at": 500,
+      "pos": 50
+    },
+    {
+      "at": 700,
+      "pos": 30
+    },
+    {
+      "at": 900,
+      "pos": 90
+    },
+    {
+      "at": 1000,
+      "pos": 100
+    },
+    {
+      "at": 1167,
+      "pos": 50
+    },
+    {
+      "at": 1367,
+      "pos": 30
+    },
+    {
+      "at": 1567,
+      "pos": 90
+    },
+    {
+      "at": 1700,
+      "pos": 100
+    },
+    {
+      "at": 1867,
+      "pos": 50
+    },
+    {
+      "at": 2033,
+      "pos": 30
+    },
+    {
+      "at": 2233,
+      "pos": 90
+    },
+    {
+      "at": 2366,
+      "pos": 100
+    },
+    {
+      "at": 2533,
+      "pos": 50
+    },
+    {
+      "at": 2700,
+      "pos": 30
+    },
+    {
+      "at": 2900,
+      "pos": 90
+    },
+    {
+      "at": 3000,
+      "pos": 100
+    },
+    {
+      "at": 3167,
+      "pos": 50
+    },
+    {
+      "at": 3333,
+      "pos": 30
+    },
+    {
+      "at": 3566,
+      "pos": 90
+    },
+    {
+      "at": 3666,
+      "pos": 100
+    },
+    {
+      "at": 3833,
+      "pos": 50
+    },
+    {
+      "at": 4000,
+      "pos": 30
+    }
+  ],
+  "metadata": {
+    "title": "peek_zombie_bj",
+    "description": "handy2 variant of 'handy2pro': slew-limited to 600 units/s sustained, 700 peak (bucket 20 units). eroscripts multi-axis guide, The Handy 2. Timing identical; only strokes the device could not complete are shortened."
+  }
+}

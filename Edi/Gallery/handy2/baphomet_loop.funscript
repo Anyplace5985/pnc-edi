@@ -1,0 +1,61 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 0
+    },
+    {
+      "at": 119,
+      "pos": 40
+    },
+    {
+      "at": 169,
+      "pos": 20
+    },
+    {
+      "at": 372,
+      "pos": 100
+    },
+    {
+      "at": 524,
+      "pos": 50
+    },
+    {
+      "at": 575,
+      "pos": 70
+    },
+    {
+      "at": 757,
+      "pos": 0
+    },
+    {
+      "at": 876,
+      "pos": 40
+    },
+    {
+      "at": 926,
+      "pos": 20
+    },
+    {
+      "at": 1145,
+      "pos": 100
+    },
+    {
+      "at": 1297,
+      "pos": 50
+    },
+    {
+      "at": 1348,
+      "pos": 70
+    },
+    {
+      "at": 1500,
+      "pos": 0
+    }
+  ],
+  "metadata": {
+    "duration": 2,
+    "title": "Baphomet_Loop",
+    "description": "handy2 variant of 'handy2pro': slew-limited to 600 units/s sustained, 700 peak (bucket 20 units). eroscripts multi-axis guide, The Handy 2. Timing identical; only strokes the device could not complete are shortened."
+  }
+}

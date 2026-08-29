@@ -96,7 +96,9 @@ pnc-edi/                                  the repo: nothing here belongs to the 
 │   ├── EdiConfig.json                    devices + variants (per-user; has your hardware IDs)
 │   ├── Gallery/
 │   │   ├── Definitions.csv               gallery name -> funscript file + time slice
-│   │   └── detailed/, handy1/            the funscripts (variant = folder name)
+│   │   └── handy2pro/, handy2/, handy1/  the funscripts (variant = folder name). handy2pro is
+│   │                                      the master; the other two are generated from it by
+│   │                                      code/variants.py (§149)
 │   └── _reference/                       capture videos, and videos/ rendered by refvideo.py
 │                                          (untracked; not read by Edi)
 ├── code/
@@ -161,11 +163,16 @@ ships stays a decision with a run behind it. §62 extended the same idea to the 
 6. **Edi** looks the name up in `Definitions.csv`, slices the funscript to
    `[StartTime, EndTime]`, rebases to zero and plays it, looping if `Loop=true`.
 
-**A row name is no longer the only thing the mod sends.** The Black Serpent's approach also POSTs
+**A row name is no longer the only thing the mod sends.** Three things now POST
 `http://127.0.0.1:5000/Edi/Intensity/<0-100>`, which scales the device's stroke range in place
-while the same row keeps looping (§125). It is global to the channel rather than a property of a
-row, so the rule is that any row which is not the lowering scene's own takes the range back with
-it. `learnings/edi-integration.md` has what was measured about it.
+while the same row keeps looping (§125): the Black Serpent's approach, the chaser bosses' aura
+(§151, `ChaserAura.cs` — the filler deepens as an audible dragon or wendigo closes in), and the
+player's own `MasterIntensity` / `RowIntensityScale` (§150). The first two are scene-level and the
+third is a standing preference, so they compose by multiplication and the serpent outranks the aura
+where both are live. It is global to the channel rather than a property of a row, so the rule is
+that any row which is not the lowering scene's own takes the range back with it.
+`learnings/edi-integration.md` has what was measured about it, and the two rules that keep two
+scene-level owners off each other.
 
 Failures at step 3/4 land in `PncEdi-missing-definitions.log`. Since §96 its message names the
 registry rather than the file, and prints which `Definitions.csv` was actually read (or that none
@@ -227,10 +234,14 @@ Full detail — the secret-leak guards, the config `SHIPPED` check, the BepInEx 
 
 Because of `LoadDefinitions`, a **new gallery name needs no code change**:
 
-1. drop a funscript in `Edi/Gallery/detailed/`
+1. drop a funscript in `Edi/Gallery/handy2pro/` — the master; **never author in a generated
+   variant**, the next regeneration discards it
 2. add a row to `Edi/Gallery/Definitions.csv`
 3. add animation-state aliases in `com.edi.pnc.cfg`
-4. `python3 code/deploy.py --no-build` — none of the above is in a game until it is deployed
+4. `.venv/bin/python code/variants.py --write` — rebuilds `handy2/` and `handy1/` from the master,
+   and every custom-enemy package's `handy2/` from its own. A device pointed at a variant that has
+   no copy of a row plays nothing for it (§149)
+5. `python3 code/deploy.py --no-build` — none of the above is in a game until it is deployed
 
 **A whole new enemy needs no code change either**, since §127: drop a package under
 `BepInEx/custom-enemies/<name>/` with an `enemy.json`, its art and its funscripts, and
@@ -254,6 +265,14 @@ never opens them when a WebM is there.
 Rebuild is only needed for new *behaviour* (new hooks, new enemy handling).
 Build: `dotnet build code/edimod/PncEdi.csproj -c Release`, which builds all three plugins and
 deploys them to `BepInEx/plugins/` **and** into both game installs by itself.
+
+**Three variant folders, one master.** `Edi/Gallery/handy2pro/` is authored; `handy2/` (600 u/s
+sustained, 700 peak) and `handy1/` (364 u/s) are generated from it by `code/variants.py`, which
+also emits each package's `handy2/`. Edi picks one by the `"Variant"` on the device in
+`EdiConfig.json` — the variant *is* the folder name, so this needs no mod change and no config
+setting. The folders were `detailed`/`handy1` until §149; a config still naming `detailed` finds
+nothing, and `deploy.py` warns about a variant folder an install carries that the tree does not
+build. `learnings/funscript-authoring.md` has the caps and why each one is what it is.
 
 **One class of row is not hand-editable: a ladder.** The seven filler rows are a set the mod
 switches between *mid-playback*, so they are built on one shared time grid with one anchor
@@ -290,14 +309,14 @@ working on the thing it checks — and because it is what `check.py` is made of 
 
 | command | tier | what it answers |
 |---|---|---|
-| `dotnet test code/tests/PncEdi.Tests.csproj` | fast | does the naming, alias and config layer still behave? (103 tests) |
+| `dotnet test code/tests/PncEdi.Tests.csproj` | fast | does the naming, alias and config layer still behave? (112 tests) |
 | `python3 code/patchaudit.py` | fast | does the mod still bind to the game, and is every patch class registered? (`--ai` also redoes the AI audit) |
 | `python3 code/cfgaudit.py` | fast | is every config entry in the section its `Bind()` names? |
 | `python3 code/bridgeaudit.py` | fast | is the custom-enemy seam still wired at both ends? Every `CustomEnemyBridge` delegate falls back to vanilla, so a dropped call is otherwise invisible (§132) |
 | `dotnet run --project code/slugharness -- BepInEx/config/com.edi.pnc.cfg` | fast | does every animator state resolve to a script? |
 | `.venv/bin/python code/animsweep.py` | full | every scene's timing and polarity against its animation |
 | `.venv/bin/python code/gallerydiff.py` | full | does the gallery play a different-length clip than gameplay? |
-| `python3 code/speedcheck.py` | full | is each script playable on the target device? |
+| `python3 code/speedcheck.py` | full | is each script playable on the target device? (`--variant handy2pro\|handy2\|handy1`) |
 | `python3 code/handystate.py` | — | what is the device *actually* holding, while a session plays? (never in `check.py`: it is an instrument, not a check) |
 | `python3 code/intensitybench.py` | — | does Edi's `Intensity` endpoint move the device's stroke range without restarting playback? (also an instrument; needs Edi up and the device connected) |
 | `.venv/bin/python code/grabflags.py` | — | which prefabs set `hideInsteadOfDestroyOnGrab` / `preserveHealthDuringGrab` - who owns an enemy across its own grab (§126). An instrument, not a check |

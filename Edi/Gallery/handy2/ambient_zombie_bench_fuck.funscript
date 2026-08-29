@@ -1,0 +1,132 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 20
+    },
+    {
+      "at": 239,
+      "pos": 100
+    },
+    {
+      "at": 514,
+      "pos": 20
+    },
+    {
+      "at": 616,
+      "pos": 40
+    },
+    {
+      "at": 685,
+      "pos": 30
+    },
+    {
+      "at": 891,
+      "pos": 100
+    },
+    {
+      "at": 1130,
+      "pos": 20
+    },
+    {
+      "at": 1233,
+      "pos": 40
+    },
+    {
+      "at": 1302,
+      "pos": 30
+    },
+    {
+      "at": 1541,
+      "pos": 100
+    },
+    {
+      "at": 1780,
+      "pos": 20
+    },
+    {
+      "at": 1883,
+      "pos": 40
+    },
+    {
+      "at": 1952,
+      "pos": 30
+    },
+    {
+      "at": 2157,
+      "pos": 100
+    },
+    {
+      "at": 2432,
+      "pos": 20
+    },
+    {
+      "at": 2534,
+      "pos": 40
+    },
+    {
+      "at": 2602,
+      "pos": 30
+    },
+    {
+      "at": 2808,
+      "pos": 100
+    },
+    {
+      "at": 3082,
+      "pos": 20
+    },
+    {
+      "at": 3185,
+      "pos": 40
+    },
+    {
+      "at": 3254,
+      "pos": 30
+    },
+    {
+      "at": 3459,
+      "pos": 100
+    },
+    {
+      "at": 3698,
+      "pos": 20
+    },
+    {
+      "at": 3801,
+      "pos": 40
+    },
+    {
+      "at": 3870,
+      "pos": 30
+    },
+    {
+      "at": 4109,
+      "pos": 100
+    },
+    {
+      "at": 4349,
+      "pos": 20
+    },
+    {
+      "at": 4451,
+      "pos": 40
+    },
+    {
+      "at": 4520,
+      "pos": 30
+    },
+    {
+      "at": 4726,
+      "pos": 100
+    },
+    {
+      "at": 5000,
+      "pos": 20
+    }
+  ],
+  "metadata": {
+    "title": "ambient_zombie_bench_fuck",
+    "description": "handy2 variant of 'handy2pro': slew-limited to 600 units/s sustained, 700 peak (bucket 20 units). eroscripts multi-axis guide, The Handy 2. Timing identical; only strokes the device could not complete are shortened."
+  }
+}

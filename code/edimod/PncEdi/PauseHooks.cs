@@ -10,6 +10,11 @@ public static class PauseHooks
 {
 	public static bool GamePaused;
 
+	// Whether the pause actually stopped the device. Under FillerWhilePaused it does not, and
+	// the resume then has nothing to undo - sending Edi/Resume against a playback that was never
+	// paused is the same contradictory instruction ResetForNewScene avoids below.
+	private static bool _devicePaused;
+
 	/// <summary>
 	/// Should a scene the mod is driving itself stop advancing?
 	///
@@ -38,6 +43,7 @@ public static class PauseHooks
 		if (GamePaused)
 		{
 			GamePaused = false;
+			_devicePaused = false;
 			Plugin.DBG("PAUSE", "scene changed while paused (quit to menu?) -> pause state cleared");
 		}
 	}
@@ -51,6 +57,16 @@ public static class PauseHooks
 			if (!GamePaused)
 			{
 				GamePaused = true;
+				// Only the filler may keep running. A grab, an interact scene or any other real
+				// row is a script for something that is on screen and has just stopped moving,
+				// so it pauses with the game whatever the setting says.
+				if (Plugin.CfgFillerWhilePaused.Value && Plugin.FillerPlaybackActive)
+				{
+					_devicePaused = false;
+					Plugin.DBG("PAUSE", "in-game pause menu opened -> filler keeps playing");
+					return;
+				}
+				_devicePaused = true;
 				Plugin.DBG("PAUSE", "in-game pause menu opened -> Edi/Pause");
 				Plugin.SendPause();
 			}
@@ -70,6 +86,12 @@ public static class PauseHooks
 			if (GamePaused)
 			{
 				GamePaused = false;
+				if (!_devicePaused)
+				{
+					Plugin.DBG("PAUSE", "in-game pause menu closed -> filler was never paused");
+					return;
+				}
+				_devicePaused = false;
 				Plugin.DBG("PAUSE", "in-game pause menu closed -> Edi/Resume");
 				Plugin.SendResume();
 				if (Plugin.ShouldBeStopped)

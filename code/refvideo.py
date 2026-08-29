@@ -261,7 +261,7 @@ def plan(env, name, clip, defs):
     """Everything about one scene that does not depend on having rendered it yet."""
     sprites, dur, fps = A.clip_frames(env, clip)
     stem = name.lower()
-    script = os.path.join("Edi/Gallery/detailed", stem + ".funscript")
+    script = os.path.join("Edi/Gallery/handy2pro", stem + ".funscript")
     if not sprites:
         return dict(name=name, clip=clip, error="clip not found or has no sprite frames")
     if not os.path.exists(os.path.join(ROOT, script)):
@@ -352,7 +352,7 @@ end and it lines up in the game with nothing to adjust.
 4. Positions are the usual 0-100. In this project's existing scripts **0 is deep**.
 
 Every scene already has a single-axis script, so you can see what has been done. It sits in the
-mod's gallery under the same name: `Edi/Gallery/detailed/<name>.funscript`.
+mod's gallery under the same name: `Edi/Gallery/handy2pro/<name>.funscript`.
 
 ## Extra axes
 

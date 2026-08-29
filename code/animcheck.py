@@ -323,7 +323,7 @@ def main():
     if "--invert" in flags:
         want = [100.0 - w for w in want]
 
-    fp = os.path.join(ROOT, "Edi/Gallery/detailed", stem + ".funscript")
+    fp = os.path.join(ROOT, "Edi/Gallery/handy2pro", stem + ".funscript")
     actions = json.load(open(fp, encoding="utf-8-sig"))["actions"]
     end = actions[-1]["at"]
     cycles = max(1, int(round(end / dur)))

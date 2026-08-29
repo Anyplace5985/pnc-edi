@@ -299,7 +299,10 @@ Put scripts beside the manifest, grouped by Edi device variant:
       enemy.json
       bog_witch.bundle
       funscripts/
-        detailed/
+        handy2pro/
+          bog_witch_loop.funscript
+          bog_witch_cum.funscript
+        handy2/
           bog_witch_loop.funscript
           bog_witch_cum.funscript
         handy1/
@@ -307,7 +310,15 @@ Put scripts beside the manifest, grouped by Edi device variant:
           bog_witch_cum.funscript
 
 At startup these are copied into the matching `Edi/Gallery/<variant>` folders and their rows added
-to `Edi/Gallery/Definitions.csv`. `endTime: 0` means "the largest `at` timestamp in the funscript".
+to `Edi/Gallery/Definitions.csv`.
+
+**Author `handy2pro/` and generate the rest.** The variant folders are named after the device they
+are for (`handy2pro` was called `detailed` before 2.6.0), and a player whose device points at a
+variant your package does not carry gets **nothing** for your enemy — Edi looks up the row in the
+folder the device names and finds no file. `.venv/bin/python code/variants.py --write` emits a
+package's `handy2/` from its `handy2pro/` masters, held to 600 units/s sustained and 700 peak. A
+`handy1/` is not generated for you: 364 units/s is a hard enough limit that the shipped packages'
+Handy 1 scripts were authored by hand rather than slew-limited, and the tool leaves them alone. `endTime: 0` means "the largest `at` timestamp in the funscript".
 Restart Edi after adding or changing a package if it was already running.
 
 In a scene, `animation` must exactly match the animator state the game or gallery selects, `gallery`

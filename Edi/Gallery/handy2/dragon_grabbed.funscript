@@ -1,0 +1,33 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 0
+    },
+    {
+      "at": 3938,
+      "pos": 100
+    },
+    {
+      "at": 4264,
+      "pos": 100
+    },
+    {
+      "at": 4626,
+      "pos": 0
+    },
+    {
+      "at": 4816,
+      "pos": 0
+    },
+    {
+      "at": 4833,
+      "pos": 0
+    }
+  ],
+  "metadata": {
+    "duration": 5,
+    "title": "Dragon_Grabbed",
+    "description": "handy2 variant of 'handy2pro': slew-limited to 600 units/s sustained, 700 peak (bucket 20 units). eroscripts multi-axis guide, The Handy 2. Timing identical; only strokes the device could not complete are shortened."
+  }
+}

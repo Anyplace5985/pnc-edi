@@ -245,7 +245,7 @@ all four share a file with live rows (`gallery`, `zombie`, `imp`).
 
 Non-funscript files kept deliberately:
 
-- `detailed/plantasha.ofsp`, `detailed/zombie.ofsp` — OpenFunscripter projects. Edi never reads
+- `handy2pro/plantasha.ofsp`, `handy2pro/zombie.ofsp` — OpenFunscripter projects. Edi never reads
   them, but they name their source media, which is how the properly-authored scripts were
   identified in the first place (see ../learnings/funscript-authoring.md provenance).
 - `Definitions.csv.bak` — the 3 June original, superseded by §1–§5 but a record of the

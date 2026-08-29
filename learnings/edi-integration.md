@@ -4,7 +4,7 @@ What the mod's contract with Edi is, and the Edi behaviour that shapes how a fun
 
 **Read this when:** adding a gallery row, changing a funscript's length, or a script plays wrongly on the device
 
-**Keywords:** Definitions.csv, StartTime, EndTime, Loop, Type, variant, InproveLoopDetection, GalleryPath, slice, SendPlay, seek, phase, ladder, axis, multi-axis, TCode, OSR
+**Keywords:** Definitions.csv, StartTime, EndTime, Loop, Type, variant, InproveLoopDetection, GalleryPath, slice, SendPlay, seek, phase, ladder, axis, multi-axis, TCode, OSR, Intensity, amplitude, slew, hysteresis, chaser aura
 
 **Edi itself:** source at <https://github.com/NoGRo/Edi>. Documentation and release thread:
 <https://discuss.eroscripts.com/t/easy-device-integration-for-games-edi-handy-hps-ble-08-2026/108186>;
@@ -101,6 +101,22 @@ and their minimum dwell all went with them, because there is no crossing left to
   most is a grab scene, which is exactly when the scene's own per-frame code is not running.
 - **Rate-limit it.** The debounce discards anything faster than 100 ms before it reaches the
   hardware, so a per-frame POST is pure waste.
+- **Slew-limit it too, if the driving quantity can move in one step (§151).** A rate limit stops
+  a smooth signal spamming the transport; it does nothing about a *discontinuity*, and a
+  discontinuity is what reads as jerky. The serpent escapes this because its band is entered by a
+  mechanic that starts at the far edge. The chaser aura does not: a boss becoming audible, dying,
+  walking out of earshot, or a second one becoming the nearest all move the target in one step, and
+  the boundary is crossable in both directions. Capping how fast the *held* value may move toward
+  the target (`ChaserAuraRamp`, 45 %/s) turns every one of those into a slide - **and replaces
+  hysteresis outright, because a value that cannot step cannot flap.** This is the third answer this
+  project has given to the same problem: §112's minimum dwell, §125's abolition of the crossing,
+  and now this. Prefer them in that order backwards - no crossing beats a slew beats a dwell.
+- **One channel, so two systems driving it need an explicit rank and a shared reading (§151).**
+  `SerpentHypnosis` outranks `ChaserAura`; the loser stands down on the winner's `OwnsIntensity`
+  while still tracking its own value, so it resumes to where the world is rather than where it was.
+  And **compare against what the channel was last asked for, not against what you last sent** -
+  `Plugin.RequestedIntensity` exists for that. A system that trusts its own last figure will sit on
+  a number the device stopped holding the moment anything else wrote one.
 
 ## Definitions.csv
 
@@ -113,7 +129,7 @@ Columns are `Name, FileName, StartTime, EndTime, Type, Loop`.
   routes that play the same scene at different lengths need **two files**, not one file played
   faster. That is the whole reason the twelve `*_Gallery` rows exist (CHANGELOG §52, §68).
 - **Row names must be unique** - Edi throws on duplicates.
-- **The variant is the folder name.** `Edi/Gallery/detailed/` and `handy1/` are variants; a
+- **The variant is the folder name.** `Edi/Gallery/handy2pro/` and `handy1/` are variants; a
   device's `"Variant"` in `EdiConfig.json` selects one. Per-device scripts therefore need no mod
   change at all.
 - Filenames must avoid Edi's magic tokens: a `.` in the stem sets the variant, and `[loop]`,
@@ -125,9 +141,9 @@ Columns are `Name, FileName, StartTime, EndTime, Type, Loop`.
 **An axis is a filename token, not a Definitions row.** A row's extra axes are files beside its own
 script in the same variant folder:
 
-    Edi/Gallery/detailed/nun_grab.funscript          the stroke (Axis.Default)
-    Edi/Gallery/detailed/nun_grab.twist.funscript    the same row's twist
-    Edi/Gallery/detailed/nun_grab.roll.funscript     ... and roll
+    Edi/Gallery/handy2pro/nun_grab.funscript          the stroke (Axis.Default)
+    Edi/Gallery/handy2pro/nun_grab.twist.funscript    the same row's twist
+    Edi/Gallery/handy2pro/nun_grab.roll.funscript     ... and roll
 
 `FunScriptFile.axis` takes the **last dot-separated token of the filename without its extension**
 and parses it against the `Axis` enum, case-insensitively; `DiscoverExtension.Discover` strips that

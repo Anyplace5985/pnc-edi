@@ -1,0 +1,33 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 0
+    },
+    {
+      "at": 100,
+      "pos": 0
+    },
+    {
+      "at": 349,
+      "pos": 100
+    },
+    {
+      "at": 415,
+      "pos": 70
+    },
+    {
+      "at": 481,
+      "pos": 100
+    },
+    {
+      "at": 3750,
+      "pos": 0
+    }
+  ],
+  "metadata": {
+    "duration": 4,
+    "title": "Gravy_End2",
+    "description": "handy2 variant of 'handy2pro': slew-limited to 600 units/s sustained, 700 peak (bucket 20 units). eroscripts multi-axis guide, The Handy 2. Timing identical; only strokes the device could not complete are shortened."
+  }
+}

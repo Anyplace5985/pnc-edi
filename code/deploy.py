@@ -463,8 +463,28 @@ def resolve_targets(explicit: list[str]) -> list[Path]:
 # Scoped to the gallery's own script folders and to `.funscript` only. Nothing else in a game
 # directory is ours to delete - `EdiConfig.json` is user state and the game's own files outnumber
 # ours - and `STALE_EDI` stays the place for a named binary rather than a swept pattern.
+# A variant folder that has been RENAMED away is invisible to the loop below, because that loop
+# only ever looks inside the variants the tree currently has. §149 renamed `detailed` to
+# `handy2pro` and both installs kept a complete `detailed/` afterwards - 102 scripts that still
+# resolve, so a device left on the old name plays the old gallery and nothing says a word. That is
+# the "silently plausible" failure this project keeps building tools against, so it is reported
+# rather than deleted: a variant folder is a lot to remove on a name comparison, and a player may
+# have hand-authored one of their own.
+def report_unknown_variants(target: Path) -> None:
+    gallery = target / "Edi/Gallery"
+    if not gallery.is_dir():
+        return
+    for folder in sorted(p for p in gallery.iterdir() if p.is_dir()):
+        if folder.name in R.GALLERY_VARIANTS or not any(folder.glob("*.funscript")):
+            continue
+        note(f"WARNING {target.name}: Edi/Gallery/{folder.name}/ is not a variant this tree "
+             f"builds - a device pointed at it plays scripts nothing here maintains. Delete it, "
+             f"and check EdiConfig.json is on one of {', '.join(R.GALLERY_VARIANTS)}")
+
+
 def prune_gallery(target: Path, files: dict[str, bytes], check: bool) -> int:
     pruned = 0
+    report_unknown_variants(target)
     for variant in R.GALLERY_VARIANTS:
         folder = target / "Edi/Gallery" / variant
         if not folder.is_dir():

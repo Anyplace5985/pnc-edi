@@ -1,0 +1,28 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 100
+    },
+    {
+      "at": 303,
+      "pos": 0
+    },
+    {
+      "at": 605,
+      "pos": 100
+    },
+    {
+      "at": 908,
+      "pos": 0
+    },
+    {
+      "at": 1200,
+      "pos": 100
+    }
+  ],
+  "metadata": {
+    "title": "Nun_Grab",
+    "description": "handy2 variant of 'handy2pro': slew-limited to 600 units/s sustained, 700 peak (bucket 20 units). eroscripts multi-axis guide, The Handy 2. Timing identical; only strokes the device could not complete are shortened."
+  }
+}

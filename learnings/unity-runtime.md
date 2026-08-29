@@ -127,6 +127,16 @@ question the display is actually asking ("is there a run to show this for") and 
 scene nobody has seen yet (§114). The same lookup was already running every frame, so it cost
 nothing; check what the per-frame code already resolves before adding a second test beside it.
 
+**The exception, and it is the ordering case (§148).** The menu filler asks the scene *name*
+instead, which is the test this rule warns about, because the question is asked from
+`activeSceneChanged` and whether the new scene's `PlayerStats` exists at that instant is exactly
+what is not known. A predicate that depends on callback ordering is worse than one that depends on
+a naming convention, so the name test stays until a log settles the ordering - `[SCENE] ...
+playerStats=yes|no` is the line, added for it. `EndGalleryPlayback` still uses the `PlayerStats`
+lookup, because it is asked from a gallery teardown rather than from a scene change. **Two
+predicates for one question is a state to leave deliberately, not to discover later:** when the log
+answers, they collapse into the object test.
+
 **Unity's `VideoPlayer` has no H.264 decoder on Linux, and fails silently.** It has no codec of its
 own for it: on Windows it hands the file to Media Foundation, on macOS to AVFoundation, and the
 Linux standalone player has no equivalent to hand it to. `Prepare()` simply never completes — no

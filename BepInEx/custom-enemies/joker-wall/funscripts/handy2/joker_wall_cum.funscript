@@ -1,0 +1,43 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 10
+    },
+    {
+      "at": 130,
+      "pos": 90
+    },
+    {
+      "at": 260,
+      "pos": 20
+    },
+    {
+      "at": 390,
+      "pos": 95
+    },
+    {
+      "at": 520,
+      "pos": 15
+    },
+    {
+      "at": 650,
+      "pos": 100
+    },
+    {
+      "at": 780,
+      "pos": 25
+    },
+    {
+      "at": 910,
+      "pos": 90
+    },
+    {
+      "at": 1040,
+      "pos": 10
+    }
+  ],
+  "metadata": {
+    "description": "handy2 variant of 'handy2pro': slew-limited to 600 units/s sustained, 700 peak (bucket 20 units). eroscripts multi-axis guide, The Handy 2. Timing identical; only strokes the device could not complete are shortened."
+  }
+}

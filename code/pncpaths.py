@@ -33,7 +33,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 GALLERY = os.path.join(ROOT, "Edi/Gallery")
 DEFINITIONS = os.path.join(GALLERY, "Definitions.csv")
-DETAILED = os.path.join(GALLERY, "detailed")
+DETAILED = os.path.join(GALLERY, "handy2pro")
 
 # The asset bundles every sprite and clip in the game is packed into.
 ASSET_FILES = ["sharedassets0.assets", "sharedassets1.assets", "resources.assets"]

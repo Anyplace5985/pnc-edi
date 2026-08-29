@@ -51,6 +51,15 @@ public partial class Plugin : BaseUnityPlugin
 	private static bool _damageLeads;
 	private static bool _fillerPlaybackActive;
 
+	// Whether the scene on screen is a menu, by the same name test OnSceneChanged has always
+	// used. Cached rather than re-read, because GoFiller is reached from a dozen places and the
+	// answer only changes when the scene does.
+	private static bool _inMenuScene;
+
+	// True while what the device is playing is the filler rather than a scene. PauseHooks needs
+	// it to tell the one playback FillerWhilePaused may leave running from every other.
+	internal static bool FillerPlaybackActive => _fillerPlaybackActive;
+
 	// True while the device is playing an actual gallery scene rather than filler, nothing, or
 	// a paused/stopped state. SendPlay records which of the two it last sent.
 	internal static bool IsGalleryPlaybackActive => !_fillerPlaybackActive && !ShouldBeStopped && !string.IsNullOrEmpty(LastSent) && LastSent[0] != '_';
@@ -97,6 +106,11 @@ public partial class Plugin : BaseUnityPlugin
 		DioramaGalleryMap.Reload();
 		PeekGalleryMap.Reload();
 		SceneManager.activeSceneChanged += OnSceneChanged;
+		// Awake runs inside whatever scene the game booted into and before the first
+		// activeSceneChanged, so the menu flag has to start from the active scene rather than
+		// from a callback that has not fired yet - otherwise the GoFiller below reads the boot
+		// menu as gameplay.
+		_inMenuScene = IsMenuSceneName(SceneManager.GetActiveScene().name);
 		ApplyPatches();
 		// Custom-enemy packages load in PncCustomEnemies, which declares a BepInDependency on this
 		// plugin and therefore has its Awake run after this one - after the alias and gallery
@@ -114,6 +128,23 @@ public partial class Plugin : BaseUnityPlugin
 		// The serpent's range hand-back is counted here rather than in the ladder: the case it
 		// exists for is a grab scene, which is exactly when the ladder is not being asked anything.
 		SerpentHypnosis.TickIntensityRelease();
+		// And the chaser aura is ticked here for the same reason and one more: a grab scene has
+		// to take the range back on the frame it starts, and the filler refresh the aura would
+		// otherwise live in stops being called at exactly that moment. It runs after the serpent
+		// so that a serpent release this frame is already visible to it.
+		ChaserAura.Tick();
+		// MasterIntensity and RowIntensityScale are edited live from the mod manager, and a
+		// softening that only takes hold at the next scene change reads as not working. Polling
+		// them is a comparison of two ints and a string reference per frame; ApplyIntensity sends
+		// nothing unless the derived figure actually moved.
+		int masterNow = Mathf.Clamp(CfgMasterIntensity?.Value ?? 100, 0, 100);
+		string rowScaleNow = CfgRowIntensityScale?.Value ?? string.Empty;
+		if (masterNow != _lastMasterIntensity
+			|| !string.Equals(rowScaleNow, _rowScaleSource, StringComparison.Ordinal))
+		{
+			_lastMasterIntensity = masterNow;
+			ApplyIntensity("settings changed");
+		}
 		bool galleryBlocks = GalleryHooks.BlocksInGameEdiTracking();
 		if (galleryBlocks)
 		{
@@ -644,6 +675,10 @@ public partial class Plugin : BaseUnityPlugin
 			}
 			FireAndForget(url, "Play " + row);
 			SerpentHypnosis.NoteRowPlayed(row);
+			// The row changed, so the per-row scale may have too - and a row that carries one is
+			// usually a row nothing else asks about intensity for. NoteRowPlayed goes first
+			// because it owns the scene-level restore this then scales.
+			ApplyIntensity("row " + row);
 			string logName = ((seek > 0) ? $"{row}@{seek}ms" : row);
 			if (!string.Equals(alias, galleryName, StringComparison.OrdinalIgnoreCase))
 			{
@@ -671,22 +706,116 @@ public partial class Plugin : BaseUnityPlugin
 	// turning it back up. Everything else in the mod assumes 100.
 	private static int _lastIntensitySent = 100;
 
+	// What the *scene* asked for, before the player's own scaling. The two are tracked separately
+	// because they answer to different things: a scene lowers the range for a reason of its own
+	// (the serpent's approach) and raises it again when that reason ends, while MasterIntensity and
+	// RowIntensityScale are a standing preference that must survive every one of those changes. So
+	// a scene sets this, the player's settings scale it, and either side moving re-derives the
+	// number the device is actually told.
+	private static int _requestedIntensity = 100;
+
+	/// <summary>
+	/// What the scene last asked for, before the player's own scaling. Read by anything that has
+	/// to notice the channel moving under it: two scene-level systems share this one number, so
+	/// comparing against what *you* last sent leaves you believing a figure the device no longer
+	/// holds.
+	/// </summary>
+	internal static int RequestedIntensity => _requestedIntensity;
+
+	private static int _lastMasterIntensity = 100;
+
+	private static string _rowScaleSource;
+
+	private static readonly Dictionary<string, int> _rowScale =
+		new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+	/// <summary>Ask the device for an amplitude on the scene's behalf, before player scaling.</summary>
 	internal static void SendIntensity(int max, string why)
 	{
-		max = Mathf.Clamp(max, 0, 100);
-		if (max == _lastIntensitySent)
-		{
-			return;
-		}
-		_lastIntensitySent = max;
-		FireAndForget(CfgEdiUrl.Value + "/Edi/Intensity/" + max, "Intensity " + max);
-		DBG("EDI-INTENSITY", max + "% (" + why + ")");
+		_requestedIntensity = Mathf.Clamp(max, 0, 100);
+		ApplyIntensity(why);
 	}
 
 	/// <summary>Hand the device its full range back. Safe to call when nothing lowered it.</summary>
 	internal static void ResetIntensity(string why)
 	{
 		SendIntensity(100, why);
+	}
+
+	// Re-derive what the device should be holding and send it if that has moved. Called by
+	// SendIntensity, by SendPlay once a new row is live (the per-row scale is a property of the
+	// row, so it changes under a scene that never touched intensity itself), and by Update when
+	// either setting is edited - the mod manager writes config live, and a softening the player
+	// cannot hear until the next scene change reads as not working.
+	private static void ApplyIntensity(string why)
+	{
+		int scaled = ScaleIntensity(_requestedIntensity);
+		if (scaled == _lastIntensitySent)
+		{
+			return;
+		}
+		_lastIntensitySent = scaled;
+		FireAndForget(CfgEdiUrl.Value + "/Edi/Intensity/" + scaled, "Intensity " + scaled);
+		if (scaled != _requestedIntensity)
+		{
+			DBG("EDI-INTENSITY", scaled + "% (" + why + "; scene asked " + _requestedIntensity
+				+ "%, master " + Mathf.Clamp(CfgMasterIntensity?.Value ?? 100, 0, 100) + "%"
+				+ (RowScaleFor(_lastSentRow) < 100 ? ", row " + RowScaleFor(_lastSentRow) + "%" : "")
+				+ ")");
+		}
+		else
+		{
+			DBG("EDI-INTENSITY", scaled + "% (" + why + ")");
+		}
+	}
+
+	// Percentages multiply: the scene's own figure, the player's global scale, and the row's. Each
+	// is a fraction of the one before it, so a serpent approach at 44% under a master of 50% is
+	// 22% and not 50% - turning the master down can never make a scene louder than it asked to be.
+	private static int ScaleIntensity(int requested)
+	{
+		int master = Mathf.Clamp(CfgMasterIntensity?.Value ?? 100, 0, 100);
+		int row = RowScaleFor(_lastSentRow);
+		return Mathf.Clamp(Mathf.RoundToInt(requested * (master / 100f) * (row / 100f)), 0, 100);
+	}
+
+	private static int RowScaleFor(string row)
+	{
+		string map = CfgRowIntensityScale?.Value ?? string.Empty;
+		if (!string.Equals(map, _rowScaleSource, StringComparison.Ordinal))
+		{
+			_rowScaleSource = map;
+			_rowScale.Clear();
+			string[] entries = map.Split(';');
+			for (int i = 0; i < entries.Length; i++)
+			{
+				string entry = entries[i].Trim();
+				int eq = entry.IndexOf('=');
+				if (eq > 0 && eq < entry.Length - 1
+					&& int.TryParse(entry.Substring(eq + 1).Trim(), out var percent))
+				{
+					_rowScale[entry.Substring(0, eq).Trim()] = Mathf.Clamp(percent, 0, 100);
+				}
+			}
+			if (_rowScale.Count > 0)
+			{
+				var summary = new System.Text.StringBuilder();
+				foreach (var kv in _rowScale)
+				{
+					if (summary.Length > 0)
+					{
+						summary.Append(", ");
+					}
+					summary.Append(kv.Key).Append('=').Append(kv.Value).Append('%');
+				}
+				DBG("EDI-INTENSITY", "row scales: " + summary);
+			}
+		}
+		if (!string.IsNullOrEmpty(row) && _rowScale.TryGetValue(row, out var scale))
+		{
+			return scale;
+		}
+		return 100;
 	}
 
 	internal static void NotePlayerDamage(PlayerStats playerStats, int damage)
@@ -911,7 +1040,9 @@ public partial class Plugin : BaseUnityPlugin
 	{
 		// A charm circle owns the channel while the player is inside it (see AmbientProximity), so
 		// the filler must not push its own row on top when heat moves.
-		if (!FillerEnabled || !_fillerPlaybackActive || PlayerDead || GalleryHooks.BlocksInGameEdiTracking() || CustomEnemyBridge.EdiChannelHeld)
+		// The menu filler is a fixed row on purpose (GoMenuFiller), so nothing may push a
+		// ladder rung over it from percentages the ended run left behind.
+		if (!FillerEnabled || !_fillerPlaybackActive || _inMenuScene || PlayerDead || GalleryHooks.BlocksInGameEdiTracking() || CustomEnemyBridge.EdiChannelHeld)
 		{
 			return false;
 		}
@@ -985,17 +1116,45 @@ public partial class Plugin : BaseUnityPlugin
 	{
 		if (Object.FindAnyObjectByType<PlayerStats>() == null)
 		{
-			DBG(logTag, "-> stop (no gameplay)");
-			_fillerPlaybackActive = false;
-			SendStop();
+			DBG(logTag, "-> no gameplay");
+			GoMenuFiller();
 			return;
 		}
 		DBG(logTag, "-> filler");
 		GoFiller();
 	}
 
+	private static bool IsMenuSceneName(string sceneName)
+	{
+		return !string.IsNullOrEmpty(sceneName) && sceneName.IndexOf("menu", StringComparison.OrdinalIgnoreCase) >= 0;
+	}
+
+	// What the filler plays outside a run. Deliberately the plain FillerGallery row and not
+	// ResolveFillerIntensity: the damage and heat percentages behind the ladder are whatever the
+	// run that just ended left in them, so a menu would otherwise open on filler_cum_75 because
+	// the last thing that happened was a death.
+	private static void GoMenuFiller()
+	{
+		if (!FillerEnabled || !CfgFillerInMenus.Value)
+		{
+			_fillerPlaybackActive = false;
+			SendStop();
+			return;
+		}
+		SendPlay(CfgFillerGallery.Value, loop: true, inGame: true, filler: true);
+	}
+
 	internal static void GoFiller()
 	{
+		// A menu has no gameplay to fill between, so every route into the filler has to ask
+		// first - not just the scene change that spots the menu. GoFiller is reached from a lost
+		// grab, a scene ending, a reset and the hotkey, and in a menu all of those mean the same
+		// thing.
+		if (_inMenuScene)
+		{
+			GoMenuFiller();
+			return;
+		}
 		// A charm circle plays its own row for as long as the player stands in it, and GoFiller is
 		// reached from a dozen places that mean "nothing else is happening" - a lost grab, a scene
 		// ending, a scene change. None of those are true inside the circle, so bail before any of
@@ -1111,7 +1270,12 @@ public partial class Plugin : BaseUnityPlugin
 
 	private void OnSceneChanged(Scene from, Scene to)
 	{
-		DBG("SCENE", "'" + from.name + "' -> '" + to.name + "'");
+		// Both facts are read before ResetForScene clears the second one. `playerStats` says
+		// whether the new scene's Awake has already run at this point - the ordering §148 could
+		// not settle from the source - and `baseHeat` is what that ordering decides.
+		DBG("SCENE", "'" + from.name + "' -> '" + to.name + "'"
+			+ " playerStats=" + ((Object.FindAnyObjectByType<PlayerStats>() != null) ? "yes" : "no")
+			+ " baseHeat=" + HeatLockSystem.BaseHeatForDiag.ToString("0.#"));
 		FreeCam.HandleSceneChanged();
 		GrabHooks.CurrentAnimator = null;
 		GrabHooks.CurrentEnemyKey = null;
@@ -1131,6 +1295,7 @@ public partial class Plugin : BaseUnityPlugin
 		EnemySpawnShuffle.ClearCache();
 		GrabScreenAudioFill.ClearCache();
 		SerpentHypnosis.ResetNow();
+		ChaserAura.ResetNow();
 		SceneEscapeGate.EndScene();
 		EnemyReactivationHelper.CancelScheduled();
 		MimicGrabGate.ResetForNewScene();
@@ -1139,12 +1304,14 @@ public partial class Plugin : BaseUnityPlugin
 		EnemyGrabGate.ResetForNewScene();
 		PauseHooks.ResetForNewScene();
 		ImpGrappleGate.ResetForNewScene();
-		// Menus (incl. game over -> main menu) should fall silent rather than keep
-		// the filler running on the device.
-		if (!string.IsNullOrEmpty(to.name) && to.name.IndexOf("menu", StringComparison.OrdinalIgnoreCase) >= 0)
+		// Menus (incl. game over -> main menu) fall silent rather than keep the filler running
+		// on the device - unless FillerInMenus says otherwise, which is the one place a player
+		// asked for the opposite.
+		_inMenuScene = IsMenuSceneName(to.name);
+		if (_inMenuScene)
 		{
-			DBG("SCENE", "menu scene -> stopping EDI");
-			SendStop();
+			DBG("SCENE", CfgFillerInMenus.Value ? "menu scene -> menu filler" : "menu scene -> stopping EDI");
+			GoMenuFiller();
 		}
 		else
 		{

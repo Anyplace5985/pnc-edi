@@ -1,0 +1,82 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 0
+    },
+    {
+      "at": 111,
+      "pos": 78
+    },
+    {
+      "at": 222,
+      "pos": 80
+    },
+    {
+      "at": 333,
+      "pos": 29
+    },
+    {
+      "at": 444,
+      "pos": 0
+    },
+    {
+      "at": 555,
+      "pos": 25
+    },
+    {
+      "at": 666,
+      "pos": 0
+    },
+    {
+      "at": 778,
+      "pos": 0
+    },
+    {
+      "at": 889,
+      "pos": 78
+    },
+    {
+      "at": 1000,
+      "pos": 80
+    },
+    {
+      "at": 1111,
+      "pos": 29
+    },
+    {
+      "at": 1222,
+      "pos": 0
+    },
+    {
+      "at": 1333,
+      "pos": 25
+    },
+    {
+      "at": 1444,
+      "pos": 0
+    },
+    {
+      "at": 1556,
+      "pos": 0
+    }
+  ],
+  "inverted": false,
+  "range": 100,
+  "version": "1.0",
+  "metadata": {
+    "bookmarks": [],
+    "chapters": [],
+    "creator": "",
+    "performers": [],
+    "tags": [],
+    "notes": "",
+    "license": "",
+    "script_url": "",
+    "video_url": "",
+    "type": "basic",
+    "duration": 2,
+    "title": "Gravy_Loop2",
+    "description": "handy2 variant of 'handy2pro': slew-limited to 600 units/s sustained, 700 peak (bucket 20 units). eroscripts multi-axis guide, The Handy 2. Timing identical; only strokes the device could not complete are shortened."
+  }
+}

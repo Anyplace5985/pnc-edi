@@ -9960,6 +9960,390 @@ The pattern in both: a document that pins a moving number, or names a file to ex
 stale silently and is only found by someone reading it for another reason.
 
 
+## 147. Two dead switches, found by checking a report against this tree instead of believing it
+
+A player posted a bug list and a wishlist in the release thread. It was worth reading and it was
+**not a report about this mod**: post 112 is a reply to post 80, by the author of the other build
+in that thread, so every bug in it was observed on that fork. Only the follow-up replies here, and
+on the same build. That was established after the first two items had already been worked, which
+is why it is the first thing this entry says — the list is a set of leads, and a lead is checked
+against this tree or it is nothing.
+
+Checking them found two defects here anyway. Neither is the bug that was reported, both are real,
+and both are a switch that reads as applied and changes nothing.
+
+**A package's on/off switch did not reach the pool that actually picks the enemy.**
+`CustomEnemyRegistry.ApplyEnabledState` re-injects every spawner's `enemyData[]` when the switch
+moves, and that is idempotent and correct. It is also, while shuffle mode is on, irrelevant:
+`EnemySpawnShuffle` keeps its own pool of prefabs and weights, rebuilds it only when the scene
+handle changes, and its `GetEnemyPrefab` prefixes **replace** the spawner's pick rather than biasing
+it (§91 is where that replacement came from). So a package switched off mid-run stayed in the stale
+pool and kept being drawn until the next level load, and a spawn-weight change did nothing at all.
+`ApplyEnabledState` and `ReinjectSpawners` now clear that cache through `EnemySpawnShuffle.ClearCache`,
+which already existed for the scene change.
+
+The asymmetry that makes this hard to see from the outside: a wall-picture trap never goes through
+the shuffle pool, so *its* switch worked. Two packages, the same control, one obeys and one does
+not, and nothing in either package explains it.
+
+Two things found beside it and deliberately left. `SpawnWeight` clamps to `Mathf.Max(0.01f, ...)`,
+so a weight of 0 is not off — it is one draw in a hundred, which is close enough to off to be
+mistaken for it. And `InjectSpawner` derives its `vanilla` list from the spawner's *current* array,
+stripping only our own entries, so the scale-up a fractional weight applies is not undone on
+re-injection: toggling a fractional package repeatedly multiplies the table's length each time. The
+odds stay right by construction; the array does not stay small.
+
+**A service scene charged a lock and paid nothing back.** `HeatLockSystem.IsService` marks an
+interact scene as one the player is *given* rather than charged for. It tested one hard-coded
+fragment, `service`, which appears nowhere in this game — no clip, no trigger, and not once in
+`Assembly-CSharp`. So the exemption had never fired. And `TryReleaseFromService`, the payout half,
+had **no callers at all**: `NoteInteractSceneTriggered` used `IsService` only to decide whether to
+skip charging, and nothing ever called the release. Two halves of one idea, one unreachable and one
+that could never match.
+
+Both are closed. The fragments are configuration — `Gameplay/ServiceSceneKeys`, defaulting to
+`service;gravy;minothaur;minotaur` — which is also how a custom-enemy package gets to ship a
+shopkeeper without a code change. `NoteInteractSceneTriggered` calls `TryReleaseFromService` on a
+match instead of falling through to the charge. The payout is the existing once-per-source keyhole
+release and `AmbientReleaseClearsAllLocks` already defaults to true, so Gravy — who heals in the
+unmodded game — clears the horny meter rather than filling it, and cannot be farmed by walking back
+to the same stool.
+
+**Neither has been seen in play.** `check.py` is 9/9 and both installs are deployed, but the service
+fragments were taken from `GalleryTable`'s slugs rather than from a log, so whether Gravy's trigger
+or its clips actually carry one of them is still unconfirmed. That is the first thing to look at in
+the next run.
+
+**Two theories checked and killed, recorded so they are not re-derived.** The reported imp bug — the
+three-attached cling script continuing over the downed scene — is not the grapple block re-sending
+`imp_3`, which dispatches only on tier transitions; and it is not a missing `InGameAliases` entry,
+because the in-game slug is `imp_grab_loop`, the full animator state name, which is a
+`Definitions.csv` row and resolves correctly. The `imp_loop` slug that has no in-game alias occurs
+only in the gallery, and `slugharness` says so. What is left is the grab dispatch not firing during
+the trio scene, which is a question for a log rather than for the source.
+
+
+## 148. Heat scaling read out of the IL, and filler that outlives the run
+
+Two jobs, one static and one built, both out of the release thread's list (§147 for what that list
+is and is not).
+
+### The scaling report, answered from the assembly rather than from a run
+
+Post 114's "horny levels do not scale with capacity" was measured on the other build, so the
+arithmetic never transferred. The question worth answering here is the mechanism, and `ikdasm` over
+`Assembly-CSharp.dll` answers all of it. `PlayerStats::maxHeat` has exactly three writers -
+`SetMaxHeat`, `LoadSaveData` and the constructor - and the paths that reach the first are:
+
+| writer | shape |
+|---|---|
+| `PlayerClassManager::ApplyStatModifiers` | `MaxHeat * heatCapacityMultiplier + bonusHeatCapacity` |
+| `ArmorData::ApplyStatModifiers` | `MaxHeat + heatCapacityBonus`, **additive** |
+| `BuffDebuffSystem::ApplyModifiersToSystems` | `baseMaxHeat + permanentMaxHeatBonus + cachedModifiers.heatCapacityBonus`, and only when that differs from the current value by more than 0.01 |
+| `PlayerStats::LoadSaveData` | writes the field directly - the one bypass, and it sends no `SetMaxHeat` |
+
+Three things follow, and none of them was written down before.
+
+**Our multiplier is not applied twice, and the reason is a branch.**
+`PlayerClassInitializer::ApplySelectedClass` tests `PlayerStateSaver.IsFirstFloor`: not the first
+floor, it calls `LoadPlayerState()` and **returns**; first floor, it falls through to
+`ApplyClassToPlayer()`. The two are exclusive, so `ClassHeatMultipliers.ApplyToPlayerHeat` - a
+multiply in place, and therefore not idempotent - runs exactly once per run. The saved capacity
+restored on later floors already carries it. `BuffDebuffSystem::ReinitializeBaseStats` is called at
+the end of both paths, after our postfix, so its `baseMaxHeat` captures the multiplied figure and
+its own writes agree with it.
+
+**On every floor after the first, nothing calls `SetMaxHeat` at all.** `LoadSaveData` writes the
+field, `CaptureBaseStats` then reads it back, and `ApplyModifiersToSystems` finds no difference to
+write. So `HeatLockSystem.SetMaxHeat_Postfix` never fires on floors 2+, and `_baseHeat` is left
+wherever the scene entry put it - either 0, from `ResetForScene`, in which case `GetScalingHeat`
+falls back to the live `PlayerStats.MaxHeat` and is right, or 100, from the `PlayerStats.Awake`
+postfix reading the prefab default before the save is restored, in which case `GetTotalLocks` is
+`ceil(100/20) = 5` for every class for the whole floor. Which of the two happens is decided by
+whether Unity's `activeSceneChanged` fires before or after that `Awake`, and **that is not
+derivable - it has to be read off a log.**
+
+The logs cannot answer it yet, and that is the finding: **every instrumented session this project
+has ever recorded is `MainMenu -> Floor1`.** Sixteen Floor1 entries across every log in
+`BepInEx/logs/`, no floor 2, ever. The floors-2+ path has never been observed. The `/5` that shows
+up on each Floor1 entry before the class multiplier lands is the same transient and is corrected
+there by the `SetMaxHeat` that floors 2+ do not get.
+
+**The class-selection screen and the runtime disagree about armour.** `GetEffectiveHeatCapacity`
+computes `(100 * heatCapacityMultiplier + bonusHeatCapacity + armorHeatBonus) * ourMultiplier`, so
+the armour bonus is multiplied. At runtime it cannot be: `ApplyClassToPlayer` runs
+`ApplyStatModifiers` first (our postfix with it), and only then `EquipStartingEquipment`, whose
+`ArmorData::ApplyStatModifiers` **adds** its bonus to the already-multiplied figure. With the
+shipped x2 the screen overstates capacity by the armour bonus - a class shown as 200 plays at 150.
+Locks are counted off the real figure, so a player reading capacity from the screen and locks from
+the meter sees exactly the mismatch that was reported, without either number being a bug on its own.
+
+Not fixed here, because which of the two is right is a design question rather than a defect: making
+the screen honest is one line in `GetEffectiveHeatCapacity`, and making the runtime match the screen
+means re-applying the multiplier after equipment, which is a gameplay change.
+
+### Filler in the main menu and while paused (request 4)
+
+Two new `EDI` settings. `FillerInMenus` ships **on**; `FillerWhilePaused` ships **off**.
+
+The asymmetry is deliberate. A menu is a gap between runs and the filler is what fills gaps, so
+running there is the same behaviour the setting's name describes rather than an escalation - and
+losing window focus still pauses, which covers the case the off default was really guarding
+against, someone walking away. A pause is the opposite: the player has deliberately stopped, and a
+device that carries on is the one thing they did not ask for.
+
+`FillerInMenus` keeps the filler running on a menu scene. The stop that used to happen there was
+right for a default and wrong as an absolute - section 8.4's rule was "a menu has no gameplay to
+fill between", which is a statement about what the filler is for rather than about what a player
+wants. `EndGalleryPlayback`, which that section added for the same reason, now routes through the
+setting too rather than stopping unconditionally.
+The routing had to move rather than the test: `GoFiller` is reached from a lost grab, a scene
+ending, a reset and the hotkey, and in a menu every one of those means the same thing, so the menu
+question is now asked in `GoFiller` itself and `OnSceneChanged` only caches the answer. The row is
+the plain `FillerGallery` and deliberately not `ResolveFillerIntensity`: the damage and heat
+percentages behind the ladder are whatever the run that just ended left in them, so a menu would
+otherwise open on `filler_cum_75` because the last thing that happened was a death. For the same
+reason `CanRefreshFillerForHeat` refuses while a menu is up.
+
+`FillerWhilePaused` lets the filler play behind the pause menu. **Only the filler** - a grab, an
+interact scene or any other real row still pauses, because those are scripts for something that is
+on screen and has just stopped moving. `PauseHooks` now records whether the pause actually stopped
+the device, so the resume has nothing to undo when it did not; sending `Edi/Resume` against a
+playback that was never paused is the same contradictory instruction `ResetForNewScene` already
+avoids. Losing window focus still pauses either way, which is the guard that makes the menu default
+matter less than it looks.
+
+`FillerEnabled` (Ctrl+1 / Ctrl+2) still wins over both.
+
+**One thing is deliberately left half-answered, and it is the same ordering question as above.**
+`learnings/unity-runtime.md`'s §114 rule says to ask for the object that defines a state rather
+than for the scene's name, and `EndGalleryPlayback` does exactly that -
+`FindAnyObjectByType<PlayerStats>() == null`. The menu filler cannot, because it is asked from
+`activeSceneChanged`, and whether the new scene's `PlayerStats` exists at that instant is precisely
+what is unknown. A predicate that turns on callback ordering is worse than one that turns on a
+naming convention, so the name test stays and the two coexist on purpose.
+
+Both are settled by one line, which is why it was added rather than argued about: `[SCENE] 'a' ->
+'b' playerStats=yes|no baseHeat=N`, read before `ResetForScene` clears the second field. `yes`
+means `Awake` has already run, which collapses the two predicates into the object test **and**
+means `_baseHeat` is zeroed after the prefab default was recorded, so floors 2+ read the live
+capacity back and there is no lock-scaling defect. `no` means the reverse on both counts.
+
+
+
+## 149. Device variants named after devices, and a second stroker script after all
+
+Out of the release thread again, but a different thread: the multi-axis scripting guide,
+<https://discuss.eroscripts.com/t/multi-axis-scripting-in-ofs-tutorial-tips-and-resources/328979>.
+It was read for its speed limits, which were reported as being much lower than this project uses.
+
+### What the guide actually says, which is not what it was reported to say
+
+Its caps, in units/s, soft then hard: Handy 400/500, Handy 2 600/700, **Handy 2 Overclocked
+700/800**, OSR/SR6 600/700. The guide has **no Handy 2 Pro row at all**, and the one 2 Pro figure
+anyone offers in the comments — 1200 *units*/s — is *higher* than the 960 u/s this project reads off
+the device's own slider-overclocking menu (1200 mm/s over a 125 mm stroke). Its Handy 1 pair,
+400/500 units/s, is likewise above that device's 364 u/s firmware ceiling.
+
+**How much weight any of it carries is settled by the author's own reply.** A commenter asked the
+obvious question — "have i been victim to fake news? i swear to god when the Handy 2 PRO released
+that people were saying the hard cap speed limit was 1200 units" — and the answer was: *"Nah it's
+just I don't have a Handy 2 so these limits are the ones I personally use. They're based on some
+quick forum searching on ES, not in depth testing or anything."* Hearsay, then, and the author says
+so. It is still worth having, because a conservative variant is worth having; it is not worth
+weighing against a number read off the device.
+
+**Which row to generate from is a judgement, and the first answer was wrong.** "Handy 2
+Overclocked" looks like the row for this project's hardware, and the variant was built to its
+700/800 before a second reading: **overclocking is a Handy 2 Pro feature** — the base Handy 2 does
+not have it — so that row is most likely describing the very device the master is already authored
+for. The folder is named `handy2`, so it carries "The Handy 2" row instead: **600 soft, 700 hard**.
+Where two hearsay figures compete, the conservative one is the right way to be wrong. And a stock,
+un-overclocked 2 Pro is 450 mm/s = 360 u/s, which is `handy1` territory rather than this folder's —
+what sits between them is a 2 Pro overclocked *part-way*, which is exactly the choice the device's
+own slider offers and needs no fourth folder.
+
+Nothing there argues for limiting the master, then. What it does give is a **second stroker
+variant**, which §36 considered and rejected — correctly, on the evidence it had, which was one
+cap and a set of accents that a single cap could not tell apart from sustained speed.
+
+### Soft and hard are different questions, and a token bucket answers both
+
+A limiter with one number cannot serve a guide that quotes two. At 700 every deliberate accent is
+flattened; at 800 almost nothing is limited. `variants.py`'s `slew` therefore carries a token
+bucket, in position units of travel: each transition earns `soft × dt` of credit and spends what it
+travels, the balance capped at `budget` and never negative, so a transition may cover
+`min(hard × dt, soft × dt + bucket)`. Idle script, full bucket, one accent at the hard cap; script
+already flat out, empty bucket, held at the soft cap. `soft=None` collapses it to the old
+single-cap limiter exactly — `handy1` regenerated byte-identical in its actions, only its metadata
+description changed, which is the regression check that the generalisation is one.
+
+`budget` was measured rather than picked. Against the master's 2132 transitions:
+
+| budget | rows changed | transitions over 700 | range units lost |
+|---|---|---|---|
+| 0 | 16 | 0 | 103 |
+| 5 | 13 | 77 | 85 |
+| 20 | 11 | 119 | 67 |
+| 40 | 11 | 144 | 60 |
+| 80 | 11 | 145 | 59 |
+
+(That sweep was run at 700/800, before the row was re-chosen; the knee it identifies is a property
+of the bucket, not of the caps.) 20 units — about 0.2 s of accent at the hard cap before the soft
+cap takes over, a snap rather than a section. Past 80 nothing changes: the master has no sustained
+run long enough to spend more. At the shipped 600/700, `speedcheck --variant handy2` confirms the
+guide's contract exactly — **0 rows over 600 by median, 0 transitions over 700** — and 16 of the 102
+scripts differ from the master, which gives up 107 position units of range in total. `imp_3`, the
+row a player reported as shaking their desk, keeps its full 0–100 range throughout.
+
+`speedcheck` learned the guide's pairs (`GUIDE`) and prints two summary lines against them, so the
+new variant is checkable and not merely generatable.
+
+### The folders are named after devices now
+
+`detailed` named a quality tier; `handy1` named a device. A player picks a variant off their
+hardware, so all three now do: **`handy2pro`** (the master, unlimited, for an overclocked 2 Pro),
+**`handy2`** (600 sustained / 700 peak), **`handy1`** (364, firmware). The gallery, all three
+custom-enemy package trees and `_example` moved with `git mv`; `pncpaths`, `variants`, `speedcheck`,
+`release`, `handystate`, `animcheck`, `animsweep`, `ladders`, `rederive`, `refvideo`, `grabs031`,
+both EdiConfig files and every document that named a folder followed.
+
+**The rename has a cost, and it is worth stating because it will come up again.** The variant is a
+folder name, so it lives in every player's `EdiConfig.json` — and 2.5.2, which is what is posted,
+ships `detailed`. The archive README says so at the point where it tells you to set the variant and
+again in troubleshooting; that was the chosen migration, over a compatibility symlink. Worse than a
+config that breaks loudly is one that does not: `deploy.py` overlays and never removed the old
+folder, so both installs kept a complete, still-resolving `detailed/` afterwards. A device left on
+the old name would have played a gallery nobody maintains, silently. `deploy.py` now reports any
+gallery variant folder an install carries that the tree does not build — reported, not deleted,
+because a folder is a lot to remove on a name comparison and a player may have authored one.
+
+### Packages get the variant too, and three of their masters are broken
+
+A device pointed at a variant a package does not carry plays **nothing** for that enemy — §5567's
+parity rule, one level up. `variants.py --write` now emits `handy2/` for every package from that
+package's own `handy2pro/` masters. Package `handy1/` folders are left alone: those were authored by
+hand against the Handy 1, not slew-limited, and regenerating them would throw that work away.
+
+That pass found something nothing else could have. Three femboy-witch masters —
+`femboy_witch_aura_0_b`, `_1` and `_3` — end `61128 ms` then `60000 ms`: a tail written out of
+order, past the row's own duration. **No check in this project has ever had an opinion about them**,
+because `speedcheck.analyse` drops `dt <= 0` pairs before it measures anything and packages are not
+in `speedcheck` at all. It surfaced here because a negative `dt` inverts the limiter's clamp and
+drags every position after it, which read as a *variant with more range than its master*. The
+limiter now passes such a pair through untouched and names the file; the masters are what need
+fixing, and a limiter quietly repairing its input would have hidden this a third time. **They are
+still unfixed** — that is a scripting job, not a tooling one.
+
+### State
+
+`check.py` 9/9 with both installs deployed and current. The three witch masters above are open.
+
+
+## 150. Softening a scene without editing its script
+
+The other half of the thread's post 113 list: a player whose desk `imp_3` shakes was told to copy
+the `handy1` variant over `detailed` as a stopgap. That is the wrong lever twice over - it swaps a
+*speed* limit in to fix a *strength* complaint, and it does it by overwriting the masters.
+
+The right lever already existed and was built for something else. §125 put the serpent's approach on
+`POST /Edi/Intensity/{max}`, which moves `device.Max` in place without re-dispatching: the row keeps
+playing, the phase holds within 22 ms, and the scene simply gets shallower. Everything the mod sends
+that way goes through one function, so the player's own scaling belongs there and nowhere else.
+
+**Two settings, both under `[EDI]` and both live from F11.** `MasterIntensity` (0-100, default 100)
+scales everything; `RowIntensityScale` is `row=percent;row=percent` for the case that is actually
+being reported, which is one or two rows rather than all of them - `imp_3=60;imp_3_Gallery=60`.
+
+**They compose by multiplication, and that direction is the point.** `SendIntensity` now records
+what the *scene* asked for and `ApplyIntensity` derives what the device is told:
+`requested × master × row`. A serpent approach at 44% under a master of 50% is 22%, not 50% - a
+player turning the master down can never make a scene louder than it asked to be. The two are
+tracked apart because they answer to different things: a scene lowers the range for a reason of its
+own and raises it when that reason ends, while the player's setting is a standing preference that
+has to survive every one of those changes.
+
+Two re-derivations keep it honest. `SendPlay` calls `ApplyIntensity` once the new row is live,
+because the per-row scale belongs to the row and changes under scenes that never touch intensity at
+all; and `Update` polls both settings, because the mod manager writes config live and a softening
+you cannot feel until the next scene change reads as broken. Neither sends anything unless the
+derived figure moved, and `_lastIntensitySent` now holds the *scaled* value, so the existing
+dedupe still does its job.
+
+What this deliberately does not do is answer the other half of that complaint. Edi's endpoint moves
+only `Max`; `Min` stays where the device is configured, so this scales amplitude anchored at the
+bottom of the stroke rather than narrowing it around its middle. Both config descriptions and the
+archive README say so, and the README also says which complaint the *variant* folders answer
+instead: too fast is a variant, too strong is these two knobs.
+
+Unplayed. `check.py` 9/9.
+
+
+## 151. The chaser bosses get an aura, and the ramp is rate-limited
+
+The last of the release thread's feature requests (post 113's list, §147 for what that list is and
+is not): the filler should build as the dragon's or the wendigo's approach closes in, instead of
+playing the same way whether the boss is across the floor or behind you. `ChaserAura.cs`, and the
+whole of it is `SerpentHypnosis`' §125 apparatus pointed at a second signal - one row, no tiers,
+`POST /Edi/Intensity/{max}` moving the device's range in place while the filler keeps looping.
+
+**"Speeds up" is not a thing this can do, and the request is better served without it.** Edi has no
+playback-rate control - `Definitions.csv` can slice a file but not time-scale one, which is why the
+twelve `*_Gallery` rows exist at all - so the only ways to make the filler *faster* are a second set
+of files and a ladder to switch between them. That is precisely the shape §120 and §125 dismantled:
+a ladder over a short band is coarse rather than slow, and adding rungs back is a move already
+rejected. Amplitude has no such problem, moves continuously, and needs no seam. So the aura closes
+in by getting deeper, and the funscript set gains nothing.
+
+**The gate is the sound, which is what was actually asked for.**
+`DragonEnemyAI.UpdateIdleMovingSound` plays `idleMovingSound` on `loopingAudioSource` while
+`!isDead && !frozenByArena && (state is Idle or Chasing) && !isAttemptingGrab`, and stops it
+otherwise. Reading `loopingAudioSource.isPlaying` is that whole predicate one frame fresh, the same
+posture as reading vanilla's `hypnosisInView` rather than recomputing visibility. It also gets §47's
+wendigo right on purpose rather than by luck - one parked in the level with its AI ticking, waiting
+for its trigger time, is audible, and the request is about what you can hear.
+
+**No scene search.** Both AI classes keep a public static `ActiveDragons`, added to in `OnEnable`
+and removed in `OnDisable`, so the live set is two list walks of length 0 or 1 and an enemy the mod
+itself hides leaves it unaided.
+
+**The far edge of the band is a config number and the near edge is the prefab's.** The serpent could
+take both from the mechanic (`hypnosisStartRange` down to `grabRange`); here the honest far edge
+would be the looping source's `maxDistance`, but `InitializeComponents` sets only `loop` and
+`playOnAwake` on that source, so its spatial settings come from the prefab - and where the game adds
+the source at runtime, Unity's default is a *non-spatial* one claiming 500 m, which would put a whole
+floor at the far value and hide the ramp. `ChaserAuraRange` is therefore an explicit 25 m, `0` means
+"trust the source", and the `[CHASER-AURA]` line prints the source's own figure alongside so one run
+says which it should have been. `grabRange` is the near edge, where the grab lands and its own scene
+takes the device.
+
+**The new idea is the slew limit, and it is what answers the objection the request arrived with.**
+Post 113's own reply says driving intensity off a distance tends to read as jerky, and the serpent's
+ramp escapes that only because its band is entered by a mechanic that starts at the far edge. This
+band has no such courtesy: a loop starting or stopping, a chaser dying, one walking out of earshot,
+a second becoming the nearest - each moves the target in one step. `ChaserAuraRamp` (45 %/s) caps
+how fast the *held* value may move toward the target, so every one of those is a slide. It also
+replaces hysteresis outright: a value that cannot step cannot flap, which is the same conclusion
+§125 reached from the other direction and the answer §112 reached with a dwell.
+
+**Two owners, one channel-wide number, and three rules that keep them apart.** The serpent outranks
+the aura, which stands down while `SerpentHypnosis.OwnsIntensity` - it keeps slewing its held value
+so it has somewhere sane to resume from, and sends nothing. The aura compares against
+`Plugin.RequestedIntensity` rather than its own last figure, so a channel moved under it by anything
+else is reasserted rather than believed. And leaving the band slews, while a real scene starting
+takes the range back *at once* - §125's second run is what the alternative costs, a 15 s grab played
+at the amplitude the last approach left behind. `Tick` runs from `Plugin.Update` for exactly that
+case: a grab is when the filler refresh it would otherwise live in stops being called.
+
+Documented where each audience looks: `PROJECT.md`'s dispatch walkthrough now says three things
+write that endpoint rather than one, `learnings/edi-integration.md` carries the slew rule and the
+two-owners rule, and the archive README says what a player will feel and which line turns it off.
+It consults no gameplay profile and should not: it moves the device's stroke range and nothing
+else, and `Vanilla`'s promise is that device playback stays on.
+
+Ships on. Unplayed, like everything since §146; `check.py` 9/9 and both installs deployed.
+
+
 ## Tried and reverted — do not redo
 
 - **Trimming loop seams.** 14 galleries end on a different position than they start.

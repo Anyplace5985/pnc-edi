@@ -545,6 +545,14 @@ internal static class HeatLockSystem
 	// ClassHeatMultipliers.ApplyToPlayerHeat multiplies again), and armour can move it
 	// mid-run. So this re-records on every SetMaxHeat rather than snapshotting once, and
 	// clamps the locks already taken if the capacity shrinks under them.
+	// For one log line only (Plugin.OnSceneChanged). The question it answers is whether
+	// activeSceneChanged fires before or after the new scene's Awake, which decides whether a
+	// floor starts with this at 0 - correct, GetScalingHeat reads the live capacity back - or at
+	// the prefab's 100, which is five locks for every class on every floor after the first,
+	// because those floors take the LoadPlayerState branch and never call SetMaxHeat at all
+	// (§148). Not derivable from the source; both orderings are consistent with it.
+	internal static float BaseHeatForDiag => _baseHeat;
+
 	internal static void RecordBaseHeat(PlayerStats playerStats)
 	{
 		if (!Enabled || playerStats == null)
@@ -952,12 +960,22 @@ internal static class HeatLockSystem
 
 	internal static void NoteInteractSceneTriggered(CameraSwapTrigger trigger, string galleryId, string rawName, Animator animator)
 	{
-		if (Enabled && !(trigger == null) && !IsKeyhole(trigger, galleryId, rawName, animator) && !IsService(trigger, galleryId, rawName, animator))
+		if (!Enabled || trigger == null || IsKeyhole(trigger, galleryId, rawName, animator))
 		{
-			string firstClipName = GetFirstClipName(animator);
-			string sceneKey = BuildSceneKey("interact", rawName ?? galleryId ?? firstClipName ?? trigger.name, trigger.transform);
-			_lastInteractLockKey = (AddLockForFirstScene(sceneKey, "interact " + (rawName ?? galleryId ?? firstClipName ?? trigger.name)) ? sceneKey : null);
+			return;
 		}
+		// A service is the other half of the same decision, and it had no caller: `IsService`
+		// only ever stopped the lock being charged, so `TryReleaseFromService` sat unreached and
+		// the payout it exists for never happened. Charging nothing and paying nothing are not
+		// the same thing - Gravy is meant to lower the meter, not merely to be free.
+		if (IsService(trigger, galleryId, rawName, animator))
+		{
+			TryReleaseFromService(trigger, galleryId, rawName, animator);
+			return;
+		}
+		string firstClipName = GetFirstClipName(animator);
+		string sceneKey = BuildSceneKey("interact", rawName ?? galleryId ?? firstClipName ?? trigger.name, trigger.transform);
+		_lastInteractLockKey = (AddLockForFirstScene(sceneKey, "interact " + (rawName ?? galleryId ?? firstClipName ?? trigger.name)) ? sceneKey : null);
 	}
 
 	internal static void AfterHeatChanged(PlayerStats playerStats)
@@ -1585,16 +1603,33 @@ internal static class HeatLockSystem
 		return false;
 	}
 
+	// A scene the player is *given* rather than charged for. It adds no lock, and pays out a
+	// release instead - the same one a peephole gives, and once per source, so it cannot be
+	// farmed by walking back to the same shopkeeper.
+	//
+	// This used to test one hard-coded fragment, `service`, which appears nowhere in the game:
+	// no clip, no trigger, not once in `Assembly-CSharp`. So the exemption existed and had never
+	// fired, and Gravy - who heals in the unmodded game - was charging a lock like any enemy.
+	// The fragments are configuration now, `ServiceSceneKeys`, which is also how a custom-enemy
+	// package gets to ship a shopkeeper without a code change.
 	private static bool IsService(CameraSwapTrigger trigger, string galleryId, string rawName, Animator animator)
 	{
 		if (trigger == null)
 		{
 			return false;
 		}
-		string lower = (galleryId + " " + rawName + " " + trigger.name).ToLowerInvariant();
-		if (lower.Contains("service"))
+		string[] keys = ServiceSceneKeys();
+		if (keys.Length == 0)
 		{
-			return true;
+			return false;
+		}
+		string lower = (galleryId + " " + rawName + " " + trigger.name).ToLowerInvariant();
+		for (int i = 0; i < keys.Length; i++)
+		{
+			if (lower.Contains(keys[i]))
+			{
+				return true;
+			}
 		}
 		if (animator == null || animator.runtimeAnimatorController == null)
 		{
@@ -1607,12 +1642,38 @@ internal static class HeatLockSystem
 		}
 		for (int i = 0; i < animationClips.Length; i++)
 		{
-			if (animationClips[i] != null && !string.IsNullOrEmpty(animationClips[i].name) && animationClips[i].name.IndexOf("service", StringComparison.OrdinalIgnoreCase) >= 0)
+			AnimationClip clip = animationClips[i];
+			if (clip == null || string.IsNullOrEmpty(clip.name))
 			{
-				return true;
+				continue;
+			}
+			string clipName = clip.name.ToLowerInvariant();
+			for (int j = 0; j < keys.Length; j++)
+			{
+				if (clipName.Contains(keys[j]))
+				{
+					return true;
+				}
 			}
 		}
 		return false;
+	}
+
+	// Lower-cased once per call rather than per clip: the list is short and the clip loop is not.
+	private static string[] ServiceSceneKeys()
+	{
+		string[] entries = (Plugin.CfgServiceSceneKeys?.Value ?? "").Split(';');
+		int count = 0;
+		for (int i = 0; i < entries.Length; i++)
+		{
+			string entry = entries[i].Trim();
+			if (entry.Length != 0)
+			{
+				entries[count++] = entry.ToLowerInvariant();
+			}
+		}
+		Array.Resize(ref entries, count);
+		return entries;
 	}
 
 	private static string GetFirstClipName(Animator animator)

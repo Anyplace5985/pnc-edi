@@ -210,7 +210,7 @@ def report(name, acts, total):
 
 
 def check():
-    """Do the shipped `detailed` files still match what this module generates?
+    """Do the shipped `handy2pro` files still match what this module generates?
 
     A ladder's invariant is not visible in any one file - a hand-edited `filler_cum_50` looks
     perfectly reasonable on its own and only steps the device against its neighbours. `deploy.py
@@ -219,7 +219,7 @@ def check():
     import json
     bad = 0
     for name, acts, total in build():
-        path = os.path.join(ROOT, "Edi/Gallery/detailed", name.lower() + ".funscript")
+        path = os.path.join(ROOT, "Edi/Gallery/handy2pro", name.lower() + ".funscript")
         if not os.path.exists(path):
             print(f"  MISSING  {name}  ({os.path.relpath(path, ROOT)})"); bad += 1; continue
         on_disk = [(a["at"], a["pos"])

@@ -1280,6 +1280,29 @@ internal static class CustomEnemyRegistry
 			if (definition.Enabled && definition.GalleryEntry != null) yield return definition.GalleryEntry;
 	}
 
+	// The second table a spawn decision is read from, and the one nothing used to tell.
+	//
+	// `EnemySpawnShuffle` in PncEdi keeps its own pool of prefabs and weights, rebuilt only when
+	// the scene handle changes, and its `GetEnemyPrefab` prefixes *replace* the spawner's pick
+	// rather than biasing it. So while shuffle mode is on, the injected `enemyData[]` table below
+	// decides nothing: a package switched off mid-run stayed in the stale pool and kept being
+	// drawn until the next level load, and a weight change did nothing at all. Both switches
+	// therefore looked broken while reading as applied, and only for packages that go through the
+	// pool - a wall-picture trap never does, so its switch worked and the difference between the
+	// two looked like a fault in the package rather than in the cache. Dropping the cache makes
+	// the next draw rebuild it from the current config.
+	private static void ClearShuffleCache()
+	{
+		try
+		{
+			EnemySpawnShuffle.ClearCache();
+		}
+		catch (Exception ex)
+		{
+			Plugin.Log?.LogError("[CustomEnemies] could not clear the shuffle pool: " + ex);
+		}
+	}
+
 	// A weight change has to reach the tables that were injected when the level loaded, or it
 	// means nothing until the next scene. Re-injecting is idempotent: InjectSpawner strips our
 	// own entries before it rebuilds, so it recomputes the table from the authored one.
@@ -1287,6 +1310,7 @@ internal static class CustomEnemyRegistry
 	{
 		try
 		{
+			ClearShuffleCache();
 			ResolvePending();
 			foreach (EnemySpawner spawner in UnityEngine.Object.FindObjectsByType<EnemySpawner>(FindObjectsInactive.Include, FindObjectsSortMode.None))
 			{
@@ -1307,6 +1331,7 @@ internal static class CustomEnemyRegistry
 	{
 		try
 		{
+			ClearShuffleCache();
 			ResolvePending();
 			foreach (EnemySpawner spawner in UnityEngine.Object.FindObjectsByType<EnemySpawner>(FindObjectsInactive.Include, FindObjectsSortMode.None))
 			{

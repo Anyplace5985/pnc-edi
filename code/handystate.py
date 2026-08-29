@@ -187,8 +187,8 @@ def main():
                         help="polls per second (default 2)")
     parser.add_argument("--log", default="game-linux/BepInEx/LogOutput.log",
                         help="our log, tailed for Play lines to interleave; '' to skip")
-    parser.add_argument("--variant", default="detailed",
-                        help="gallery folder the device is set to (default detailed)")
+    parser.add_argument("--variant", default="handy2pro",
+                        help="gallery folder the device is set to (default handy2pro)")
     parser.add_argument("--raw", action="store_true",
                         help="print the whole state object each poll")
     parser.add_argument("--out", metavar="PATH",

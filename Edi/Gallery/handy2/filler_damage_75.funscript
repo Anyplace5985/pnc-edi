@@ -1,0 +1,58 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 0
+    },
+    {
+      "at": 170,
+      "pos": 82
+    },
+    {
+      "at": 360,
+      "pos": 14
+    },
+    {
+      "at": 560,
+      "pos": 95
+    },
+    {
+      "at": 770,
+      "pos": 4
+    },
+    {
+      "at": 1010,
+      "pos": 100
+    },
+    {
+      "at": 1270,
+      "pos": 24
+    },
+    {
+      "at": 1580,
+      "pos": 88
+    },
+    {
+      "at": 2000,
+      "pos": 0
+    }
+  ],
+  "inverted": false,
+  "range": 100,
+  "version": "1.0",
+  "metadata": {
+    "bookmarks": [],
+    "chapters": [],
+    "creator": "",
+    "performers": [],
+    "tags": [],
+    "notes": "",
+    "license": "",
+    "script_url": "",
+    "video_url": "",
+    "type": "basic",
+    "duration": 2,
+    "title": "filler_damage_75",
+    "description": "handy2 variant of 'handy2pro': slew-limited to 600 units/s sustained, 700 peak (bucket 20 units). eroscripts multi-axis guide, The Handy 2. Timing identical; only strokes the device could not complete are shortened."
+  }
+}

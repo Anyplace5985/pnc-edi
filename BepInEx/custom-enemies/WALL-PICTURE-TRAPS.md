@@ -143,9 +143,11 @@ Same layout as any other package - beside the manifest, grouped by device varian
       massage.png
       cum.png
       funscripts/
-        detailed/
+        handy2pro/
           example_wall_massage.funscript
           example_wall_cum.funscript
+        handy2/
+          ...
         handy1/
           ...
 

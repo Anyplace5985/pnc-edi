@@ -1,0 +1,58 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 0
+    },
+    {
+      "at": 111,
+      "pos": 8
+    },
+    {
+      "at": 222,
+      "pos": 65
+    },
+    {
+      "at": 333,
+      "pos": 98
+    },
+    {
+      "at": 444,
+      "pos": 100
+    },
+    {
+      "at": 556,
+      "pos": 78
+    },
+    {
+      "at": 667,
+      "pos": 51
+    },
+    {
+      "at": 778,
+      "pos": 9
+    },
+    {
+      "at": 889,
+      "pos": 0
+    }
+  ],
+  "inverted": false,
+  "range": 100,
+  "version": "1.0",
+  "metadata": {
+    "bookmarks": [],
+    "chapters": [],
+    "creator": "",
+    "performers": [],
+    "tags": [],
+    "notes": "",
+    "license": "",
+    "script_url": "",
+    "video_url": "",
+    "type": "basic",
+    "duration": 1,
+    "title": "Plantasha_Start_Gallery",
+    "description": "handy2 variant of 'handy2pro': slew-limited to 600 units/s sustained, 700 peak (bucket 20 units). eroscripts multi-axis guide, The Handy 2. Timing identical; only strokes the device could not complete are shortened."
+  }
+}

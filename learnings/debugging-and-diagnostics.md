@@ -147,6 +147,23 @@ session's is still there to diff against. Rotation is spliced into the launcher 
 a hand-run `run_bepinex.sh`, or the Windows install under Proton, still appends to one growing
 `LogOutput.log`, which is why `AppendLog = true` stays forced.
 
+**Check what the logs have never seen before treating them as coverage (§148).** Every instrumented
+session this project has ever recorded is `MainMenu -> Floor1` — sixteen Floor1 entries across every
+file in `BepInEx/logs/`, and no floor 2, ever. That matters because the game takes a *different
+branch* on later floors: `PlayerClassInitializer.ApplySelectedClass` calls `LoadPlayerState()` and
+returns when `PlayerStateSaver.IsFirstFloor` is false, so `PlayerClassManager.ApplyStatModifiers`
+and every postfix on it — ours included — runs on floor 1 only. A whole class of behaviour has
+therefore never been observed, and "the logs say it is fine" was never a statement about it. One
+`grep -ho "SCENE\] '[^']*' -> '[^']*'" logs/*.log | sort | uniq -c` is the whole check, and it is
+worth running before a log-based argument rests on absence of evidence.
+
+**Unity callback ordering is not derivable, and a diagnosis that turns on it is not finished
+(§148).** Whether `activeSceneChanged` fires before or after a new scene's `Awake` decides whether
+`HeatLockSystem._baseHeat` starts a floor at 0 (correct — the live capacity is read back) or at the
+prefab's 100 (five locks for every class). Both readings are internally consistent and the source
+supports neither over the other. The same shape as §106's device diagnosis: when two orderings give
+two different answers, print one line and read it rather than reasoning about which Unity does.
+
 **A harness that skips a step cannot fail at that step (§92).** `slugharness` reported the five
 GoonShroom gallery rows resolving cleanly throughout, because its `Emit` called
 `BuildGallerySlug(key, state)` directly while the game calls `ResolveEnemyKey(name)` first and

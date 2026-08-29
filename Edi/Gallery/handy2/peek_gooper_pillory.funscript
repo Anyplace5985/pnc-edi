@@ -1,0 +1,93 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 0
+    },
+    {
+      "at": 336,
+      "pos": 100
+    },
+    {
+      "at": 571,
+      "pos": 20
+    },
+    {
+      "at": 671,
+      "pos": 0
+    },
+    {
+      "at": 772,
+      "pos": 20
+    },
+    {
+      "at": 872,
+      "pos": 0
+    },
+    {
+      "at": 1207,
+      "pos": 100
+    },
+    {
+      "at": 1476,
+      "pos": 20
+    },
+    {
+      "at": 1577,
+      "pos": 0
+    },
+    {
+      "at": 1677,
+      "pos": 20
+    },
+    {
+      "at": 1778,
+      "pos": 0
+    },
+    {
+      "at": 2114,
+      "pos": 100
+    },
+    {
+      "at": 2382,
+      "pos": 20
+    },
+    {
+      "at": 2482,
+      "pos": 0
+    },
+    {
+      "at": 2583,
+      "pos": 20
+    },
+    {
+      "at": 2684,
+      "pos": 0
+    },
+    {
+      "at": 3020,
+      "pos": 100
+    },
+    {
+      "at": 3254,
+      "pos": 20
+    },
+    {
+      "at": 3355,
+      "pos": 0
+    },
+    {
+      "at": 3455,
+      "pos": 20
+    },
+    {
+      "at": 3556,
+      "pos": 0
+    }
+  ],
+  "metadata": {
+    "duration": 4,
+    "title": "peek_gooper_pillory",
+    "description": "handy2 variant of 'handy2pro': slew-limited to 600 units/s sustained, 700 peak (bucket 20 units). eroscripts multi-axis guide, The Handy 2. Timing identical; only strokes the device could not complete are shortened."
+  }
+}

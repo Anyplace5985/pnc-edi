@@ -1,0 +1,77 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 0
+    },
+    {
+      "at": 227,
+      "pos": 100
+    },
+    {
+      "at": 568,
+      "pos": 5
+    },
+    {
+      "at": 885,
+      "pos": 100
+    },
+    {
+      "at": 1270,
+      "pos": 5
+    },
+    {
+      "at": 1557,
+      "pos": 100
+    },
+    {
+      "at": 1914,
+      "pos": 5
+    },
+    {
+      "at": 2194,
+      "pos": 100
+    },
+    {
+      "at": 2574,
+      "pos": 5
+    },
+    {
+      "at": 2881,
+      "pos": 100
+    },
+    {
+      "at": 3254,
+      "pos": 5
+    },
+    {
+      "at": 3572,
+      "pos": 100
+    },
+    {
+      "at": 3928,
+      "pos": 5
+    },
+    {
+      "at": 4250,
+      "pos": 100
+    },
+    {
+      "at": 4611,
+      "pos": 5
+    },
+    {
+      "at": 4898,
+      "pos": 100
+    },
+    {
+      "at": 5333,
+      "pos": 0
+    }
+  ],
+  "metadata": {
+    "duration": 5,
+    "title": "Zombie_Loop",
+    "description": "handy2 variant of 'handy2pro': slew-limited to 600 units/s sustained, 700 peak (bucket 20 units). eroscripts multi-axis guide, The Handy 2. Timing identical; only strokes the device could not complete are shortened."
+  }
+}

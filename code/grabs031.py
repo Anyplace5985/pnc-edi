@@ -468,7 +468,7 @@ def main():
     # to read. That is the point of reading the file rather than the function: re-running --write
     # after editing a master regenerates its twin, and the two cannot drift.
     missing = [n for n in (r[1] for r in REMAPPED) if not os.path.exists(
-        os.path.join(ROOT, "Edi/Gallery/detailed", n.lower() + ".funscript"))]
+        os.path.join(ROOT, "Edi/Gallery/handy2pro", n.lower() + ".funscript"))]
     if missing:
         print(f"\n  {len(REMAPPED) + 1} gallery twins not built: their masters are not written "
               f"yet ({missing[0]} ...).\n  Run with --write.")

@@ -62,8 +62,13 @@ INSTALL
        machine and point [EDI] Url in the config at it - the mod only needs to reach it over
        HTTP.
 
-4. In Edi, set your device's "Variant" to "detailed". A device left on "None" is muted, which
-   looks exactly like the mod not working. See "DEVICE VARIANTS" below.
+4. In Edi, set your device's "Variant" to the folder that matches your hardware - "handy2pro",
+   "handy2" or "handy1". A device left on "None" is muted, which looks exactly like the mod not
+   working. See "DEVICE VARIANTS" below.
+
+   UPGRADING FROM 2.5.2 OR EARLIER: the variant folders are now named after the devices they are
+   for. What used to be called "detailed" is now "handy2pro". If your EdiConfig.json still says
+   "Variant": "detailed", change it, or Edi will look for a folder that is no longer there.
 
 You should now see a BepInEx console line on startup, and BepInEx/LogOutput.log should fill with
 [EDI] lines as scenes play.
@@ -73,18 +78,33 @@ You should now see a BepInEx console line on startup, and BepInEx/LogOutput.log 
 DEVICE VARIANTS
 ------------------------------------------------------------------------------------------------
 
-Two sets of the same scripts are included. Edi picks one by the "Variant" set on the device in
+Three sets of the same scripts are included. Edi picks one by the "Variant" set on the device in
 EdiConfig.json, and the variant name is the folder name:
 
-  detailed    The masters. For a Handy 2, overclocked or not, and anything of that class.
-              This is the default and what you want unless the strokes feel mushy.
+  handy2pro   The masters, and the default. Written for a Handy 2 Pro with the slider overclock
+              turned up (1200 mm/s over a 125 mm stroke = 960 units/s, off the device's own
+              overclocking menu). Fast accents are kept deliberately: a snap the motor renders as
+              "as fast as you can" is part of the script.
 
-  handy1      Speed-limited for a Handy 1 (110 mm at 400 mm/s). Slow strokes keep their full
-              range; only transitions the device cannot physically reach are shortened.
+  handy2      Held to 600 units/s sustained, 700 peak - the soft and hard caps the eroscripts
+              multi-axis scripting guide gives for a Handy 2. For a Handy 2, an OSR/SR6, or a
+              2 Pro that is overclocked part-way or not at all and where the loud scenes feel like
+              too much. Sixteen of the 102 scripts differ from the masters; the rest are
+              identical, because they were already inside those caps.
+
+              A 2 Pro with no overclock at all is 450 mm/s = 360 units/s, which is what handy1 is
+              limited to - so that is the better folder for one, despite the name.
+
+  handy1      Speed-limited for a Handy 1 (110 mm at 400 mm/s = 364 units/s). Slow strokes keep
+              their full range; only transitions the device cannot physically reach are shortened.
+
+In every variant the TIMING is identical - it is the sync to the animation and never moves. Only
+strokes the device could not have completed are shortened, so a slower variant loses reach on the
+loud scenes and changes nothing anywhere else.
 
 Set it like this in EdiConfig.json:
 
-    "The Handy [xxxxxxxx]": { "Variant": "detailed", "Channel": null, "Min": 0, "Max": 100 }
+    "The Handy [xxxxxxxx]": { "Variant": "handy2pro", "Channel": null, "Min": 0, "Max": 100 }
 
 
 ------------------------------------------------------------------------------------------------
@@ -135,6 +155,14 @@ _50 / _75): Automatic uses heat under Vanilla and God Mode and the stronger of h
 pressure under Pressure and Release; Heat and ReleasePressure force one or the other; Highest
 always takes whichever is stronger.
 
+[EDI] ChaserAura, on by default, builds the idle filler as a chaser boss closes in: while the
+dragon's or the wendigo's approach loop is audible, the device's stroke range is scaled by how
+close it is - shallow at the edge of the band, full at the range where it grabs. It never changes
+which script is playing and never makes anything louder than the script asks for, and it hands the
+range straight back when a real scene starts. ChaserAuraRange is how wide the band is in metres,
+ChaserAuraIntensityFar how shallow its far end, and ChaserAuraRamp how fast the change is allowed
+to move - lower that if it reads as abrupt, or set ChaserAura = false to turn it off.
+
 
 ------------------------------------------------------------------------------------------------
 CUSTOM ENEMIES AND WALL TRAPS
@@ -164,7 +192,8 @@ Nothing happens at all
 
 The log fills with [EDI] lines but the device is silent
     Edi is not running, is on a different port, or the device's Variant is "None" (which mutes
-    it). Set it to "detailed".
+    it) or "detailed" (the pre-2.6.0 name for what is now "handy2pro"). Set it to a folder that
+    exists under Edi/Gallery/.
 
 One scene does nothing
     grep the log for ALIAS-GAP:
@@ -172,6 +201,23 @@ One scene does nothing
         grep "\[ALIAS-GAP\]" BepInEx/LogOutput.log
 
     That names any animation the mod saw and had no script for. Please report it with the line.
+
+The filler goes shallow when a boss is nearby
+    That is the chaser aura, and it is deliberate - see ChaserAura under GAMEPLAY PROFILES above.
+    [EDI] ChaserAura = false turns it off; ChaserAuraIntensityFar raises its quiet end.
+
+A scene is too strong
+    Two knobs under [EDI], both live-editable from F11, and neither one touches the funscripts:
+
+        MasterIntensity      a percentage applied to everything, e.g. 70
+        RowIntensityScale    per row, e.g. imp_3=60;imp_3_Gallery=60
+
+    Both work through Edi's intensity endpoint, which moves the top of the device's stroke range
+    while the script keeps playing - so a scene gets shallower, not slower, and nothing is
+    re-dispatched or retimed. Row names are the ones in Edi/Gallery/Definitions.csv.
+
+    If the problem is that fast sections feel mushy or rattly rather than too deep, that is speed
+    and not strength: switch to the "handy2" or "handy1" variant instead. See DEVICE VARIANTS.
 
 To remove the mod
     Delete winhttp.dll, doorstop_config.ini, .doorstop_version, libdoorstop.so, run_bepinex.sh,

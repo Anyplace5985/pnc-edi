@@ -345,7 +345,7 @@ def _remap_by_frame(env, source_row, new_row, play_clip, gal_clip, cycles):
                 return ys[i] + f * (ys[i + 1] - ys[i])
         return ys[-1]
 
-    fp = os.path.join(ROOT, "Edi/Gallery/detailed", source_row.lower() + ".funscript")
+    fp = os.path.join(ROOT, "Edi/Gallery/handy2pro", source_row.lower() + ".funscript")
     src = _json.load(open(fp, encoding="utf-8-sig"))["actions"]
     total = int(round(cycles * gdur))
     acts, seen = [], set()
@@ -375,7 +375,7 @@ def _scaled_from(source_row, new_row, cycles, period):
     Reads the master rather than hardcoding, so the two cannot drift: re-running `--write` after
     editing an imp scene regenerates its gallery twin."""
     import json as _json
-    fp = os.path.join(ROOT, "Edi/Gallery/detailed", source_row.lower() + ".funscript")
+    fp = os.path.join(ROOT, "Edi/Gallery/handy2pro", source_row.lower() + ".funscript")
     src = _json.load(open(fp, encoding="utf-8-sig"))["actions"]
     total = int(round(cycles * period))
     scale = total / src[-1]["at"]

@@ -131,7 +131,7 @@ SHIPPED: dict[tuple[str, str], object] = {
     #   and there is no code path that reproduces them. Losing them silently un-fixes the bug.
 }
 
-GALLERY_VARIANTS = ["detailed", "handy1"]
+GALLERY_VARIANTS = ["handy2pro", "handy2", "handy1"]
 
 # Edi itself, bundled the way the eroscripts mods do, so the archive is one download and works
 # out of the box. Pinned rather than "whatever is newest": a release has to be reproducible, and

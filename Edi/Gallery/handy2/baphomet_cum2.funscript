@@ -1,0 +1,77 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 0
+    },
+    {
+      "at": 100,
+      "pos": 0
+    },
+    {
+      "at": 165,
+      "pos": 30
+    },
+    {
+      "at": 232,
+      "pos": 0
+    },
+    {
+      "at": 298,
+      "pos": 30
+    },
+    {
+      "at": 364,
+      "pos": 0
+    },
+    {
+      "at": 430,
+      "pos": 30
+    },
+    {
+      "at": 496,
+      "pos": 0
+    },
+    {
+      "at": 1328,
+      "pos": 0
+    },
+    {
+      "at": 1394,
+      "pos": 30
+    },
+    {
+      "at": 1460,
+      "pos": 0
+    },
+    {
+      "at": 1526,
+      "pos": 30
+    },
+    {
+      "at": 1592,
+      "pos": 0
+    },
+    {
+      "at": 1658,
+      "pos": 30
+    },
+    {
+      "at": 1724,
+      "pos": 0
+    },
+    {
+      "at": 2484,
+      "pos": 0
+    },
+    {
+      "at": 2500,
+      "pos": 0
+    }
+  ],
+  "metadata": {
+    "duration": 2,
+    "title": "Baphomet_Cum2",
+    "description": "handy2 variant of 'handy2pro': slew-limited to 600 units/s sustained, 700 peak (bucket 20 units). eroscripts multi-axis guide, The Handy 2. Timing identical; only strokes the device could not complete are shortened."
+  }
+}

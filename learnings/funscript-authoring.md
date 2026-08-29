@@ -4,7 +4,7 @@ Device speed limits, point spacing, range decisions, per-device variants, and wh
 
 **Read this when:** writing or editing a curve, or judging whether a script is playable on a given device
 
-**Keywords:** units per second, Handy, stroke length, 100ms, buzz, vibration, slew limit, variant, handy1, provenance, ladder, shared grid, anchor
+**Keywords:** units per second, Handy, stroke length, 100ms, buzz, vibration, slew limit, variant, handy1, handy2, handy2pro, soft cap, hard cap, token bucket, budget, non-monotonic timestamps, backwards timestamp, provenance, ladder, shared grid, anchor
 
 ---
 
@@ -21,6 +21,38 @@ the device's stroke, so **speed = |Δpos|/Δt in units/s**, and every device has
 **The 125 mm rows are a Handy 2 Pro, and were all along.** They were labelled "Handy 2" until §103
 because that is what the device was believed to be; the numbers came off the 2 Pro's own menu and
 did not change when the label did. `speedcheck.py`'s keys are `handy2pro` / `handy2pro_oc`.
+
+**A guide's caps come in pairs, and the pair is not one number twice (§149).** The eroscripts
+multi-axis guide quotes a **soft** and a **hard** figure per device — Handy 400/500, Handy 2
+600/700, Handy 2 Overclocked 700/800, OSR/SR6 600/700, all in units/s. Soft is what a script
+should *sustain*; hard is a wall. That is the same distinction as this file's own "judge the median,
+never the maximum", arriving from the other direction, and **a single-cap limiter cannot express
+it**: limit to the soft figure and every deliberate accent is flattened, limit to the hard one and
+almost nothing is limited at all. What serves both is a **token bucket** measured in position
+units: each transition earns `soft × dt` of credit and spends what it travels, the balance capped
+at a budget and never negative, so a transition may cover `min(hard × dt, soft × dt + bucket)`. A
+script that has been idling can spend a full bucket on one accent at the hard cap; one already
+running flat out has an empty bucket and is held at the soft cap. 20 units of budget is ~0.2 s of
+accent — a snap, not a section. `variants.py` generates `handy2` that way and
+`speedcheck --variant handy2` confirms the contract: 0 rows over 600 by median, 0 transitions over
+700.
+
+**Which of a guide's rows a variant is generated from is a judgement, not a lookup (§149).** That
+guide's "Handy 2 Overclocked" row (700/800) was the obvious pick for this project's own hardware and
+is the wrong one: **overclocking is a Handy 2 Pro feature**, so that row is most likely describing
+the same device the master is authored for, and the author's reply to a commenter who queried it —
+"I don't have a Handy 2 so these limits are the ones I personally use… based on some quick forum
+searching, not in depth testing" — says how much weight either row carries. So the folder named for
+a device carries that device's own row, and where two hearsay figures compete, the conservative one
+is the right way to be wrong. Note also what the name does *not* mean: a stock, un-overclocked 2 Pro
+is 450 mm/s = 360 u/s, which is `handy1` territory, not `handy2`'s.
+
+**A guide is a source about devices it has actually measured, and the Handy 2 Pro is not one of
+them.** That guide has no 2 Pro row at all; the only figure its comments offer for one — 1200
+*units*/s — is *higher* than the 960 read off the device's own menu, and its author says outright
+the limits are unverified. So its numbers gave this project a new variant and changed nothing
+about the master. Its Handy 1 pair (400/500 units/s) is likewise *above* that device's 364 u/s
+firmware ceiling, which is why `handy1` stays a single-cap limit — 364 is hardware, not taste.
 
 **Take these off the device, not off review articles** — those quote 800 mm/s for the
 overclock, which is low by a third. The real figures are in the device's own slider-overclocking
@@ -68,11 +100,29 @@ when only one (`imp_3`) was actually too fast for the device; the other eleven w
 for accents. It was deleted. The Handy 1 variant survives because there the *median* transition
 across the whole set (363 u/s) sits at the cap.
 
+**A variant name must name a device, because a player picks it off their hardware (§149).** These
+folders were `detailed` and `handy1` for most of this project's life: one named a quality tier and
+the other a device, and the first one told a player nothing about whether it was for them. They are
+now `handy2pro`, `handy2` and `handy1`. The rename has a cost that is worth knowing before doing it
+again — the variant is a *folder name*, so it lives in every player's `EdiConfig.json`, and a config
+still naming the old folder finds nothing. Worse, an overlay install keeps the old folder: it still
+resolves, so the device plays a gallery nobody maintains and nothing says a word. `deploy.py` now
+reports a variant folder in an install that the tree does not build, for exactly that reason.
+
+**A backwards timestamp is invisible to every check this project has (§149).** Three femboy-witch
+masters end `61128 ms` then `60000 ms` — a tail written out of order, past the row's own duration.
+`speedcheck.analyse` drops any `dt <= 0` pair *before* it measures anything, so no speed, spacing or
+polarity check has ever had an opinion about them, and packages are not in `speedcheck` at all. A
+slew limiter is where it finally showed up, because a negative `dt` inverts the clamp and drags
+every position after it — which read as a *variant with more range than its master*. `variants.py`
+passes such a pair through untouched and reports the file: the master is what needs fixing, and a
+limiter quietly repairing its input would have hidden the defect a third time.
+
 **Per-device versions are a variant, not a setting.** Edi picks the script by variant and the
 variant is the *folder name*, so `Gallery/handy1/` needs no mod change — a device's `Variant` in
 `EdiConfig.json` selects it. Generate by **slew limiting, never global scaling**: clip each
-transition to `limit * dt`, so slow strokes keep their full range and only the impossible ones
-shorten. And limit **cyclically** — every row is `Loop=true` and `InproveLoopDetection` snaps the
+transition to what the device can cover in the time available, so slow strokes keep their full
+range and only the impossible ones shorten. And limit **cyclically** — every row is `Loop=true` and `InproveLoopDetection` snaps the
 last action onto the first, so a start-to-end limiter leaves the wrap as an unclipped jump.
 `code/speedcheck.py`, `code/variants.py`.
 
