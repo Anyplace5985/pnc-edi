@@ -9840,6 +9840,34 @@ has spent forty entries arguing against.
 
 No code changed and no check can see any of this. `check.py` 9/9.
 
+## 144. The dead zombie knob, deleted
+
+The last item standing between the tree and a release build, and the smallest: what to do about
+`ZombieGrappleChargeRate`. §138 established that it reaches nothing — `ApplyZombieGrappleTuning` is
+a postfix on `ChargingEnemyAI.Start` that then requires `key == "zombie"`, and no zombie prefab is a
+`ChargingEnemyAI` in 0.2.1, 0.3.1 or 0.3.2. The zombies are plain `EnemyAI`, so they neither charge
+nor grapple, and the intersection the patch is gated on has been empty since before this mod was
+recovered. §138 left three ways open: delete it, repoint it at the clinging family, or keep it and
+say what it is.
+
+**Deleted.** Repointing it at the imps and the goonshroom is a gameplay change rather than a repair,
+and it would be a gameplay change written on release eve with no play behind it. Keeping it means
+shipping a config surface with an entry that documents its own inertness — a knob that lies by
+existing, which the next person has to re-derive the emptiness of before they can trust the rest of
+the section. What came out: the `ApplyZombieGrappleTuning` method, the `ChargingEnemyAI.Start`
+postfix that existed only to call it (its whole body was that one call), `CfgZombieGrappleChargeRate`
+and its `Bind`, and the entry in `com.edi.pnc.cfg`. Nothing else referenced any of them — no test, no
+tool, no other plugin. An existing install that keeps its own `com.edi.pnc.cfg` is left with the
+line as an orphaned entry, which BepInEx preserves rather than strips — harmless, read by nothing,
+and gone the moment the file is replaced by a deploy or a fresh extract.
+
+The `SpinningEnemyAI.Start` postfix beside it is untouched and still does the gargoyle and plantasha
+tuning; the deletion takes the mod's only patch on `ChargingEnemyAI.Start` with it, which
+`patchaudit` is content with because a patch that is not there is not an unregistered one.
+
+`check.py` 9/9, `dotnet test` clean, both installs deployed and current. The tree is now at the point
+`release.py` was waiting for.
+
 ## Tried and reverted — do not redo
 
 - **Trimming loop seams.** 14 galleries end on a different position than they start.

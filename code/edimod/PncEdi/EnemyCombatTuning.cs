@@ -74,21 +74,6 @@ internal static class EnemyCombatTuning
 		}
 	}
 
-	internal static void ApplyZombieGrappleTuning(ChargingEnemyAI ai)
-	{
-		if (Plugin.GameplayTweaksEnabled && !(ai == null) && !(ResolveEnemyKey(ai.gameObject, ai.galleryEnemyID) != "zombie"))
-		{
-			float rate = Mathf.Max(1f, Plugin.CfgZombieGrappleChargeRate.Value);
-			if (!(rate <= 1.001f))
-			{
-				ai.chargeCooldown = Mathf.Max(1.8f, ai.chargeCooldown / rate);
-				Traverse traverse = Traverse.Create((object)ai);
-				float hitRange = traverse.Field("chargeHitRange").GetValue<float>();
-				traverse.Field("chargeHitRange").SetValue((object)Mathf.Min(2.15f, hitRange * (1f + (rate - 1f) * 0.5f)));
-			}
-		}
-	}
-
 	internal static void ApplySpinningEnemyTuningForKey(SpinningEnemyAI ai)
 	{
 		if (Plugin.GameplayTweaksEnabled && !(ai == null))
@@ -117,13 +102,6 @@ internal static class EnemyCombatTuning
 			return speed;
 		}
 		return speed * enemyProjectileSpeedMultiplier;
-	}
-
-	[HarmonyPatch(typeof(ChargingEnemyAI), "Start")]
-	[HarmonyPostfix]
-	private static void ChargingEnemyAI_Start_Postfix(ChargingEnemyAI __instance)
-	{
-		ApplyZombieGrappleTuning(__instance);
 	}
 
 	[HarmonyPatch(typeof(SpinningEnemyAI), "Start")]

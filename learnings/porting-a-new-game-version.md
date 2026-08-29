@@ -88,7 +88,9 @@ claim about the assets that nothing checks, and this one had been false since be
 recovered: `EnemyCombatTuning.ApplyZombieGrappleTuning` is a postfix on `ChargingEnemyAI.Start` that
 then requires `key == "zombie"`, an intersection that has always been empty. **A patch gated on both
 a component and a key is dead the moment those two stop overlapping, and it logs nothing** — the
-same silent shape as §109's unregistered patch class.
+same silent shape as §109's unregistered patch class. The knob and its patch were deleted in §144;
+what stays is the shape, because the next config description that names a component is a claim about
+the assets in exactly the same way.
 
 **The reverse of a closed item: a new vanilla mechanic can quietly shrink the reach of a config
 knob.** 0.3.2's `ShouldCharge()` tests `regrappleCooldown` *before* `chargeCooldown` and never skips

@@ -58,7 +58,6 @@ public partial class Plugin
 	internal static ConfigEntry<float> CfgGoonShroomGrappleReinforcementRamp;
 	internal static ConfigEntry<int> CfgGoonShroomGrappleReinforcementCeiling;
 	internal static ConfigEntry<float> CfgNunGrabPreferenceMultiplier;
-	internal static ConfigEntry<float> CfgZombieGrappleChargeRate;
 	internal static ConfigEntry<float> CfgGargoyleGrabRate;
 	internal static ConfigEntry<float> CfgGargoyleShootRate;
 	internal static ConfigEntry<float> CfgGargoyleSpinRangeScale;
@@ -393,7 +392,6 @@ public partial class Plugin
 		CfgEndGrabImmunitySeconds = Config.Bind<float>("Gameplay", "EndGrabImmunitySeconds", 4f, "Seconds the player cannot be grabbed again after a grab ends (Q key or normal EndGrab).");
 		CfgEndGrabEnemyCooldownSeconds = Config.Bind<float>("Gameplay", "EndGrabEnemyCooldownSeconds", 0f, "Extra grab cooldown forced onto the enemy when a grab ends while it is still alive, as a floor under the enemy's own grabCooldown. 0 leaves vanilla's timing alone, which is the default: the mod protects what is on screen rather than blocking the re-grab (§122). Raise it to hold an enemy off for longer than the game would.");
 		CfgNunGrabPreferenceMultiplier = Config.Bind<float>("Gameplay", "NunGrabPreferenceMultiplier", 1.45f, "Ghoul/nun (EnemyAI) grab tuning. Higher = shorter grab cooldown, longer melee cooldown, and in grab range they wait for grab instead of punching. 1 = vanilla. Default 1.45 is clearly weaker than old 2.5.");
-		CfgZombieGrappleChargeRate = Config.Bind<float>("Gameplay", "ZombieGrappleChargeRate", 1.35f, "INERT on game 0.3.2: this wants an enemy that is both a ChargingEnemyAI and keyed 'zombie', and no such prefab exists - the zombies are plain EnemyAI (§138). Kept until it is decided whether to delete it or repoint it at the clinging family. When it did apply: charge frequency, 1.35 = ~35% shorter cooldown, 1 = vanilla.");
 		CfgGargoyleGrabRate = Config.Bind<float>("Gameplay", "GargoyleGrabRate", 1.28f, "Gargoyle (SpinningEnemyAI) grab attempt rate. 1.28 = clearly more grab tries. 1 = vanilla.");
 		CfgGargoyleShootRate = Config.Bind<float>("Gameplay", "GargoyleShootRate", 1.35f, "Gargoyle ranged shot rate. 1.35 = clearly more shots. 1 = vanilla.");
 		CfgGargoyleSpinRangeScale = Config.Bind<float>("Gameplay", "GargoyleSpinRangeScale", 0.8f, "Gargoyle spin engagement radius scale (<1 = smaller spin zone, more ranged play). 0.8 = noticeable shift. 1 = vanilla.");
