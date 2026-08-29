@@ -21,6 +21,13 @@
 !/.gitignore
 !/.gitattributes
 !/*.md
+# TODO.md is private working notes, not a document about the mod. It is one person's handoff to
+# their next session - half-formed diagnoses, what is annoying, what is not worth doing - and it
+# is the one file here written with no reader in mind. Untracked so it can stay that way: a
+# public TODO is either curated (which costs the honesty that makes it useful) or it is a
+# to-do list published to strangers. The documents that reference it now check whether one
+# exists rather than assuming it does.
+/TODO.md
 !/learnings/
 !/code/
 !/BepInEx/

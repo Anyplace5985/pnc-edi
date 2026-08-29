@@ -106,15 +106,17 @@ chmods instead. BepInEx's own `run_bepinex.sh` has the same trap, which is why t
 happen before handing over to it. **Test on a fresh unpack, not the working directory** — the bit
 had been set by hand here months ago, so nothing local could ever have shown this.
 
-**`TODO.md` regrows unless closing an item means deleting it.** §70 cut it from 1017 lines to
+**`TODO.md` regrows unless closing an item means deleting it.** (It is untracked since §146 —
+private working notes — so check whether the working tree has one before reaching for it. The rule
+below is about the file when it exists.) §70 cut it from 1017 lines to
 126; by §136 it was back to 1207, and almost none of that was open work — it was sixty sessions of
 *closed* items kept in place with a strikethrough and a "confirmed in play" note, plus a handoff per
 session and a standing-guidance section that had become a second copy of `learnings/`. The drift is
 one habit: a session finishes something and records the outcome where the work was written down.
 The rule that keeps the file its own size is that **the four documents each hold one thing** — open
 work in `TODO.md`, the narrative in `CHANGELOG.md`, the rules in `learnings/`, the map and the
-commands in `PROJECT.md` and `code/README.md` — so closing an item means deleting it from `TODO.md`
-once the `§n` entry exists, and one handoff at a time. A generalised rule written into a CHANGELOG
+commands in `PROJECT.md`, `README.md` and `code/README.md` — so closing an item means deleting it
+from `TODO.md` once the `§n` entry exists, and one handoff at a time. A generalised rule written into a CHANGELOG
 entry has the same problem in the other direction: it is invisible to the grep that `CLAUDE.md`
 asks for, because nobody greps a 9,000-line narrative for a rule. State it in `learnings/` and let
 the entry point at it (§137).

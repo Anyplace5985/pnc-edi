@@ -123,7 +123,6 @@ config with an undeclared local tweak in it. Custom-enemy packages are their own
 | **[learnings/README.md](learnings/README.md)** | Everything learned the hard way, indexed by topic. Read before doing anything non-obvious — and grep it for a symptom before diagnosing one. |
 | **[code/README.md](code/README.md)** | Build, release and tool reference for the `code/` tree. |
 | **[CHANGELOG.md](CHANGELOG.md)** | The narrative record, `§1`–`§144`: every change, why, and what was tried and rejected. |
-| **[TODO.md](TODO.md)** | Only what is still open. |
 | **[CREDITS.md](CREDITS.md)** | Whose work this is built on. |
 
 ## What is not in this repo
@@ -136,6 +135,9 @@ Deliberately, and each for its own reason:
   cached under `code/dist/cache/`.
 - **`Edi/EdiConfig.json`.** Its device names embed per-user Handy connection keys, which are
   effectively credentials for controlling that hardware.
+- **`TODO.md`.** Private working notes — one person's handoff to their next session, written with
+  no reader in mind. The other documents check whether one exists rather than assuming it does; the
+  newest `§n` entry in `CHANGELOG.md` is the public answer to "where is this up to".
 - **Custom-enemy package media.** A package's *text* — manifest, funscripts, `SOURCE.txt` — is
   tracked, because the funscripts are ours and the manifest is where a package's tuning lives. The
   art, video and audio are third-party, and git history is permanent. A fresh clone therefore has a

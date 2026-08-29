@@ -34,7 +34,10 @@ Then, depending on what you are doing:
 - **`README.md`** — the public front door, and the only document written for someone who owns none
   of this context: requirements, setup, build, deploy, check, release. It is what a stranger reads
   first, so when any of those commands or prerequisites change, it changes too.
-- **`TODO.md`** — only what is still open. Start here to pick up work.
+- **`TODO.md`, if the working tree has one** — untracked private working notes, so a clone
+  does not carry it and a session cannot assume it is there. **Check first**; if it exists it
+  holds only what is still open, and it is where to start to pick up work. If it does not,
+  `CHANGELOG.md`'s newest `§n` entry is the most recent state of play.
 
   **And when you finish something, delete it from here.** Not a strikethrough, not a "confirmed in
   play" note under the old text — a deletion, once the `§n` entry exists, because that entry is the

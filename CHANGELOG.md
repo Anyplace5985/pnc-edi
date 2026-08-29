@@ -4,7 +4,9 @@ Work from 2026-08-15 (§1–§8: scripts, config, source recovery) and 2026-08-1
 gameplay and device-dispatch fixes). Only changes that are **still in effect** are listed;
 things tried and reverted are noted at the bottom so they aren't re-attempted.
 
-`TODO.md` is the handoff document — start there, not here.
+If the working tree has a `TODO.md`, that is the handoff document — start there, not here. It is
+untracked private working notes, so a clone does not carry one; without it, the newest `§n`
+entry below is the most recent state of play.
 
 This repo is the mod alone; the game installs it is deployed into are outside it, reached
 through the `game-windows` / `game-linux` symlinks (§62). There is no mirrored copy of anything —
@@ -9916,6 +9918,34 @@ Linux build names its data folder after the version; and `game-linux` is optiona
 "where to look for what" table and `CLAUDE.md`'s document list both gained a row for it — a public
 README that drifts is worse than none, so the obligation to keep it current is written where
 sessions read.
+
+
+## 146. `TODO.md` untracked, and the documents that assumed it
+
+`TODO.md` was tracked, and it is the one file in this repo written with no reader in mind — one
+person's handoff to their next session, carrying half-formed diagnoses, what is annoying, and what
+is not worth doing. Publishing it makes it one of two things: curated, which costs exactly the
+honesty that makes it useful, or a private to-do list handed to strangers. Untracked, it stays what
+it is.
+
+`.gitignore` gains `/TODO.md` under the `!/*.md` opt-in that had been sweeping it in, with the
+reason written beside it, and §145's amend trick does not apply — the file is in all three commits
+by now, so removing it from history took an `--index-filter` over the branch rather than an amend.
+Still the cheap side of the line, and for the same reason: nothing is pushed.
+
+**The interesting half was the documents.** Four of them named `TODO.md` as a thing that is there:
+`CLAUDE.md` ("start here to pick up work"), `PROJECT.md`'s where-to-look table, `CHANGELOG.md`'s own
+header ("start there, not here"), and `README.md`'s read-next table, which after §145 was a link a
+stranger could not follow. Each now says **check whether the working tree has one** and what to do
+when it does not — the newest `§n` entry here is the state of play, which is true whether or not a
+`TODO.md` exists. `learnings/working-practice.md`'s rule about the file regrowing is unchanged and
+still worth having; it just no longer assumes the file.
+
+The general shape, which is the part worth keeping: **a document that is untracked cannot be
+referenced as though it were present.** The reference has to carry its own fallback, or the first
+person to clone the repo hits a dead end that reads as a broken repo rather than a private file.
+`README.md` says the absence is deliberate, in the same list as the game, the DLLs and the device
+keys.
 
 
 ## Tried and reverted — do not redo
