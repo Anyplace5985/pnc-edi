@@ -47,9 +47,27 @@ public static class ClassHeatMultipliers
 		return 100f * playerClass.heatCapacityMultiplier + playerClass.bonusHeatCapacity + armorHeatBonus;
 	}
 
+	/// <summary>
+	/// Put the multiplier and the armour bonus together the way the *runtime* does, which is not
+	/// the way they read on paper (§148, confirmed in play §158).
+	///
+	/// `PlayerStats.ApplyStatModifiers` multiplies the class base, and our
+	/// <see cref="ApplyToPlayerHeat"/> rides on that; only afterwards does
+	/// `ArmorData.ApplyStatModifiers` *add* its heat bonus. So the bonus is never multiplied, and
+	/// a display that multiplies it promises capacity the run cannot deliver - the shipped x2 mage
+	/// showed 300 and played at 275, the 25 points of armour being counted twice.
+	///
+	/// Pure and free of `PlayerClass` so `code/tests` can check the arithmetic without a Unity
+	/// object.
+	/// </summary>
+	public static float ScaleCapacity(float vanillaCapacity, float armorHeatBonus, float multiplier)
+	{
+		return vanillaCapacity * multiplier + armorHeatBonus;
+	}
+
 	public static float GetEffectiveHeatCapacity(PlayerClass playerClass, float armorHeatBonus = 0f)
 	{
-		return GetVanillaHeatCapacity(playerClass, armorHeatBonus) * GetMultiplier(playerClass?.className);
+		return ScaleCapacity(GetVanillaHeatCapacity(playerClass), armorHeatBonus, GetMultiplier(playerClass?.className));
 	}
 
 	public static void ApplyToPlayerHeat(PlayerClass playerClass, PlayerStats playerStats)

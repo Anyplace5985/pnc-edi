@@ -190,4 +190,20 @@ public class ClassHeatMultiplierTests
 		Fixtures.Configure(classHeat: "Rogue=1.5");
 		Assert.Equal(1f, ClassHeatMultipliers.GetMultiplier(className));
 	}
+
+	[Fact]
+	public void ArmourBonusIsAddedAfterTheMultiplier()
+	{
+		// The mage of §148: base 125, armour +25, x2. The runtime multiplies the base and adds
+		// the armour afterwards, so it plays at 275 - not the 300 a multiply-everything reading
+		// gives, which is what the class screen used to print.
+		Assert.Equal(275f, ClassHeatMultipliers.ScaleCapacity(125f, 25f, 2f));
+	}
+
+	[Fact]
+	public void WithoutArmourTheMultiplierIsTheWholeStory()
+	{
+		Assert.Equal(250f, ClassHeatMultipliers.ScaleCapacity(125f, 0f, 2f));
+		Assert.Equal(150f, ClassHeatMultipliers.ScaleCapacity(125f, 25f, 1f));
+	}
 }

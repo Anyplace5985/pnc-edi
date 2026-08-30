@@ -10981,6 +10981,38 @@ The masters' `handy1` copies needed the same edit by hand for the same reason §
 authored against the device rather than limited from the master. That is now the second defect to
 be fixed twice in two places, which is what makes it a `TODO.md` item rather than a footnote.
 
+## 162. The class-selection screen made honest: profile-gated, and armour counted once
+
+Two display defects on one screen, both closed in `ClassSelectionHooks.cs`, both landing before
+2.6.0 is posted rather than after. Neither changes what a run plays at — the runtime was right
+about the numbers all along and the screen was not.
+
+**The armour bonus was multiplied where the runtime adds it (§148, confirmed in play §158).**
+`PlayerStats.ApplyStatModifiers` multiplies the class base and `ClassHeatMultipliers.ApplyToPlayerHeat`
+rides on that; only afterwards does `ArmorData.ApplyStatModifiers` *add* its heat bonus. So with
+the shipped ×2 the mage's 25 armour points were counted twice on the screen — 300 shown against
+275 played, and the heat locks counted off the real figure. `GetEffectiveHeatCapacity` now defers
+to a new pure `ScaleCapacity(vanilla, armour, multiplier)` = `vanilla * multiplier + armour`,
+which is the runtime's own order. **Pure and free of `PlayerClass` on purpose**: the capacity
+helpers take a Unity `ScriptableObject` that cannot be built in a test host, so the arithmetic
+that was wrong is now the one part `code/tests` can reach. Two tests, and the mutation check
+(`(v + a) * m`) fails the mage case as it should. 114 tests, up from 112.
+
+**And the screen ignored the profile.** §158's audit found the three postfixes calling
+`GetEffectiveHeatCapacity`/`GetMultiplier` with no `UsesClassHeatScaling` check, unlike
+`ApplyToPlayerHeat`, which is gated — so `Vanilla` and `GodMode` advertised a scaled capacity
+neither of them will ever write onto the player. The gate has to sit in the hook body rather than
+in whether the hook is installed: every gameplay patch stays installed under every profile so a
+mid-run switch has no half-patched state to land in (`GameplayProfiles`' design note). One private
+`DisplayHeatCapacity` now picks `GetEffectiveHeatCapacity` or the unmultiplied
+`GetVanillaHeatCapacity` per profile, both bar and number read it, and the "Max Heat (EDI ×N)"
+line returns early when the profile does not scale.
+
+`check.py` 9/9 fast, both installs deployed. The alternative on the armour item — re-applying the
+multiplier after equipment so the runtime matches the old display — was rejected: it is a gameplay
+change, it would need play, and it makes armour worth double on a scaled class for no reason
+anyone asked for.
+
 ## Tried and reverted — do not redo
 
 - **Trimming loop seams.** 14 galleries end on a different position than they start.

@@ -13,6 +13,23 @@ public static class ClassSelectionHooks
 		return Traverse.Create((object)ui).Method("GetArmorHeatBonus", new object[1] { playerClass }).GetValue<float>();
 	}
 
+	/// <summary>
+	/// What this class will actually play at, under the profile in force.
+	///
+	/// The patches stay installed under every profile (that is `GameplayProfiles`' whole design -
+	/// no patch is added or removed mid-run), so the gate has to live here rather than in whether
+	/// the hook exists. Without it the screen shows a multiplied number under `Vanilla` and
+	/// `GodMode`, neither of which ever calls `ApplyToPlayerHeat` - a figure that cannot happen in
+	/// that run (§158).
+	/// </summary>
+	private static float DisplayHeatCapacity(ClassSelectionUI ui, PlayerClass playerClass)
+	{
+		float armorHeatBonus = GetArmorHeatBonus(ui, playerClass);
+		return GameplayProfiles.UsesClassHeatScaling
+			? ClassHeatMultipliers.GetEffectiveHeatCapacity(playerClass, armorHeatBonus)
+			: ClassHeatMultipliers.GetVanillaHeatCapacity(playerClass, armorHeatBonus);
+	}
+
 	[HarmonyPatch(typeof(ClassSelectionUI), "CalculateBarNormalizationValues")]
 	[HarmonyPostfix]
 	public static void CalculateBarNormalizationValues_Postfix(ClassSelectionUI __instance)
@@ -28,8 +45,7 @@ public static class ClassSelectionHooks
 		{
 			if (!(playerClass == null))
 			{
-				float armorHeatBonus = GetArmorHeatBonus(__instance, playerClass);
-				float effectiveHeatCapacity = ClassHeatMultipliers.GetEffectiveHeatCapacity(playerClass, armorHeatBonus);
+				float effectiveHeatCapacity = DisplayHeatCapacity(__instance, playerClass);
 				if (effectiveHeatCapacity > maxCapacity)
 				{
 					maxCapacity = effectiveHeatCapacity;
@@ -45,8 +61,7 @@ public static class ClassSelectionHooks
 	{
 		if (!(playerClass == null))
 		{
-			float armorHeatBonus = GetArmorHeatBonus(__instance, playerClass);
-			float effectiveHeatCapacity = ClassHeatMultipliers.GetEffectiveHeatCapacity(playerClass, armorHeatBonus);
+			float effectiveHeatCapacity = DisplayHeatCapacity(__instance, playerClass);
 			Traverse traverse = Traverse.Create((object)__instance);
 			float maxEffectiveHeat = traverse.Field("maxEffectiveHeat").GetValue<float>();
 			Image heatBarFill = traverse.Field("heatBarFill").GetValue<Image>();
@@ -78,7 +93,7 @@ public static class ClassSelectionHooks
 
 	private static void AppendHeatModLine(PlayerClass playerClass, ref string stats)
 	{
-		if (!(playerClass == null))
+		if (!(playerClass == null) && GameplayProfiles.UsesClassHeatScaling)
 		{
 			float multiplier = ClassHeatMultipliers.GetMultiplier(playerClass.className);
 			if (!(multiplier <= 1.0001f))
