@@ -10880,6 +10880,18 @@ twice. `TODO.md` carries both.
 
 No code changed this session; nothing to build, test or deploy.
 
+## 159. The 2.6.0 release build, and WebM package video confirmed on Windows
+
+`check.py --full` ran 13/14, `deploy` the one failure — `--check` reported `game-linux: would
+change 1 file(s)` with no `--verbose` to say which. `python3 code/deploy.py` wrote it; `check.py
+--full` then ran 14/14. `python3 code/release.py` built
+`dist/PNC0.3.2-PncEdi-2.6.0.zip`, 89.8 MB, sha256
+`2230f0601a9c004677d7027bcafc896b5c0af2fa50dee84efd57c3da5b2f583e`.
+
+The open question from the §158 handoff — whether the archive's WebM-converted package videos play
+on Windows, only ever run on Linux before now — is answered: they do. Nothing else about the
+release changed; §152-§158 is what ships as 2.6.0.
+
 ## Tried and reverted — do not redo
 
 - **Trimming loop seams.** 14 galleries end on a different position than they start.
