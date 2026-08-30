@@ -676,8 +676,15 @@ cover up to `min(hard × dt, soft × dt + bucket)`. A script that has been idlin
 bucket on one accent at the hard cap; a script already running flat out has an empty bucket and is
 held at the soft cap for every further transition. 20 units is about 0.2 s of accent before the
 soft cap takes over — a snap rather than a section. The result satisfies the guide's contract
-exactly: `speedcheck --variant handy2` reports **0 rows over 600 by median and 0 transitions over
-700**.
+exactly: across the main gallery, `speedcheck --variant handy2` reports **0 rows over 600 by median
+and 0 transitions over 700**.
+
+**Since §160 that run also lists the custom-enemy packages**, which are held to the same caps by
+the same limiter and are reported in the same table under a `<package>/<row>` label. One package
+row does cross the hard cap there — `femboy-witch/femboy_witch_aura_4_b`, on a single 2 ms segment
+at the very end of its 60 s loop. That is not the limiter failing: positions are integers, so a
+2 ms gap cannot express anything below 500 u/s, and no main-gallery row has a gap short enough to
+meet it. See `TODO.md` for what that end-of-loop segment is.
 
 **The guide's next row up, "The Handy 2 Overclocked" (700/800), is deliberately not what this
 folder uses.** Overclocking is a 2 Pro feature, so that row is most likely describing the same

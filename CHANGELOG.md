@@ -10892,6 +10892,95 @@ The open question from the §158 handoff — whether the archive's WebM-converte
 on Windows, only ever run on Linux before now — is answered: they do. Nothing else about the
 release changed; §152-§158 is what ships as 2.6.0.
 
+## 160. Self-contained custom-enemy packages, investigated; `speedcheck` now walks package scripts
+
+`TODO.md` carried "each custom enemy should carry everything it needs inside its own directory and
+ship as its own zip", raised with no investigation behind it and a note not to start without one.
+This is the investigation. Read `release.py`'s `custom_enemy_files` / `custom_enemy_gallery` /
+`build_package`, `deploy.py`'s `payload`, the plugin's `SyncFunscripts` / `UpsertDefinitions` and
+its per-package config binds, and `variants.py`'s `emit_packages`.
+
+**Most of the idea already works.** The package directory holds the manifest, the art, the audio,
+the video, the funscripts for all three variants and its `SOURCE.txt`, and nothing outside it names
+a package — no entry in `com.edi.pnc.cfg`, no row in the repo's `Definitions.csv`, no script in
+`Edi/Gallery/`. The per-package enable switch and spawn-weight override are *generated* from the
+manifest at load (`CustomEnemies.cs:187`/`:193`, `WallPictureTraps.cs:141`), so a package defines
+its own settings and the cfg file is only where BepInEx persists a player's overrides. And the
+per-package zip has existed since the framework shipped: `release.py --package <name>|all`.
+
+Three things are genuinely not colocated, and they are of very different sizes. **Behaviour is
+code** — a manifest parametrises one of the two behaviours compiled into `PncCustomEnemies.dll`,
+and shipping a new one means loading an assembly out of a content directory, which is a design
+change rather than a cleanup. **The runtime gallery cannot be colocated at all**: Edi reads one
+gallery, so a package's scripts must be copied into `Edi/Gallery/<variant>/` and its rows merged
+into `Definitions.csv`, which is why both `deploy.py` and the mod do it and why §129 happened.
+**Config persistence is the only small one** — one shared `com.edi.pnc.customenemies.cfg` means
+deleting a package leaves its settings behind; a per-package `ConfigFile` fixes that at the price
+of a migration and of everyone's overrides resetting without one. Not worth it at two packages.
+
+**What the investigation actually turned up was a hole in the checks, and that is what got fixed.**
+`speedcheck.py` walked `Definitions.csv`, which has no package rows, so no package script had ever
+been checked against a device ceiling — including the packages' `handy1/` folders, which
+`variants.py` deliberately does not regenerate (`emit_packages` emits `handy2` alone) because they
+were authored by hand. `package_rows` now walks `BepInEx/custom-enemies/*/funscripts/<variant>/`
+and lists those scripts in the same table under a `<package>/<row>` label, with a line naming any
+package that has no folder for the variant at all — Edi picks a variant by folder name, so that
+case is silence with no error anywhere (§149). The scene column widened to 38 to fit the labels.
+`speedcheck` is a `report` step in `check.py`, so this changes what a human reads and cannot fail a
+run.
+
+It found something immediately. **In the hand-authored `handy1` folder, seven witch scripts each
+exceed the Handy 1 cap exactly once, and every one of those segments is in the last 105 ms of a
+60 s loop** — `femboy_witch_aura_4_b` ends on a 40-unit jump across 2 ms (20000 u/s), and
+`_0_c`/`_3_c` on 42 units across 15 ms. The same tail is in the master: 75 units across 2 ms,
+37500 u/s, which is where the master's own peak column comes from. Nothing is out of order any
+more (`variants.py`'s `nonmonotonic` check is clean and every file ends on 60000), so this is what
+the earlier truncation left behind — the final point pulled back onto the loop boundary with its
+position kept, compressing the last segment instead of dropping it. The bodies are otherwise clean:
+outside that tail the `handy1` witch scripts have no transition over 364 u/s at all. Fixed in §161.
+
+## 161. The witch loops' seams, repaired: an artefact is dropped, a slow stroke is clipped
+
+§160's finding, measured and fixed. Every witch aura script ends on a point whose position equals
+the first point's — the loop seam Edi's `InproveLoopDetection` wants — and §156's truncation left
+some of them with an unreachable segment into it. On a `Loop=true` row that segment runs on every
+cycle, so it is not a one-off blemish at the end of a minute: it is a jerk once a minute, forever.
+**This is not "trimming loop seams" in the rejected list below.** That was moving a row's ending to
+close a seam and it cost real content; here the seam point itself is untouched and what goes is a
+point the device cannot reach it from.
+
+**Two faults hid behind the one symptom, and they want opposite remedies.** Reading the tails
+rather than the summary is what separated them:
+
+- **A truncation artefact** — a point sitting 2–15 ms before the seam, holding a position 40–75
+  units away from it. There is no time for any stroke there and the loop's own gaps are 15–150 ms,
+  so nothing that close to the seam is authored motion. `femboy_witch_aura_4_b`'s was `59998@100`
+  against a seam of `60000@25`: 37500 u/s in the master. **Dropped**, in the master and in the
+  hand-authored `handy1` copy.
+- **A stroke the device is merely too slow for** — an ordinary pre-seam point 75–105 ms out, legal
+  on a 2 Pro and over the Handy 1's 364 u/s. Dropping one of those throws away real motion, so the
+  **position is clipped back towards the seam** until the segment is reachable, which is what
+  `variants.py`'s slew limiter does everywhere else. Four `handy1` scripts, 2–31 units each.
+
+Two details are worth keeping. **Clip with a floor, never a round**: positions are integers, and
+rounding up leaves the segment a unit or two over the cap — which is exactly how the generated
+`handy2` still read 1000 u/s at the seam before the master was fixed, 2 units across 2 ms. And
+**clip backwards, not once**: pulling a position towards the seam lengthens the segment *into* it,
+so one clip can push the fault a point earlier. `femboy_witch_aura_3_c` needed two.
+
+Timing was never moved and nothing outside the last 132 ms of any file was touched. Ten scripts
+changed across the two hand-owned variants (`handy2pro` ×3, `handy1` ×7); `variants.py --write`
+then regenerated the packages' `handy2`, which changed three files and left the main gallery
+byte-identical. **`speedcheck` now reads clean where it did not**: `handy1` 7 rows over the Handy 1
+cap → **0**, `handy2` 1 row over the guide's hard 700 → **0** and 1 over the 2 Pro OC ceiling →
+**0**. The master's remaining over-cap rows are its buzz sections, which are authored that way and
+are not this defect. `check.py --full` 14/14, both installs deployed.
+
+The masters' `handy1` copies needed the same edit by hand for the same reason §156 did:
+`variants.py`'s `emit_packages` generates a package's `handy2` alone, because its `handy1` was
+authored against the device rather than limited from the master. That is now the second defect to
+be fixed twice in two places, which is what makes it a `TODO.md` item rather than a footnote.
+
 ## Tried and reverted — do not redo
 
 - **Trimming loop seams.** 14 galleries end on a different position than they start.

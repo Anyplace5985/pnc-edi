@@ -87,6 +87,43 @@ def axis_files(tree, stem):
     return out
 
 
+def package_rows(variant):
+    """[(label, tree, stem)] for every custom-enemy package script in this variant, plus the
+    packages that have no folder for it at all.
+
+    A package carries its own gallery under `BepInEx/custom-enemies/<pkg>/funscripts/<variant>/`
+    and `deploy.py` copies it into `Edi/Gallery/<variant>/` - so a package script is played by the
+    same device under the same ceilings as any other row, but it is not in `Definitions.csv` on
+    this side and so was checked by nothing. `handy2` is the only package variant `variants.py`
+    generates (its `emit_packages`); `handy1` was authored by hand and no tool owns it, which is
+    the case this exists for.
+
+    The missing-folder list is the §149 trap: Edi picks a variant by folder name, so a device on
+    `handy1` finds nothing for a package that only ships `handy2pro` and plays silence for it -
+    no error anywhere.
+    """
+    root = os.path.join(ROOT, "BepInEx/custom-enemies")
+    rows, absent = [], []
+    if not os.path.isdir(root):
+        return rows, absent
+    known = {a.lower() for a in AXES if a != "default"}
+    for pkg in sorted(os.listdir(root)):
+        scripts = os.path.join(root, pkg, "funscripts")
+        if pkg == "_example" or not os.path.isdir(scripts):
+            continue
+        tree = os.path.join(scripts, variant)
+        if not os.path.isdir(tree):
+            absent.append(pkg)
+            continue
+        for f in sorted(glob.glob(os.path.join(tree, "*.funscript"))):
+            stem = os.path.basename(f)[:-len(".funscript")]
+            # `<row>.<axis>.funscript` is not a row of its own; axis_files finds it from the row.
+            if "." in stem and stem.rsplit(".", 1)[1].lower() in known:
+                continue
+            rows.append((f"{pkg}/{stem}", tree, stem))
+    return rows, absent
+
+
 def limit(dev):
     mm, mms = DEV[dev]
     return mms / mm * 100.0
@@ -135,20 +172,37 @@ def main():
                 continue
             (out if axis in LINEAR_AXES else extra).append(
                 (r["Name"] if axis == "default" else f"{r['Name']}.{axis}", axis, st))
+    # Package scripts are played on the same device under the same ceilings and are listed in the
+    # same table, prefixed by their package. See package_rows for why they are not in `rows`.
+    pkg_rows, pkg_absent = package_rows(variant)
+    for label, pkg_tree, stem in pkg_rows:
+        for axis, fp in axis_files(pkg_tree, stem):
+            st = analyse(json.load(open(fp, encoding="utf-8-sig"))["actions"])
+            if not st:
+                continue
+            (out if axis in LINEAR_AXES else extra).append(
+                (label if axis == "default" else f"{label}.{axis}", axis, st))
     out.sort(key=lambda x: -x[2]["peak"])
     print(f"variant: {variant}")
-    print(f"{'scene':<28}{'pts':>5}{'mingap':>7}{'<100ms':>7}{'peak u/s':>10}{'p95':>7}"
+    if pkg_rows:
+        print(f"custom-enemy packages: {len(pkg_rows)} script(s) from "
+              f"{len({l.split('/')[0] for l, _, _ in pkg_rows})} package(s)")
+    if pkg_absent:
+        # Not a speed problem, but it is silence on this variant and nothing else reports it.
+        print(f"NO {variant}/ FOLDER: {', '.join(pkg_absent)} - a device on this variant plays "
+              f"nothing for them")
+    print(f"{'scene':<38}{'pts':>5}{'mingap':>7}{'<100ms':>7}{'peak u/s':>10}{'p95':>7}"
           f"{'>H1':>5}{'>Proc':>7}")
     for n, axis, s in out:
-        print(f"{n:<28}{s['n']:>5}{s['mingap']:>7}{s['short']:>7}{s['peak']:>10.0f}{s['p95']:>7.0f}"
+        print(f"{n:<38}{s['n']:>5}{s['mingap']:>7}{s['short']:>7}{s['peak']:>10.0f}{s['p95']:>7.0f}"
               f"{s['over']['handy1']:>5}{s['over']['handy2pro_oc']:>7}")
     if extra:
         # A degrees-per-second axis has no stroke length, so the mm/s ceilings do not apply and are
         # not printed. Point spacing still does: every device averages away points it cannot reach.
         print(f"\nnon-linear axes ({len(extra)}) - no stroke ceiling applies; spacing still does")
-        print(f"{'scene':<28}{'pts':>5}{'mingap':>7}{'<100ms':>7}{'peak u/s':>10}{'p95':>7}")
+        print(f"{'scene':<38}{'pts':>5}{'mingap':>7}{'<100ms':>7}{'peak u/s':>10}{'p95':>7}")
         for n, axis, s in sorted(extra, key=lambda x: -x[2]["peak"]):
-            print(f"{n:<28}{s['n']:>5}{s['mingap']:>7}{s['short']:>7}{s['peak']:>10.0f}"
+            print(f"{n:<38}{s['n']:>5}{s['mingap']:>7}{s['short']:>7}{s['peak']:>10.0f}"
                   f"{s['p95']:>7.0f}")
     print(f"\nlimits: handy1 {limit('handy1'):.0f} u/s | handy2pro {limit('handy2pro'):.0f}"
           f" | handy2pro max OC {limit('handy2pro_oc'):.0f}   (min gap {MIN_GAP} ms, tol x{TOL})")

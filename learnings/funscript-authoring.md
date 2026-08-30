@@ -4,7 +4,7 @@ Device speed limits, point spacing, range decisions, per-device variants, and wh
 
 **Read this when:** writing or editing a curve, or judging whether a script is playable on a given device
 
-**Keywords:** units per second, Handy, stroke length, 100ms, buzz, vibration, slew limit, variant, handy1, handy2, handy2pro, soft cap, hard cap, token bucket, budget, non-monotonic timestamps, backwards timestamp, provenance, ladder, shared grid, anchor
+**Keywords:** units per second, Handy, stroke length, 100ms, buzz, vibration, slew limit, variant, handy1, handy2, handy2pro, soft cap, hard cap, token bucket, budget, non-monotonic timestamps, backwards timestamp, loop seam, seam segment, truncation artefact, tail, package handy1, provenance, ladder, shared grid, anchor
 
 ---
 
@@ -131,6 +131,30 @@ every action with `at > endTime` from all three masters (verified each file's in
 already sat at exactly `endTime` with `pos` equal to the first action's — the honest wrap point was
 never missing) and found the identical defect duplicated in the package's hand-authored `handy1`
 copies, which `variants.py` does not regenerate for a package and so needed the same fix by hand.
+
+**Truncating a tail leaves a second defect at the seam, and the summary row will not show it
+(§161).** After §156 pulled every out-of-window action back, the witch loops ended `…59998@100,
+60000@25` — the seam point intact, and a point 2 ms before it holding a position 75 units away.
+`nonmonotonic` is clean, the file ends on its `endTime`, every check passes, and the device is
+asked for 37500 u/s on **every cycle of a looping row**. Read the *tails* of the files a truncation
+touched, not the pass/fail line.
+
+**Two faults live at a seam and they want opposite remedies.** A point within ~20 ms of the seam is
+a truncation artefact — no stroke fits there, and the loop's own gaps are an order of magnitude
+wider — so **drop it**. A point 75–105 ms out that is merely faster than the device is authored
+motion, so **clip its position back towards the seam** until the segment is reachable and keep the
+stroke. Getting these the wrong way round either deletes real content or leaves an unplayable jerk.
+Two mechanics, both learned the hard way: **floor the clip, never round it** — positions are
+integers, and rounding up leaves a segment a unit or two over the cap, which is how a *generated*
+`handy2` still read 1000 u/s at a seam — and **clip backwards until a segment is legal on its own**,
+because pulling one position towards the seam lengthens the segment into it and can push the fault a
+point earlier.
+
+**A package's `handy1` needs every such fix applied twice.** `variants.py`'s `emit_packages`
+generates a package's `handy2` from its master and *not* its `handy1`, which was authored against
+the device by hand. So a master-side repair does not reach it: §156 and §161 both had to make the
+same edit in both folders. Until that is resolved, treat "and the package's `handy1`" as part of
+any master edit.
 
 **Per-device versions are a variant, not a setting.** Edi picks the script by variant and the
 variant is the *folder name*, so `Gallery/handy1/` needs no mod change — a device's `Variant` in
