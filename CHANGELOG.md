@@ -11013,6 +11013,18 @@ multiplier after equipment so the runtime matches the old display — was reject
 change, it would need play, and it makes armour worth double on a scaled class for no reason
 anyone asked for.
 
+## 163. 2.6.0 rebuilt, so the version that ships is the version that was fixed
+
+§159 built the archive, then §161 repaired ten funscripts and §162 fixed the class screen. The
+version number does not move for either — nothing is posted yet, so 2.6.0 is still an unreleased
+number and rebuilding it is free, where bumping to 2.6.1 would publish a version history nobody
+outside this tree ever saw. `check.py --full` 14/14 (`speedcheck`'s remaining over-cap rows are the
+buzz sections §161 identified, not the seam defect), then `python3 code/release.py`:
+`dist/PNC0.3.2-PncEdi-2.6.0.zip`, 89.8 MB, 355 files, sha256
+`b8685af16e9fd05c425c7328ffee21ba6f48796fd34177c408956f4f3ac4a4a2` — replacing §159's
+`2230f060…`. Still Edi v1.0.4 + PR #15, for the reason `PROJECT.md` gives: the PR is merged but
+v1.0.4 is still the newest tag. What is left is posting it.
+
 ## Tried and reverted — do not redo
 
 - **Trimming loop seams.** 14 galleries end on a different position than they start.
