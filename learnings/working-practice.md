@@ -4,7 +4,7 @@ Process rules this project arrived at the hard way - about copies, defaults, dec
 
 **Read this when:** before adding a second copy of anything, changing a default, or trusting a note that says 'do not redo'
 
-**Keywords:** mirrored copy, generate, config default, decisions expire, deploy, release, permission bit, dedup key, decompile diff, rename pass
+**Keywords:** build last then publish the checksum, a document that ships cannot describe its own archive, mirrored copy, generate, config default, decisions expire, deploy, release, permission bit, dedup key, decompile diff, rename pass
 
 ---
 
@@ -81,6 +81,14 @@ Process rules this project arrived at the hard way - about copies, defaults, dec
   building an archive must not swap the binary you are mid-test on.
   **When a manual step has already cost you a session, hang it off the thing you cannot forget
   to do.**
+- **A document that ships inside the archive cannot describe that archive.** `CHANGELOG.md` goes
+  into every release as `PncEdi-CHANGELOG.txt`, so §163's habit of writing the zip's sha256 into
+  the entry that announces it is a loop: recording the number changes the file, which changes the
+  archive, which changes the number. The same trap catches any figure about the build — size, file
+  count, a "what is in this release" summary — written into a file the build packs. **Build last,
+  and publish the checksum the final `release.py` prints**, keeping it in `TODO.md`, which is
+  untracked and never shipped. A stale sha in a changelog is worse than none: it is a number a
+  reader can check and be misled by.
 - **A mirrored copy is a bug waiting for a deadline; generate it instead.** `mod/single-mod` was a
   hand-kept duplicate of the plugin, the config and both gallery trees, and six tools had to write
   to two paths to keep it true. Every accident it caused was the same shape — one side updated,

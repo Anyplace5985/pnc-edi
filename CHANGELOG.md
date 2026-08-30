@@ -11020,10 +11020,16 @@ version number does not move for either — nothing is posted yet, so 2.6.0 is s
 number and rebuilding it is free, where bumping to 2.6.1 would publish a version history nobody
 outside this tree ever saw. `check.py --full` 14/14 (`speedcheck`'s remaining over-cap rows are the
 buzz sections §161 identified, not the seam defect), then `python3 code/release.py`:
-`dist/PNC0.3.2-PncEdi-2.6.0.zip`, 89.8 MB, 355 files, sha256
-`b8685af16e9fd05c425c7328ffee21ba6f48796fd34177c408956f4f3ac4a4a2` — replacing §159's
-`2230f060…`. Still Edi v1.0.4 + PR #15, for the reason `PROJECT.md` gives: the PR is merged but
-v1.0.4 is still the newest tag. What is left is posting it.
+`dist/PNC0.3.2-PncEdi-2.6.0.zip`, 89.8 MB, 355 files. Still Edi v1.0.4 + PR #15, for the reason
+`PROJECT.md` gives: the PR is merged but v1.0.4 is still the newest tag. What is left is posting
+it.
+
+**No checksum is written here, and that is deliberate.** The archive ships this file as
+`PncEdi-CHANGELOG.txt`, so a sha recorded in it can only ever describe some *earlier* build —
+writing one starts a loop where each rebuild invalidates the number that documents it. **Build
+last, publish the checksum the final `release.py` prints**, and keep it in `TODO.md` (untracked,
+never shipped) until it is posted. §159's `2230f060…` was recorded before this was noticed and is
+superseded.
 
 ## 164. The two custom-enemy packaging decisions, taken
 
