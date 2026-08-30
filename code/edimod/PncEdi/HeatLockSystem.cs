@@ -331,7 +331,17 @@ internal static class HeatLockSystem
 		}
 	}
 
-	internal static void ResetForScene()
+	// "shop" is enough to catch every stage's own Stage{n}Shop, the same substring convention
+	// Plugin.IsMenuSceneName uses for "menu".
+	private static bool IsShopSceneName(string sceneName)
+	{
+		return !string.IsNullOrEmpty(sceneName) && sceneName.IndexOf("shop", StringComparison.OrdinalIgnoreCase) >= 0;
+	}
+
+	// sceneName is null for a mid-run profile switch (GameplayProfiles.OnProfileChanged), which
+	// clears the locks unconditionally - they belong to the outgoing ruleset regardless of what
+	// scene is on screen.
+	internal static void ResetForScene(string sceneName = null)
 	{
 		// One-time releases are one-time *per run*, not per launch. Nothing ever cleared
 		// these, so a diorama consumed in one run stayed consumed until the game was closed -
@@ -348,7 +358,24 @@ internal static class HeatLockSystem
 		_player = null;
 		_baseHealth = 0;
 		_baseHeat = 0f;
-		_locks = 0;
+		// A clamp armed just before this scene change is always discarded here rather than
+		// landed: a shop transition is exactly the case it exists to protect against (see
+		// RecordBaseHeat), and a non-shop transition is about to zero _locks outright below, which
+		// makes applying it first pointless.
+		if (_pendingClampTotalLocks >= 0)
+		{
+			Plugin.DBG("HEAT-LOCK", $"discarded a pending capacity-shrink clamp ({_locks} -> {_pendingClampTotalLocks}) at scene change");
+			_pendingClampTotalLocks = -1;
+		}
+		// The shop is a rest stop inside the current stage, not a new one: locks held on the way
+		// in have to survive it, or the exemption that pays them out from the Gravy service scene
+		// (CfgServiceSceneKeys) always finds an empty set - the scene change that puts you in the
+		// shop happens first, seconds before the service's own watchtime completes. The next real
+		// floor still clears them, because that transition is not a shop scene either way.
+		if (!IsShopSceneName(sceneName))
+		{
+			_locks = 0;
+		}
 		_adjustingHeat = false;
 		_adjustingHealth = false;
 		_healAccumulator = 0f;
@@ -381,6 +408,7 @@ internal static class HeatLockSystem
 			_player = Object.FindAnyObjectByType<PlayerStats>();
 			RecordBaseHealth(_player);
 		}
+		ConfirmPendingClamp();
 		TickPostCumGrace();
 		TraceGrabHeat();
 		TraceOverheatLatch();
@@ -440,21 +468,23 @@ internal static class HeatLockSystem
 				+ $"heat={_player.CurrentHeat:F1}/{_player.MaxHeat:F1} floor={minHeat:F1} locks={_locks}/{GetTotalLocks()}");
 		}
 
-		// The defect itself - but only once it has *held* for StuckLatchGraceSeconds. The predicate
-		// is true for one frame on every ordinary trip below the cap, between vanilla failing to
-		// clear the latch and `ClearOverheatAtLockFloor` clearing it: §139 logged five such lines,
-		// each cleared 4 ms later, which is the fix working rather than the defect. What was
-		// reported is a latch that *outlives* the heat that set it, so a line that cannot tell those
-		// apart is a fourth way to misread this instrument. Then once a second while it holds, with
-		// the duration on the line, so the log answers "how long" without a second reading.
-		if (latched && _player.CurrentHeat < _player.MaxHeat)
+		// The defect itself: latched *after heat has reached the lock floor*, not merely below the
+		// cap. Below-max-but-above-floor is the cum-cooldown drain running as designed - the latch
+		// is *supposed* to hold there, `ClearOverheatAtLockFloor` has not yet had its trigger, and
+		// the drain can take seconds. A dwell cannot tell that apart from the defect, because the
+		// defect is also "still true a while after the transition": three sessions read this
+		// instrument wrong that way in a row (§134, §138, §139's own dwell included). Gating on the
+		// floor instead means the line goes quiet for the whole drain and only fires on the thing
+		// nothing should be able to produce - vanilla's own clear runs the instant heat crosses back
+		// under it. `StuckLatchFloorEpsilon` absorbs float noise at that boundary, nothing more.
+		if (latched && _player.CurrentHeat <= minHeat + StuckLatchFloorEpsilon)
 		{
 			if (_stuckLatchSince <= 0f) _stuckLatchSince = Time.unscaledTime;
 			float held = Time.unscaledTime - _stuckLatchSince;
-			if (held >= StuckLatchGraceSeconds && Time.unscaledTime >= _nextStuckLatchReportAt)
+			if (Time.unscaledTime >= _nextStuckLatchReportAt)
 			{
 				_nextStuckLatchReportAt = Time.unscaledTime + 1f;
-				Plugin.DBG("OVERHEAT", "STUCK: disarmed with heat below the cap - "
+				Plugin.DBG("OVERHEAT", "STUCK: disarmed with heat at the lock floor - "
 					+ $"held={held:F1}s heat={_player.CurrentHeat:F1}/{_player.MaxHeat:F1} floor={minHeat:F1} "
 					+ $"canAttack={canAttack} locks={_locks}/{GetTotalLocks()}");
 			}
@@ -466,9 +496,8 @@ internal static class HeatLockSystem
 		}
 	}
 
-	// Long enough that the one-frame handoff below the cap never prints, short enough that a latch
-	// a player would notice always does.
-	private const float StuckLatchGraceSeconds = 0.5f;
+	// Float noise only, at the floor boundary - not a grace period. See TraceOverheatLatch.
+	private const float StuckLatchFloorEpsilon = 0.05f;
 
 	private static float _stuckLatchSince;
 	private static float _nextStuckLatchReportAt;
@@ -553,6 +582,23 @@ internal static class HeatLockSystem
 	// (§148). Not derivable from the source; both orderings are consistent with it.
 	internal static float BaseHeatForDiag => _baseHeat;
 
+	// A capacity-shrink clamp arms here but does not land until PendingClampConfirm - either
+	// applied by Tick once PendingClampConfirmSeconds pass with nothing to contradict it, or
+	// discarded by ResetForScene if a shop transition follows first. See the two call sites for
+	// why: the first attempt at this fix (§154) gated on "is this the first reading since a scene
+	// reset", which assumed the transient shop-entry reading arrived *after* ResetForScene had
+	// already zeroed _baseHeat. The log proved that wrong - the shop's SetMaxHeat(100) call, and
+	// this clamp, both fire *before* Plugin.OnSceneChanged's own line, while _baseHeat still holds
+	// the previous floor's real value, so "first reading since reset" was never true here. Worse,
+	// the shop never sends a correcting SetMaxHeat afterward - MaxHeat genuinely stays 100 for the
+	// whole visit - so no amount of waiting for a "second, truer reading" would ever arrive either.
+	// The only signal that ever distinguishes this from a real armour-triggered shrink is the
+	// scene-change event fired ~20ms later, which is too late to gate RecordBaseHeat itself but
+	// not too late to unwind what it queued.
+	private static int _pendingClampTotalLocks = -1;
+	private static float _pendingClampAt;
+	private const float PendingClampConfirmSeconds = 0.5f;
+
 	internal static void RecordBaseHeat(PlayerStats playerStats)
 	{
 		if (!Enabled || playerStats == null)
@@ -567,9 +613,31 @@ internal static class HeatLockSystem
 			int totalLocks = GetTotalLocks();
 			if (_locks > totalLocks)
 			{
-				_locks = totalLocks;
+				_pendingClampTotalLocks = totalLocks;
+				_pendingClampAt = Time.unscaledTime;
 			}
 		}
+	}
+
+	// Called from Tick every frame: lands a pending clamp once it has gone unchallenged for
+	// PendingClampConfirmSeconds, which only a genuine mid-floor capacity shrink (armour) survives
+	// - a shop transition resolves via ResetForScene, below, well inside that window.
+	private static void ConfirmPendingClamp()
+	{
+		if (_pendingClampTotalLocks < 0)
+		{
+			return;
+		}
+		if (Time.unscaledTime - _pendingClampAt < PendingClampConfirmSeconds)
+		{
+			return;
+		}
+		if (_locks > _pendingClampTotalLocks)
+		{
+			Plugin.DBG("HEAT-LOCK", $"capacity shrink clamp: {_locks} -> {_pendingClampTotalLocks} locks (baseHeat={_baseHeat:F1})");
+			_locks = _pendingClampTotalLocks;
+		}
+		_pendingClampTotalLocks = -1;
 	}
 
 	private static void AdjustHeat(float amount)

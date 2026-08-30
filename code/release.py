@@ -100,6 +100,27 @@ SHIPPED: dict[tuple[str, str], object] = {
     #   `deploy.py` even forces it on into the two game installs, which exist to be read - but a
     #   player gets a quiet log. This is the one entry here that does not follow from a deviation:
     #   live and default agree, and the release still differs from both on purpose.
+    ("EDI", "ChaserStompRange"): LIVE,
+    #   Coded default is 25. §151 shipped the mechanism (then ChaserAura, an Intensity squeeze on
+    #   the filler) blind because the honest far edge (the chaser's own AudioSource.maxDistance)
+    #   was unmeasured; the 2026-08-29 run measured it at 30 m and found the dragon's whole
+    #   approach living between 3.5-13.6 m, an 84-100% band nobody could feel. 12 puts that same
+    #   approach across 50-100%. ChaserAura was later folded into ChaserStomp - same band, same
+    #   reasoning, now capping the stomp row's own travel instead of the filler's. A second
+    #   2026-08-30 play session found the ramp barely readable below its own Far value either -
+    #   IntensityNearDistance (new, defaults to 5 m) moves 100% out from "basically touching" to a
+    #   few metres out, and Far dropped from 55 to 50 - both are the coded defaults now, so neither
+    #   needs its own SHIPPED entry. Ship the measured range.
+    ("EDI", "ChaserStompIntensityFar"): "30",
+    #   Coded default is 50. The 2026-08-30 session that measured Range=12 also found repeated
+    #   short gate losses during real grab attempts (see ChaserStompGrace below) and, separately,
+    #   moved Range to 0 (the honest maxDistance, 30 m for these two prefabs) once the 12 m tuning
+    #   turned out to sit inside the AI's own ambiguous not-quite-chasing zone. A wider band at the
+    #   same Far value would start the stomp row noticeably earlier, while the sound is still
+    #   faint - Far dropped to 30 to keep the *near* end of the experience (close, loud, about to
+    #   grab) roughly where it was, rather than diluting it across three times the distance.
+    #   Unplayed as of this session; revisit if 30 reads as too early once tested against the wider
+    #   band it now pairs with.
     ("Gameplay", "GodMode"): "false",
     #   Coded default is true, but EnableHeatLocks replaces god mode with the horny locks and is
     #   itself on by default. Shipping true would hand players both and neuter the mechanic.

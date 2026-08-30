@@ -165,14 +165,19 @@ ships stays a decision with a run behind it. §62 extended the same idea to the 
 
 **A row name is no longer the only thing the mod sends.** Three things now POST
 `http://127.0.0.1:5000/Edi/Intensity/<0-100>`, which scales the device's stroke range in place
-while the same row keeps looping (§125): the Black Serpent's approach, the chaser bosses' aura
-(§151, `ChaserAura.cs` — the filler deepens as an audible dragon or wendigo closes in), and the
-player's own `MasterIntensity` / `RowIntensityScale` (§150). The first two are scene-level and the
-third is a standing preference, so they compose by multiplication and the serpent outranks the aura
-where both are live. It is global to the channel rather than a property of a row, so the rule is
-that any row which is not the lowering scene's own takes the range back with it.
-`learnings/edi-integration.md` has what was measured about it, and the two rules that keep two
-scene-level owners off each other.
+while the same row keeps looping (§125): the Black Serpent's approach, the chaser bosses' approach
+(§151/§153, `ChaserStomp.cs`), and the player's own `MasterIntensity` / `RowIntensityScale` (§150).
+The first two are scene-level and the third is a standing preference, so they compose by
+multiplication and the serpent outranks the chaser stomp where both are live. It is global to the
+channel rather than a property of a row, so the rule is that any row which is not the lowering
+scene's own takes the range back with it. **The chaser stomp is not Intensity-only** (§153): while
+a dragon or wendigo is audible and in range it dispatches a real row of its own — `Dragon_Stomp` /
+`Wendigo_Stomp`, phase-locked to the creature's own footfall — because Intensity can only ever cap
+a row's travel down, never raise it above what the row was authored for, and the request behind
+this was for the device to read as *more* than the ordinary filler up close. Intensity still runs
+underneath it, capping that row's own travel by distance the same way it capped the filler before
+this split. `learnings/edi-integration.md` has what was measured about it, and the two rules that
+keep two scene-level owners off each other.
 
 Failures at step 3/4 land in `PncEdi-missing-definitions.log`. Since §96 its message names the
 registry rather than the file, and prints which `Definitions.csv` was actually read (or that none

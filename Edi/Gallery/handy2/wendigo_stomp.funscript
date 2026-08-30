@@ -1,0 +1,38 @@
+{
+  "actions": [
+    {
+      "at": 0,
+      "pos": 90
+    },
+    {
+      "at": 100,
+      "pos": 20
+    },
+    {
+      "at": 300,
+      "pos": 5
+    },
+    {
+      "at": 603,
+      "pos": 90
+    }
+  ],
+  "inverted": false,
+  "range": 100,
+  "version": "1.0",
+  "metadata": {
+    "bookmarks": [],
+    "chapters": [],
+    "creator": "",
+    "performers": [],
+    "tags": [],
+    "notes": "",
+    "license": "",
+    "script_url": "",
+    "video_url": "",
+    "type": "basic",
+    "duration": 1,
+    "title": "Wendigo_Stomp",
+    "description": "handy2 variant of 'handy2pro': slew-limited to 600 units/s sustained, 700 peak (bucket 20 units). eroscripts multi-axis guide, The Handy 2. Timing identical; only strokes the device could not complete are shortened."
+  }
+}

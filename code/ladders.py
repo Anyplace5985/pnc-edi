@@ -192,7 +192,62 @@ def hypnosis_row(name, amp):
     return name, acts, HYPNOSIS_CYCLES * HYPNOSIS_PERIOD
 
 
-NEW_ROWS = {name for name, _ in HYPNOSIS_ROWS}
+# ---------------------------------------------------------------------------------------------
+# The chaser bosses' stomp, synced to the sound of the footfall rather than to distance
+#
+# §125's serpent replaced tiers with one row scaled by Intensity, and §151's ChaserAura did the
+# same for the dragon/wendigo approach - but Intensity only ever scales *down* from whatever the
+# filler is already playing (Edi/Intensity/{max} caps the row's own travel, it cannot raise it),
+# so the closest a chaser could ever get you was the filler at its own ordinary amplitude. Asked
+# for directly: something that reads as *more* than baseline right next to the thing chasing you,
+# which needs a real row - Intensity cannot produce a number above 100.
+#
+# So this is not a ladder tier and not an Intensity target. It is one row per chaser, dispatched
+# in place of the filler while the player is close, and phase-locked to the real footfall via the
+# same `?seek=` mechanism a grab screen already uses to start mid-animation (Plugin.SendPlay's
+# animNormalizedTime/animClipSeconds) - except the clock here is the enemy's own idleMovingSound
+# AudioSource rather than an Animator, because neither DragonEnemyAI nor ProximityDragonEnemyAI
+# fires a footstep event; the only signal that exists is the looping walk clip itself. See
+# code/edimod/PncEdi/ChaserStomp.cs for the runtime half.
+#
+# MEASURED against the actual walk clips (DragonWalk, "Wendigo walk" - both `idleMovingSound`,
+# confirmed off the live prefab components, not guessed from the asset name):
+#
+#   dragon:  43 footfalls across 25.800 s of DragonWalk.wav, onsets 90-25500 ms, mean gap
+#            605.0 ms, std 19.4 ms - counted by ear (the clip also carries a lot of non-footstep
+#            dragon noise a naive onset detector cannot tell apart from a footfall).
+#   wendigo: 12 footfalls across 7.206 s of "Wendigo walk".wav, onsets 60-6690 ms, mean gap
+#            602.7 ms, std 36.5 ms - counted by ear over an "ominous hum" that swells and recedes
+#            between beats and fooled every automated onset detector tried here into reading 2-4x
+#            too many, none of them footsteps.
+#
+# Both creatures land within 2 ms of the same ~603 ms beat despite being different animals at
+# different speeds - dragon light and frequent within its stride, wendigo one heavy drag - which
+# is a coincidence worth recording rather than assuming holds for any other chaser this project
+# ever adds.
+#
+# SHAPE. Nothing here measures the *envelope* of a single stomp, only when each one lands, so the
+# curve is a judgement the way ladders.py's PEAKS/TROUGHS arrays are: peak at the beat itself,
+# a fast release right after it (a footfall's impact reads as a snap, same idiom as
+# `shared_zombie`'s buzz - large fast strokes are the vibration), a slow settle through the
+# middle of the beat, then an easier climb back up so the device arrives at the peak exactly when
+# the next real footfall lands. Both rows share the shape; only the period differs, because
+# nothing measured here says the two creatures' *impacts* feel different, only that they land at
+# nearly the same rate.
+#
+# PEAK is 90, the same figure and the same reasoning as Serpent_Hypnosis: this plays instead of
+# the filler outright rather than through Intensity, so the authored row already is the loudest
+# the approach will ever be - there is no scaling step left to raise it later.
+CHASER_STOMP_ROWS = [("Dragon_Stomp", 605), ("Wendigo_Stomp", 603)]
+
+
+def chaser_stomp_row(name, period, amp=90):
+    """Peak at the beat, a fast release, a slow settle, an easing climb back to the next peak."""
+    acts = [(0, amp), (100, 10), (300, 5), (period, amp)]
+    return name, acts, period
+
+
+NEW_ROWS = {name for name, _ in HYPNOSIS_ROWS} | {name for name, _ in CHASER_STOMP_ROWS}
 
 
 def build():
@@ -200,6 +255,8 @@ def build():
         yield filler_row(name, amp, floor)
     for name, amp in HYPNOSIS_ROWS:
         yield hypnosis_row(name, amp)
+    for name, period in CHASER_STOMP_ROWS:
+        yield chaser_stomp_row(name, period)
 
 
 def report(name, acts, total):
@@ -232,7 +289,8 @@ def check():
              [filler_row(n, amp, f) for n, amp, f in FILLER_ROWS]}
     print(f"  filler ladder: {len(FILLER_ROWS)} rows on {len(grids)} grid(s), "
           f"{FILLER_GRID[-1]} ms; hypnosis: {len(HYPNOSIS_ROWS)} row, "
-          f"{HYPNOSIS_CYCLES * HYPNOSIS_PERIOD} ms")
+          f"{HYPNOSIS_CYCLES * HYPNOSIS_PERIOD} ms; chaser stomp: "
+          f"{len(CHASER_STOMP_ROWS)} rows, {[p for _, p in CHASER_STOMP_ROWS]} ms")
     if bad:
         print(f"ladders: {bad} file(s) do not match the generator - re-run with --write")
         return 1

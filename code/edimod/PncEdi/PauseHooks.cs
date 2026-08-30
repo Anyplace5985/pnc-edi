@@ -15,6 +15,11 @@ public static class PauseHooks
 	// paused is the same contradictory instruction ResetForNewScene avoids below.
 	private static bool _devicePaused;
 
+	// Exposed so a focus-regain can tell "menu is open and holding the device paused" apart from
+	// "menu is open but FillerWhilePaused left the device running" - only the former should defer
+	// its Resume to the eventual menu close.
+	public static bool DevicePausedByMenu => _devicePaused;
+
 	/// <summary>
 	/// Should a scene the mod is driving itself stop advancing?
 	///
@@ -35,16 +40,26 @@ public static class PauseHooks
 	// `if (!GamePaused)` guard, and the next unpause sends a Resume nothing asked for. The tell in
 	// a log is a "[PAUSE] ... closed" with no "opened" before it (§99).
 	//
-	// Only the flag is cleared. The device is already handled by the scene change itself, which
-	// either stops Edi (a menu) or starts the filler, so sending a Resume from here would be a
-	// second, contradictory instruction.
+	// The device still needs a Resume when the paused scene leaves through a menu: §148 made a
+	// menu *play the filler* rather than stop Edi, and a Play does not lift the Pause
+	// (`untilResume=true`) sent when the game paused. Call sites must run this before dispatching
+	// the menu filler, or the Resume below would follow the Play it is meant to unblock.
 	public static void ResetForNewScene()
 	{
 		if (GamePaused)
 		{
 			GamePaused = false;
-			_devicePaused = false;
-			Plugin.DBG("PAUSE", "scene changed while paused (quit to menu?) -> pause state cleared");
+			Plugin.ClearSavedFillerForMenu();
+			if (_devicePaused)
+			{
+				_devicePaused = false;
+				Plugin.DBG("PAUSE", "scene changed while paused -> Edi/Resume");
+				Plugin.SendResume();
+			}
+			else
+			{
+				Plugin.DBG("PAUSE", "scene changed while paused (quit to menu?) -> pause state cleared");
+			}
 		}
 	}
 
@@ -57,13 +72,14 @@ public static class PauseHooks
 			if (!GamePaused)
 			{
 				GamePaused = true;
-				// Only the filler may keep running. A grab, an interact scene or any other real
-				// row is a script for something that is on screen and has just stopped moving,
-				// so it pauses with the game whatever the setting says.
-				if (Plugin.CfgFillerWhilePaused.Value && Plugin.FillerPlaybackActive)
+				// Under FillerWhilePaused the menu always plays the base filler, whatever the
+				// device was doing when it opened - the filler itself, or a real gallery row (a
+				// grab, an interact scene). PauseFillerForMenu saves either kind and restores it
+				// on close; with the setting off, anything playing just pauses with the game.
+				if (Plugin.CfgFillerWhilePaused.Value && (Plugin.FillerPlaybackActive || Plugin.IsGalleryPlaybackActive))
 				{
 					_devicePaused = false;
-					Plugin.DBG("PAUSE", "in-game pause menu opened -> filler keeps playing");
+					Plugin.PauseFillerForMenu();
 					return;
 				}
 				_devicePaused = true;
@@ -88,7 +104,7 @@ public static class PauseHooks
 				GamePaused = false;
 				if (!_devicePaused)
 				{
-					Plugin.DBG("PAUSE", "in-game pause menu closed -> filler was never paused");
+					Plugin.ResumeFillerFromMenu();
 					return;
 				}
 				_devicePaused = false;

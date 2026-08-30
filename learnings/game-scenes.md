@@ -4,7 +4,7 @@ Dioramas, peek scenes, grab screens and the gallery viewer - what identifies eac
 
 **Read this when:** wiring a new scene, or working out which script a game object should play
 
-**Keywords:** diorama, D-slot, GalleryUnlockTrigger, galleryID, peek scene, peephole, gallery split, Gallery_ clip, ambient
+**Keywords:** diorama, D-slot, GalleryUnlockTrigger, galleryID, peek scene, peephole, gallery split, Gallery_ clip, ambient, PauseHooks, ResetForNewScene, Stage1Shop, shop scene, HeatLockSystem
 
 ---
 
@@ -41,6 +41,17 @@ and does anything downstream still consume it**". §119 anchors the release on t
 loop *inside the box* instead, which leaves `Patterns` doing only the job that is genuinely its
 own.
 
+**A second case, same shape: `PauseHooks.ResetForNewScene` deliberately sent no Resume on a
+quit-to-menu, reasoning that the scene change itself always resolved the device — a menu stopped
+Edi, or the filler started, either way "undoing the pause" was someone else's job. §148 changed
+which job a menu does (it now *plays the filler* instead of stopping Edi) without anyone asking
+whether the old no-Resume reasoning still held once that changed. It did not: a `Play` does not
+lift `Pause?untilResume=true`, so the device stayed paused under a filler that looked like it was
+running (§152).** The comment beside the code even said why it was safe — and stayed true right up
+until the mechanism it was reasoning about changed underneath it. **A comment that names *why a gap
+is safe* is a claim about a specific other mechanism, and needs revisiting the moment that mechanism
+changes — the same way a superseded path needs its consumers enumerated.**
+
 Note a `galleryID` is **not unique**: 0.3.1 ships two `D2` boxes, one for the secret-room version of
 that room. `DioramaUnlockTriggers.Entries` is a flat list and every query iterates it, so this
 needed no handling — a dictionary keyed on the id would have kept one box and silently dropped the
@@ -49,6 +60,16 @@ other.
 **The suffix is the reliable signal, and adjacent rooms share a base name.** `Mansion staircase
 room` holds diorama D4; `Mansion staircase room_Peep` holds the imp keyhole. `Dungeon 4 way`
 holds D8; `Dungeon 4 way_Peek` holds the nun&mimic peephole. They are different rooms.
+
+**A blanket "reset on every scene change" cannot tell a rest stop from a new stage.**
+`HeatLockSystem.ResetForScene` zeroed the horny-lock count on every `activeSceneChanged`, including
+`Floor1 -> Stage1Shop` — so §147's exemption (the Gravy service scene pays locks out, armed a few
+seconds after the shop loads) always found an empty set by the time its own watchtime finished,
+because the *scene transition into the shop* had already cleared what the payout was reaching for
+(§152). The shop is not a new stage the way the next floor is; it is a stop inside the current one,
+and state meant to survive into it needs a narrower reset than "any scene changed" — here, skipping
+the clear when the destination scene name matches `shop`, the same substring convention
+`Plugin.IsMenuSceneName` uses for `menu`.
 
 Peek rooms each carry an `AmbientAudioSource*` object too, which is why a peephole can look like
 a diorama to a proximity check — `AmbientAudioSourceWendigoPeek`, `AmbientAudioSourceNuns`,

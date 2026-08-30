@@ -10344,6 +10344,500 @@ else, and `Vanilla`'s promise is that device playback stays on.
 Ships on. Unplayed, like everything since §146; `check.py` 9/9 and both installs deployed.
 
 
+## 152. §147-§151 played, and five of the six things the run found
+
+Three in-game runs on 2026-08-29, 16:40-17:06, all in one `game-linux/BepInEx/LogOutput.log`
+(2890 lines — the launcher rotated nothing between them, so it is one file). Every one of
+§147-§151's seven confirmations came back: the menu filler and the pause settings work, the
+renamed `handy2pro` variant plays, §147's spawn fix holds with no level change, §147's service
+exemption matched its fragment, §150's two knobs compose correctly, and §148's open question —
+whether `activeSceneChanged` fires before or after the new scene's `Awake` — is settled *after*,
+read straight off `playerStats=yes baseHeat=100` on every `[SCENE]` line rather than reasoned about
+from the IL. Floors 2+ were observed for the first time in this project's history and hold no
+defect: `Floor1` at `5/8` -> `Stage1Shop` -> `Floor2` at `1/9` in one run, `14/14` against 275 heat
+in the other, the feared `M=5` never appearing. The release thread's imp-downing report (post 112,
+§147) does not reproduce here either — the downed scene's own row plays, phase-matched.
+
+The run also found six new things, none of which needed a further play session to build. One —
+both installs' `EdiConfig.json` still pointing every device at the retired `detailed` variant, so a
+Windows launch today would have played two packages and nothing else — was fixed the same day it
+was found, from the deploy warning §149 added for exactly this, and needed no rebuild: `detailed`
+-> `handy2pro` in both files' `Variant` entries, the stale regenerated `detailed/` folders deleted,
+`deploy.py --check` clean again. Four more are fixed below. The sixth — a white screen after death,
+now narrowed to one disabled `Animator` component rather than §50's unreadable ancestor — is a
+visual bug in the game's own rendering and is deliberately left for a session of its own.
+
+**The menu filler was silent after quitting to the menu from a paused grab**, because §148 made a
+menu *play the filler* rather than stop Edi, and `PauseHooks.ResetForNewScene` still assumed the
+scene change itself always resolved the device — clearing `Pause?untilResume=true` was left to
+whichever of "the menu stops Edi" or "the filler starts" actually happened, and neither does that
+job any more once a menu plays the filler instead of stopping it:
+
+    17:05:39.503 [PAUSE] in-game pause menu opened -> Edi/Pause      (correct - a grapple was live)
+    17:05:40.107 [PAUSE] scene changed while paused -> pause state cleared
+    17:05:40.107 [EDI] Play filler                                   <- the device is still paused
+    17:06:21.009 [FOCUS] regained -> Edi/Resume                      <- an alt-tab is what fixed it
+
+`ResetForNewScene` now sends Resume when `_devicePaused`, ahead of the menu-filler dispatch in
+`OnSceneChanged` — an ordering already true before this fix, since `PauseHooks.ResetForNewScene()`
+was already called before the `_inMenuScene` branch; only the missing Resume itself needed adding.
+`learnings/README.md`'s lesson 12 — *superseding a mechanism is not removing what rode on it* — is
+this exact shape a second time, so the addition there is a citation of this case rather than a new
+rule (see `learnings/game-scenes.md`).
+
+**The chaser aura ran, and needed one config number rather than a rebuild.** The line the whole
+feature was built to print:
+
+    [CHASER-AURA] Dragon at 10.0m of 25.0-3.0 (its loop reaches 30.0m) -> 97%
+
+The looping source's own `maxDistance` is 30.0 m — spatial and sane, not the 500 m the code feared
+— which answers §151's open question, and answers it against `ChaserAuraRange = 0`: 30 m is wider
+than the shipped 25 and would flatten the ramp further. The dragon's whole approach lived between
+3.5 m and 13.6 m; against the shipped `25-3` band that is only 84-100%, a spread nobody can feel,
+and every close approach hit 100 and released the device mid-chase. `ChaserAuraRange` is now **12**
+in `BepInEx/config/com.edi.pnc.cfg`, which puts that same approach across the full 55-100 band, and
+declared in `release.py`'s `SHIPPED` (coded default stays 25 — this is a measured live value, not a
+new default). Judging it by feel is still a play question, same as §151 always said it would be.
+
+One real defect rode along in the same log line: on the slew back up after a chaser goes quiet,
+`ChaserAura.TargetFor` clears `_who` to `null` but leaves `_whoDistance` at its `float.MaxValue`
+seed, and `Describe()` formatted it anyway —
+
+    [CHASER-AURA]  at 340282300000000000000000000000000000000.0m of 0.0-0.0 (its loop reaches 0.0m) -> 60%
+
+— the *send* was correct (the deliberate slew home), only the description was garbage. `Describe()`
+now special-cases `_who == null` with its own wording, "no chaser audible, slewing back to 100%",
+rather than formatting stale sentinel fields.
+
+**The heat locks were cleared by entering the shop, so the service exemption paid out nothing.**
+Found in play, both halves of it ten seconds apart:
+
+    16:56:32 [SCENE] '' -> 'Stage1Shop'                     (locks were 5/8 on the floor before it)
+    16:56:39 [HEAT-LOCK] queued clear-all release from service GloryHoleCamera after watchtime
+    16:56:49 [HEAT-LOCK] peephole not spent, no locks held at payout from service GloryHoleCamera
+
+`HeatLockSystem.ResetForScene` zeroed `_locks` on *every* scene transition, including
+`Floor1 -> Stage1Shop`, so §147's service exemption — armed a few seconds after the shop loads,
+paid out ten seconds after that — always found an empty set by the time it ran. `ResetForScene` now
+takes the destination scene name and skips the `_locks = 0` when it matches `shop` (the same
+substring convention `Plugin.IsMenuSceneName` uses for `menu`), so locks held on the way into a shop
+survive it; the next real floor is not a shop scene either way, so it still clears there as
+observed above. `GameplayProfiles.OnProfileChanged`'s call passes no scene name and clears
+unconditionally, unchanged — a profile switch mid-run is not a scene the player walked into.
+
+**The `[OVERHEAT]` instrument was misread a fourth time, by its own prescribed fix.** §139 gave the
+`STUCK` line a 0.5 s dwell specifically so a fix-produced transient — the one frame between vanilla
+failing to clear `hasBeenOverheated` and `ClearOverheatAtLockFloor` clearing it — would not read as
+the defect. This run produced nine `STUCK` lines across four grabs, three of them past that
+dwell's own threshold:
+
+    17:02:15.829 [OVERHEAT] hasBeenOverheated=True canAttack=False heat=175.0/175.0 floor=19.4
+    17:02:16.383 [OVERHEAT] STUCK: ... held=0.5s heat=150.3/175.0 floor=19.4 canAttack=False
+    17:02:17.384 [OVERHEAT] STUCK: ... held=1.5s heat=99.8/175.0  floor=19.4 canAttack=False
+    17:02:18.384 [OVERHEAT] STUCK: ... held=2.5s heat=42.3/175.0  floor=19.4 canAttack=False
+    17:02:18.801 [OVERHEAT] hasBeenOverheated=False canAttack=True heat=18.1/175.0 floor=19.4
+
+Every one of the four sequences ended the same way: the latch cleared within a fraction of a second
+of heat reaching the lock floor. The `held=` window was the **cum-cooldown drain**, during which
+the latch is *supposed* to hold — and that drain took up to 2.5 s here, well past the dwell meant to
+absorb a one-frame transient. **A dwell of any length cannot separate "the fix is still running" from
+"the defect is present", because both are just "the state has held for a while."** What can: the
+defect is specifically *still latched after heat has reached the lock floor*, a state vanilla's own
+clear should make unreachable. `TraceOverheatLatch` now gates `STUCK` on
+`heat <= floor + StuckLatchFloorEpsilon` (0.05, float noise only) instead of on a duration, so it
+stays quiet for the whole drain and fires only on the thing actually reported. `learnings/README.md`
+lesson 21 and its home in `debugging-and-diagnostics.md` are corrected rather than merely cited —
+the dwell they prescribed was itself the fourth misreading, not a fix to it.
+
+All four are built and deployed to both installs (`check.py` 9/9 after each) but **none has been
+played** — that is the next session's job, alongside the run's own `CHANGELOG` narrative for these
+findings being this entry itself and a commit for the six files it touches
+(`HeatLockSystem.cs`, `PauseHooks.cs`, `Plugin.cs`, `ChaserAura.cs`, `release.py`,
+`BepInEx/config/com.edi.pnc.cfg`).
+
+
+## 153. §152's four fixes played, a new pause defect found, and the chaser aura rebuilt as a real row
+
+A second run, 17:57–18:12 on 2026-08-29, one log (`game-linux/BepInEx/LogOutput.log`, no rotation
+since launch). Three of §152's four fixes are confirmed; the fourth prompted a redesign rather
+than a confirmation, once played against.
+
+**Item 3 (heat locks survive shop entry) holds on an independent run.** `'' -> 'Stage1Shop'
+playerStats=yes baseHeat=100` at 18:08:41, five locks carried in from the floor before it, and at
+18:09:05 `[HEAT-LOCK] clear all locks from service GloryHoleCamera -> 0/9 (was 5)` — a real,
+nonzero payout. Closed.
+
+**Item 5 (the `STUCK` gate) holds too, cleanly.** Two `STUCK` lines this run, both
+`held=0.0s`, both clearing the same frame heat reached the lock floor — no more of the
+multi-second holds `heat <= floor + epsilon` was built to stop misreading as the defect. One after
+a `Mimic_Cum`, one after a crossbow shot following a mimic grab; both `hasBeenOverheated=False
+canAttack=True` within 5 ms of the `STUCK` line. Closed.
+
+**Item 1 (menu filler after quitting a paused grab) holds for the case it was built for, and
+surfaced a second pause defect it was never built for.** Quitting to the main menu from a paused
+grab now sends `Edi/Resume` before the menu filler, confirmed. But alt-tabbing *while the pause
+menu is still open* replays the last grab script instead of staying silent:
+
+    18:00:47.134 [PAUSE] in-game pause menu opened -> Edi/Pause          (_devicePaused=true)
+    18:01:01.330 [FOCUS] lost -> Edi/Pause
+    18:01:02.752 [FOCUS] regained -> Edi/Resume                          <- replays imp_2, menu still open
+    18:01:06.555 [FOCUS] lost -> Edi/Pause
+    18:02:18.120 [FOCUS] regained -> Edi/Resume                          <- again
+    18:02:18.242 [PAUSE] in-game pause menu closed -> Edi/Resume         <- the real unpause, 122 ms later
+
+`Plugin.OnApplicationFocus`'s regain branch calls `SendResume()` off its own `EdiPausedByFocus`
+flag alone, with no read of `PauseHooks.GamePaused` — two independent pause sources stack (the
+game's own pause menu, and alt-tab) and only the inner one is checked on the way back out, so a
+focus regain undoes the *menu's* pause a full minute before the player actually closed it.
+**Diagnosed, not fixed** — the next session's first job.
+
+**Item 2 was never a bug, and became a design conversation instead.** `ChaserAura` fired exactly
+as built — `[CHASER-AURA] Dragon at 8.6m of 12.0-3.0 ... -> 99%` down to `62%` before the dragon's
+audio cut out for a grab — but "still no chaser script playing whatsoever" was the real complaint
+underneath the report: `Edi/Intensity/{max}` can only ever cap a row's travel *down* from what it
+was authored for, never past it, so the closest the aura could ever make the device feel was the
+filler at its own ordinary depth. Asked directly: should the approach read as *more* than baseline
+right at grab range, built as a real row rather than a squeeze. Also asked: could that row be
+synced to the actual footfall, and does that work for both bosses — worth its own record, because
+answering it needed the kind of measurement the "look at the scene, then measure" rule is for
+rather than a guess.
+
+**Wendigo needed no separate code at all — confirmed off the live assembly, not assumed.** There is
+no `WendigoEnemyAI` class (`monodis --typedef` against `Assembly-CSharp.dll` lists none); a wendigo
+is a reskinned `ProximityDragonEnemyAI` prefab, same as `ChaserAura` already walked. Tracing the
+same prefab's actual serialized fields (the `TypeTreeGenerator` technique `spawntables.py` already
+used, applied here to `DragonEnemyAI`/`ProximityDragonEnemyAI` directly rather than a spawn table)
+confirmed `idleMovingSound` = `DragonWalk` on `Dragon`, `"Wendigo walk"` on `Wendigo` — and ruled
+out a look-alike red herring: `Dragged Away Dragon Near` / `Dragged Away Wendigo`, found in the
+same asset sweep, turned out to be a plain `playOnAwake, Loop=true` `AudioSource` sitting directly
+on each GameObject, not bound to any `DragonEnemyAI` field at all — always-on ambience with a
+10–30 m rolloff, not a scripted "near" cue, despite the name.
+
+**Counting the beat needed a human ear, not just a better filter.** Onset detection against
+`DragonWalk.wav` and `"Wendigo walk".wav` (pulled via `UnityPy`, archived to `Edi/_reference/audio/`
+- gitignored, kept for re-measurement) never converged on its own: a spectral-flux detector tuned
+tight enough to catch every footfall also caught the dragon's own noise (150 "onsets" where 43
+stomps are real) and a low drone that swells and recedes between wendigo beats (up to 35 where 12
+are real). Widening the detector's minimum gap to roughly the beat a human ear already suspected -
+not narrowing it - is what resolved both, and only once the ear supplied the true count first:
+**43 dragon stomps over 25.8 s (605 ms mean gap, std 19 ms) and 12 wendigo stomps over 7.2 s
+(603 ms, std 37 ms)**, confirmed by ear against the detector's own settled answer. Two different
+creatures landing on nearly the same cadence is recorded as a coincidence, not a rule for any
+chaser this project adds later. `learnings/funscript-proxies.md` has the general lesson.
+
+**`Dragon_Stomp` / `Wendigo_Stomp`, one cycle each at the measured period, peak 90** (the same
+figure and the same reasoning as `Serpent_Hypnosis`: played instead of the filler outright, so the
+authored row already has to be the loudest the approach will ever be). Shape is a judgement, not a
+further measurement - nothing here measured a single stomp's own envelope, only when each one
+lands - so it is peak-at-the-beat, a fast release, a slow settle, an easing climb back to the next
+peak, the same idiom `shared_zombie`'s buzz already established (large fast strokes read as the
+impact). `code/ladders.py`'s `CHASER_STOMP_ROWS` has the full reasoning and both rows' numbers;
+`variants.py --write` generated `handy2`/`handy1` copies the ordinary way, no exceptions.
+
+**`ChaserAura.cs` is gone, folded into a new `ChaserStomp.cs`.** Once a real row existed, the old
+mechanism's own reason for touching the filler disappeared - a chaser close enough to be part of
+either mechanism is now always playing its stomp row, never the filler, so there was nothing left
+for an Intensity squeeze on the filler to be squeezing. The merge kept both of the old file's real
+pieces and gave them one new one:
+
+  - **The gate** (audible + within `ChaserStompRange`, 0 = trust the source's own `maxDistance`) is
+    unchanged from `ChaserAura`'s, renamed.
+  - **The intensity ramp** (`ChaserStompIntensityFar`/`Near`, `ChaserStompRamp`,
+    `ChaserStompIntensityStep`/`Interval`) is unchanged in mechanism, retargeted to cap the stomp
+    row's own travel instead of the filler's.
+  - **The row itself is new**, phase-locked on first dispatch to the creature's own
+    `idleMovingSound` `AudioSource.time` by reusing `Plugin.SendPlay`'s existing animator-phase
+    machinery (`animNormalizedTime`/`animClipSeconds`) fed an audio clock instead - nothing in that
+    math is Animator-specific, and `GalleryRegistry.LoopMs(row)` doubling as the beat period means
+    the funscript's declared length and the phase math can never drift apart. Two measured offsets
+    (`DragonFirstOnsetSec` 90 ms, `WendigoFirstOnsetSec` 60 ms) correct for the one thing that math
+    cannot know on its own: the walk clip's *audio file* loops at its own t=0, not at a footfall.
+  - **A hold the old file never needed.** `ChaserAura`'s own header said hysteresis and a dwell
+    were both unnecessary, and it was right - a slewed number self-damps a flickering target for
+    free, so nothing could flap. That reasoning does not survive the row: there is no way to slew
+    between two different funscripts, so the same flickering `isPlaying`/range gate that the ramp
+    shrugged off would have meant the device restarting the beat on every crossing. `ChaserStompGrace`
+    (1.5 s, `SerpentHypnosisViewGrace`'s own default) holds the row across a lost gate the same
+    shape the serpent's view grace already uses for a different flickering boolean. This is the
+    fourth answer this project has given to a signal that crosses a boundary too fast to feel
+    (§112's dwell, §125's abolition of the crossing, §151's slew, now a hold) - and the first time
+    two different answers were both live in one mechanism at once, because a ramp and a row-switch
+    are different kinds of thing being driven off the same gate.
+
+**Config renamed wholesale, `ChaserAura*` -> `ChaserStomp*`, confirmed nothing has shipped to
+players to need back-compat for.** `release.py`'s `SHIPPED` entry moved with it (still `LIVE`,
+still 12 - the reasoning is unchanged, only the mechanism the number now describes).
+`learnings/edi-integration.md` has the two reusable pieces: feeding `SendPlay`'s phase machinery a
+non-Animator clock, and the slew-vs-hold distinction.
+
+`dotnet build`/`dotnet test` (112/112)/`check.py` (9/9, cfgaudit and release both clean against the
+rename) all pass and both installs are deployed. **The chaser stomp mechanism itself is desk-verified
+only - not yet played.** Nothing from this session or §152 is committed; the working tree now also
+carries a new `ChaserStomp.cs`, a deleted `ChaserAura.cs`, `PluginConfig.cs`, `SerpentHypnosis.cs`,
+`ladders.py`, `release.py`, `Definitions.csv`, and six new funscripts across the three variant
+folders, on top of §152's own six files.
+
+## 154. §153's focus/pause defect fixed (twice), ChaserStomp played and retuned, and a silent lock-loss found
+
+A 2026-08-30 session against `LogOutput.log` (03:06-03:27), driving §153's one open defect plus the
+first play of the rebuilt chaser stomp mechanism.
+
+**The focus/pause fix took two passes, because the first one only covered half the state space.**
+§153's defect was `Plugin.OnApplicationFocus`'s regain branch calling `SendResume()` off its own
+`EdiPausedByFocus` flag alone, with no read of `PauseHooks.GamePaused` - an alt-tab while the pause
+menu was still open undid the menu's own pause a full minute early. The first fix guarded the regain
+on `!PauseHooks.GamePaused`. Before it was ever played, a second look at `FillerWhilePaused` caught
+what that guard breaks: opening the menu with the filler active leaves `_devicePaused=false` (the
+filler keeps running, `PauseGame_Postfix` never sends a Pause) - but losing focus pauses it anyway,
+because `OnApplicationFocus`'s own `SendPause()` call has never checked `FillerWhilePaused`. Blanket-
+skipping the regain's Resume whenever `GamePaused` is true would leave that pause permanently stuck:
+`ResumeGame_Postfix` also checks `_devicePaused` (false) and does nothing when the menu closes.
+`PauseHooks` grew a `DevicePausedByMenu` accessor (`_devicePaused`, exposed) so the guard could ask
+the sharper question - defer to the menu only when the menu is the one actually holding the device
+paused, not merely whenever it is open. Played both branches (`Plugin.cs`, `PauseHooks.cs`):
+confirmed correct.
+
+**Playing the filler-active branch surfaced a second, unrelated design gap in the same code path.**
+`FillerWhilePaused`'s whole feature was "leave whatever filler happens to be already playing running
+across a pause" - which meant the pause menu could open on the last ladder rung or mid-chaser-stomp
+rather than a neutral row, and if nothing had been actively dispatched that exact frame nothing
+started at all, because the branch just `return`ed. `Plugin.PauseFillerForMenu`/`ResumeFillerFromMenu`
+now force-switch to the plain `FillerGallery` row on open, saving the outgoing row and its loop phase
+(`CurrentLoopPhaseMs()`, captured before the swap overwrites it) so the close can restore the exact
+row at the exact position rather than whatever the ladder reads as fresh. `SendPlay` grew a
+`seekOverrideMs` parameter for the restore, because `preservePhase`'s existing equality check
+compares against the *outgoing* row at call time (the base filler), not the row being restored -
+different question, needs its own answer. `CanRefreshFillerForHeat` now also stands down while
+`PauseHooks.GamePaused`, so the ladder cannot recompute over the swap mid-pause; `ResetForNewScene`
+clears the saved state on any scene change made while paused, so quitting to menu cannot leak it into
+whatever loads next. Built and deployed; not yet played (found and fixed after this session's run,
+in review rather than in-game). `learnings/edi-integration.md` has the reusable shape.
+
+**`ChaserStomp` played for the first time, both bosses, and the phase-lock and grace both held.**
+The beat landed with the audible footfall for both `Dragon_Stomp` and `Wendigo_Stomp`, and
+`ChaserStompGrace` visibly did its job - repeated `out of range - holding ... for up to 1.5s` /
+`stayed out of range - the stomp gives the device back` pairs in the log, no beat restarts from a
+flickering gate. Dragon and Wendigo were briefly both in range at once during this session
+(03:12:10, alternating dispatch every few ms) - real flapping, but only possible because this was a
+test session with both bosses present; a normal floor spawns one or the other, never both, so this
+is not a defect to chase.
+
+**The intensity ramp itself read wrong, and not from ramp lag.** `ChaserStompIntensityNear` (100%)
+was only ever reached at the chaser's own `grabRange` - a few metres, "basically touching" - so a
+real approach spent almost all of itself between `ChaserStompIntensityFar` and something close to
+100% off ramp momentum, never settling at the tuned far-edge value the log kept showing (91-99% just
+inside a 12 m band whose far value is 55). `ChaserStompIntensityNearDistance` (new, defaults to 5 m,
+clamped to at least `grabRange`) decouples "where the ramp saturates" from "where the grab lands" -
+100% is now reached a few metres out and held from there in, not only at the instant of contact.
+`ChaserStompIntensityFar` also dropped 55 -> 50. Both changed in `PluginConfig.cs`,
+`com.edi.pnc.cfg`, and `ChaserStomp.cs`'s `IntensityTargetFor`; `release.py`'s `ChaserStompRange`
+comment updated to match, no new `SHIPPED` entry needed since the cfg and the coded default now
+agree. Not yet played with the new numbers.
+
+**A real, silent bug: entering the shop cost 3 of 8 earned heat locks, with no log line for it.**
+`[SCENE] '' -> 'Stage1Shop' ... baseHeat=100` at 03:22:13, locks 8/8 going in; the next lock-related
+line, 45 seconds later, was `clear all locks from service GloryHoleCamera -> 0/8 (was 5)` - proving
+the count had already silently dropped to 5 with nothing printed for it. Root cause is
+`HeatLockSystem.RecordBaseHeat` (`HeatLockSystem.cs:575`): whenever the live `MaxHeat` differs from
+the cached `_baseHeat` it clamps `_locks` down to `GetTotalLocks()` at the new capacity - a real
+feature for when armour actually shrinks capacity mid-run, but it fired here off a transient,
+unscaled reading. This is §148's still-open ambiguity (`learnings/debugging-and-diagnostics.md`) -
+whether a scene load's first `MaxHeat` read lands before or after the locks' own scaling multiplier
+reapplies - and §153's play only ever settled it for floor-to-floor transitions (correct ordering,
+no defect). Shop entry takes the *other* ordering: `baseHeat=100` is the vanilla, unscaled figure,
+`GetTotalLocks()` at that capacity is 5 - "five locks for every class", exactly what the learning
+predicted - and the clamp cut real progress with nothing to show for it because the clamp path never
+logs. **Diagnosed, not fixed** - the next session's first job. `learnings/debugging-and-diagnostics.md`
+has the addendum to §148's entry.
+
+`dotnet build`/`dotnet test` (112/112)/`check.py` (9/9, cfgaudit and release clean against the new
+`ChaserStompIntensityNearDistance` key and the retuned defaults) all pass and both installs are
+deployed. Nothing from this session or §152/§153 is committed. The session log (03:06-03:27) has the
+evidence for all of the above and is preserved at
+`game-linux/BepInEx/logs/LogOutput-20260830-preserved-shop-heat-lock-bug.log`.
+
+## 155. §154's shop fix played wrong and re-diagnosed from timestamps, and ChaserStomp's ramp deleted in favour of the row's own grace
+
+A desk session, no new play - working from §154's preserved log
+(`LogOutput-20260830-preserved-shop-heat-lock-bug.log`) and a fresh decompile, not a new run.
+
+**§154's shop fix was built on a theory nobody had actually checked against the log's own
+timestamps, and it did not survive being played.** The fix skipped `RecordBaseHeat`'s clamp on the
+first reading since a scene reset, on the theory that the shop's transient `baseHeat=100` arrives
+*after* `ResetForScene` zeroes `_baseHeat` - consistent with how the printed log line read, never
+checked further. Played: still clamped 8 locks to 5. Lining the two log lines' own timestamps up
+(not just their printed content) found the theory backwards: `[HEAT-LOCK] capacity shrink clamp:
+8 -> 5 locks` prints at `03:56:50.794`, **21 ms before** `[SCENE] '' -> 'Stage1Shop'` at
+`03:56:50.815` - the clamp fires before `Plugin.OnSceneChanged` runs at all, while `_baseHeat` still
+holds the previous floor's real value. Something in the shop's entry trigger calls
+`SetMaxHeat(100)` synchronously in the *old* scene, and the shop then never sends a correcting
+`SetMaxHeat` - `MaxHeat` genuinely stays 100 for the whole visit, so no amount of waiting for "a
+truer second reading" could have worked either. `learnings/debugging-and-diagnostics.md` has the
+generalised lesson: an ordering theory is still a guess until the timestamps are actually compared,
+even when it is built by reading a log rather than by reasoning about which Unity callback runs
+first.
+
+The real fix defers the clamp instead of gating it on a reset. `RecordBaseHeat` now arms a pending
+clamp (`_pendingClampTotalLocks`/`_pendingClampAt`) rather than applying it; `HeatLockSystem.Tick`
+lands it after `PendingClampConfirmSeconds` (0.5s) with nothing to contradict it - a real mid-floor
+armour shrink survives that window because nothing corrects it either, which is exactly how it
+should behave - and `ResetForScene` discards any pending clamp outright on *any* scene change, since
+a shop transition is precisely the case needing protection and a non-shop transition is about to
+zero `_locks` outright regardless. The clamp also now logs unconditionally when it actually fires,
+which is what caught the first fix's failure at all - without that line this would have shipped
+believed-fixed. Built, `dotnet test` 112/112, `check.py` 9/9, both installs deployed. **Still
+unplayed** - needs a shop-entry run, and ideally one genuine mid-floor armour-capacity change to
+confirm the clamp still fires when it should.
+
+**Separately, playtesting turned up a `ChaserStomp` band tuned too tight, and chasing that question
+found the intensity ramp itself was solving the wrong problem.** `ChaserStompRange = 12` (from
+§154) put the near-boundary experience inside the Wendigo/Dragon AI's own ambiguous
+idle/not-quite-chasing zone rather than a zone it reliably holds while actually closing in -
+confirmed off the log, which showed repeated 1-2s bursts of play followed by exactly
+`ChaserStompGrace` later giving the device back, at distances reading as wandering rather than
+approach. `ChaserStompRange` is now **0** (the honest `AudioSource.maxDistance`, 30 m for both
+prefabs per the log's own `its loop reaches 30.0m`) rather than a hand-picked figure that can drift
+out of sync with the prefab, and `ChaserStompIntensityFar` dropped **50 -> 30** (declared in
+`release.py`'s `SHIPPED`) so the near end of the experience does not dilute across three times the
+distance.
+
+Widening the band raised the question of whether `ChaserStompRamp` (45%/s) could track a player
+closing that distance in a dash or two, and the answer was no - for a reason that also applied at
+the old, narrower range. `ChaserStomp`'s gate is distance **and** `loop.isPlaying`, a state boolean,
+not a continuous reading; decompiling `DragonEnemyAI`/`ProximityDragonEnemyAI` with `ilspycmd`
+found the boolean's real source: `GrabSequence` holds `isAttemptingGrab` (silencing the gate) for
+exactly `grabAttemptDuration`, 1.5s, win or miss, every real grab attempt. The ramp was rate-
+limiting *all* target movement to damp that boolean's flicker, but the same cap also throttled
+genuine fast movement - a dash-speed approach is not noise, it is the event the mechanism exists to
+track, and the ramp reported it late by design. `SerpentHypnosis`'s own history was already the
+proof a continuous, distance-driven value does not need rate-limiting at all (no ramp, direct
+jumps, measured accurate within 22 ms on real hardware) - the boolean, not the distance, was always
+the thing that needed a guard. **`ChaserStompRamp` is deleted** (config entry and all); the
+intensity target is now assigned directly off distance the instant the gate reads true, and held -
+not slewed, not recomputed from a now-stale reading - across a lost gate for `ChaserStompGrace`,
+releasing to 100% in one step once the grace expires, exactly mirroring how the row already hands
+itself back. That made the grace's own value load-bearing for the first time, so it was measured
+rather than left at its borrowed default: `ChaserStompGrace` was 1.5s, exactly equal to the measured
+`grabAttemptDuration` - a coin flip on every single grab attempt, not a guard. It is now **2.0s**,
+clearing the measured hazard with margin. `learnings/edi-integration.md` has the corrected general
+shape (a slew answers a fast-moving number; a stuck state needs a hold, and the two are not the
+same problem just because they move the same field).
+
+Built, `dotnet test` 112/112, `check.py` 9/9 (`release.py`'s `SHIPPED` updated for
+`ChaserStompIntensityFar`), both installs deployed. **Entirely unplayed** - needs a run near the new
+wider band, and specifically several close-range grab attempts, to confirm the hold survives a real
+1.5s windup without reading as flicker and that `IntensityFar=30` does not read as starting too
+early across the wider band.
+
+**And one more thing found but not yet chased: pausing/unpausing while a real (non-filler) scene's
+script is playing was reported as a small desync.** Not reproduced from this session's log - every
+`[PAUSE] ... closed -> Edi/Resume` in it is followed only by filler restores, never a stray re-`Play`
+of a scene row. A real hazard exists in the source (`SendPause`/`SendResume` stamp `LastSent` to a
+sentinel, which would defeat `SendPlay`'s own "same alias within 0.25s" dedupe for the next
+legitimate re-dispatch of that row) but nothing ties it to the reported symptom yet. Needs a repro:
+which scene, and whether an `[EDI] Play <row>` line appears within a second or two of the next
+`Resume` line.
+
+
+## 156. The three femboy-witch masters' backwards timestamps, fixed by tracing Edi's own loader
+
+A desk session, no play needed - the fix is data-only and the loader's own filter proves it inert.
+
+§149 found three `femboy-witch` `aura` masters ending with a tail written past the row's own 60s
+duration - `femboy_witch_aura_0_b`, `_1` and `_3` each had a final action or two that read `at`
+values above 60000, then one landing back at exactly 60000. `speedcheck.analyse` drops any `dt <= 0`
+pair before measuring, so it never had an opinion, and packages are not in `speedcheck` at all;
+§149 left the fix as a scripting job, and open question of whether the tail was a real closing
+stroke that belonged before 60000 or noise to drop, deferred to reading `FunscriptRepository.cs`
+first.
+
+Read it (`Edi.Core/Gallery/Funscript/FunscriptRepository.cs` in the decompiled tree at
+`../testing/Edi/`). `ReadGallery` filters `.Where(x.at >= StartTime && x.at <= EndTime).OrderBy(x.at)`
+before anything else runs, so any action past a row's declared `endTime` (60000 for every `Aura`
+scene, per `enemy.json`) is dropped before dispatch - never played, regardless of where it sits in
+the file or whether it reads earlier or later than its neighbour. `inproveLoopAccion` then forces
+`last.pos = first.pos` unconditionally on whatever survives the filter, so even the in-window
+closing action's own `pos` value is moot. Both masters' in-window last action already sat at exactly
+`at=60000` with `pos` equal to the first action's `pos` in every file - the honest wrap point was
+never missing, just followed by dead data.
+
+**The tail is noise, confirmed rather than guessed**, and turned out bigger than §149's own read: a
+grep-by-symptom for `dt<=0` finds only a *decreasing* pair, but `femboy_witch_aura_0_b` had six
+actions strung out past 60000 (60065-61128 ms), all increasing relative to each other, so
+`speedcheck`'s filter would not have flagged them even if packages were in scope for it. The other
+two masters had one stray action each. **Fix**: every action with `at > 60000` dropped from all
+three `handy2pro` masters, verified against the loader's own boundary rather than a guess, and the
+same defect found and fixed identically in the package's hand-authored `handy1` copies - those are
+not derived from the master (`variants.py` only emits `handy2` for a package, `handy1` is authored
+by hand per its own comment) so needed their own pass. `code/variants.py --write` regenerated the
+package's `handy2` from the corrected masters. `dotnet test` unaffected (data-only), `check.py` 9/9,
+both installs deployed. Played implicitly: `FunscriptRepository`'s filter means gameplay was never
+different, before or after - this is a data-hygiene fix, not a gameplay one, and needs no run to
+confirm.
+
+`learnings/funscript-authoring.md` has the generalised rule and now closes its own open question:
+Edi sorts by `at` and clips to `endTime` on load, so a written-out-of-order action is invisible to
+Edi and to this project's own checks alike, and the only way to be sure a suspected tail is dead is
+to trace the loader, not to guess from the symptom's shape.
+
+
+## 157. §155's shop-lock fix and ChaserStomp retune both played and confirmed; a real pause-menu gap found and fixed alongside them
+
+A play session, this time against the code §154-§156 had only built and deployed.
+
+**§155's deferred heat-lock clamp is confirmed - the shop no longer costs locks.** Entered
+`Stage1Shop` at 8/8 locks (`baseHeat=100` at 15:29:11); no `capacity shrink clamp` line fired at
+any point during the visit (there was nothing to contradict the pending clamp, so `Tick` never
+landed one), and the two `[OVERHEAT]` lines just before entry both still read `locks=8/8`. Left the
+shop via `clear all locks from service GloryHoleCamera -> 0/8 (was 8)` - the full count survived.
+No genuine mid-floor armour shrink happened to occur this session, so the clamp's other half (that
+it still fires when it should) remains unexercised; nothing about that is now known to be broken,
+it simply was not tested.
+
+**The reworked `ChaserStomp` band plays well** - confirmed against Wendigo: intensity read 88% at
+10.0m and 99% at 6.2m, both against `IntensityFar` unchanged at 30 and no ramp artefacts, and the
+grace held cleanly across two `out of range - holding ... for up to 2.0s` windows before releasing
+(one `stayed out of range - the stomp gives the device back` when the gap didn't close in time).
+**`ChaserStompIntensityNearDistance` moved 5 → 6 m** on the strength of that same read - 100%
+was still landing a little later than wanted, and the play call was to give it another metre.
+`PluginConfig.cs`'s default and `com.edi.pnc.cfg`'s shipped value were moved together, so they
+still agree and no `SHIPPED` entry is needed.
+
+**Playing the pause-menu filler fix (§154) surfaced a real gap it never covered: pausing during a
+real scene row didn't switch to the base filler at all.** `PauseGame_Postfix` only ever called
+`Plugin.PauseFillerForMenu()` when `Plugin.FillerPlaybackActive` was true; anything else - a
+GoonShroom cling loop, `GoonShroom_Start`, any real gallery row - fell through to the plain
+`Plugin.SendPause()` branch, which is Edi's own pause: it freezes the row exactly where it is
+rather than swapping to a neutral row, which is what the fix's own commentary had documented as
+deliberate ("a grab ... still pauses"). Playtesting against a GoonShroom at the start of a floor
+showed the filter row simply frozen in the menu rather than replaced - not the behaviour wanted.
+
+Fixed by widening the gate to `Plugin.FillerPlaybackActive || Plugin.IsGalleryPlaybackActive` and
+generalising `PauseFillerForMenu`/`ResumeFillerFromMenu` to save and restore either kind of row.
+The save side now branches on which was active: `_lastFillerGallery` for filler, `_lastSentRow`
+for a real row, into the same `_fillerSavedGallery`/`_fillerSavedPhaseMs` pair as before, plus a
+new `_fillerSavedWasFiller` flag so the restore's `SendPlay` call passes the right `filler` flag
+back rather than always claiming the resumed row as filler (which would have left
+`IsGalleryPlaybackActive` and everything gated on it lying for as long as that row kept playing).
+`FillerWhilePaused`'s config description is updated to match - it previously promised the opposite
+of the new behaviour outright. Played and confirmed both directions: `saved goonshroom_3 at
+948ms` / `restore goonshroom_3 at 948ms` and `saved GoonShroom_Start at 84ms` / `1003ms` with
+matching restores, both against real gallery rows rather than filler.
+
+**§155's open pause/unpause desync item is dropped rather than left open.** Not reproduced this
+session either, and worked back through with the player: nothing in this session's or last
+session's log ties an `[EDI] Play <row>` to a `Resume` line, and the report is now believed to have
+been imagined rather than observed. The hazard in `SendPause`/`SendResume`'s `LastSent` sentinel
+handling is still real in the source if it ever does show up again, but there is nothing left
+pointing at it as the cause of anything, so it does not belong in the open list on its own.
+
+`dotnet build`/`dotnet test` (112/112)/`check.py` (9/9, `cfgaudit` and `release.py --check` clean
+against the `ChaserStompIntensityNearDistance` retune) all pass; `deploy.py --no-build` was needed
+once more after the config-only change (a DLL-only patch does not carry a `.cfg` edit) and both
+installs are current. No mod-level warning or error in this session's log; the two `EDI-SKIP`
+lines it has (`gravy_minotaur_intro`, `gravy_minotaur_bjstart`) are the seed table's own
+intentional `-` targets for fade/intro states (`GalleryTable.cs`), not gaps.
+
 ## Tried and reverted — do not redo
 
 - **Trimming loop seams.** 14 galleries end on a different position than they start.

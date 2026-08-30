@@ -722,7 +722,7 @@ each curve, so they are reproducible and arguable rather than an unexplained JSO
 | `rederive.py` | the six `retime.py` refused, `Wendigo_Continued`, and the original twelve `*_Gallery` rows | wrong shape, wrong target, nothing on screen, or the gallery plays a different clip (§48, §51–§53) |
 | `scenes031.py` | game 0.3.1's six dioramas and four peek scenes | a whole-frame proxy averages a diorama into mush (§67) |
 | `grabs031.py` | game 0.3.1's three new enemies — eleven grab scenes and nine `*_Gallery` twins | scene-specific proxies, and four cum clips that change geometry partway through (§71) |
-| `ladders.py` | the seven filler rows, and the serpent's single `Serpent_Hypnosis` row | a set the mod switches *between* mid-playback, so the rows have to agree with each other, not only with a clip (§87). The serpent's row is generated here for its measured shape, not because it is a ladder — §125 replaced its tiers with one row the mod scales through Edi's `Intensity` |
+| `ladders.py` | the seven filler rows, the serpent's single `Serpent_Hypnosis` row, and the chaser bosses' `Dragon_Stomp` / `Wendigo_Stomp` | a set the mod switches *between* mid-playback, so the rows have to agree with each other, not only with a clip (§87). The serpent's row is generated here for its measured shape, not because it is a ladder — §125 replaced its tiers with one row the mod scales through Edi's `Intensity`. The two stomp rows are the same shape of exception, each one cycle long at its own creature's measured footfall period (§153) |
 
 Re-running any of them with `--write` regenerates its scenes and adds rows to `Definitions.csv`
 where they do not exist yet. **Then re-run `variants.py --write`.**

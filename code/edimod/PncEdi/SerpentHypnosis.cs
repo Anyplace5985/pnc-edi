@@ -68,7 +68,7 @@ internal static class SerpentHypnosis
 	/// <summary>
 	/// True while the approach is holding the channel's range down - including through the armed
 	/// hand-back, which is a range this still owns and has only decided not to give back yet.
-	/// `ChaserAura` stands down on it: both write one channel-wide number, and this one is part
+	/// `ChaserStomp` stands down on it: both write one channel-wide number, and this one is part
 	/// of a scene it is also choosing the row for.
 	/// </summary>
 	internal static bool OwnsIntensity => _intensityLowered;

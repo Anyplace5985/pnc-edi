@@ -4,7 +4,7 @@ How to find out what is actually happening, and the log shapes that lie to you.
 
 **Read this when:** a fix does not work, the log looks clean but behaviour is wrong, or a hypothesis needs testing
 
-**Keywords:** probe, instrument, log tag, silent gate, postfix, WriteUnityLog, dump every gate, audit itself, OVERHEAT, STUCK, dwell, transient, misread instrument
+**Keywords:** probe, instrument, log tag, silent gate, postfix, WriteUnityLog, dump every gate, audit itself, OVERHEAT, STUCK, dwell, transient, misread instrument, RecordBaseHeat, baseHeat, shop entry, silent clamp, scene-transition ordering, pending clamp, timestamp comparison, unverified ordering theory, PendingClampConfirmSeconds
 
 ---
 
@@ -164,6 +164,37 @@ prefab's 100 (five locks for every class). Both readings are internally consiste
 supports neither over the other. The same shape as §106's device diagnosis: when two orderings give
 two different answers, print one line and read it rather than reasoning about which Unity does.
 
+**A plausible-sounding ordering theory is still a guess until two log lines' own timestamps are
+compared, not just their printed values (§154, corrected §155).** §153's play confirmed
+floor-to-floor takes the "correct" `activeSceneChanged`-after-`Awake` ordering (no defect). Entering
+the shop first *looked* like the other ordering: `baseHeat=100` printed at the `Stage1Shop`
+`[SCENE]` line, read as "the new scene's `Awake` ran and set the vanilla default before the class
+multiplier reapplied." §155's first fix acted on that reading (skip `RecordBaseHeat`'s
+capacity-shrink clamp on the first reading since a scene reset, on the theory that the transient
+100 arrives *after* `ResetForScene` zeroes `_baseHeat`) — built, played, and it still clamped 8
+locks down to 5. The theory was never actually checked against the one thing that would have
+disproven it immediately: the two log lines' own timestamps. `[HEAT-LOCK] capacity shrink clamp:
+8 -> 5 locks` printed at `03:56:50.794`, **21 ms before** `[SCENE] '' -> 'Stage1Shop'` at
+`03:56:50.815` — the clamp fires *before* `Plugin.OnSceneChanged` runs at all, while `_baseHeat`
+still holds the previous floor's real value (150), so "first reading since reset" was never true
+in the first place. The real mechanism: something in the shop's entry trigger calls
+`SetMaxHeat(100)` synchronously in the *old* scene, before Unity's `activeSceneChanged` fires - and
+the shop then never sends a correcting `SetMaxHeat` at all; `MaxHeat` genuinely stays 100 for the
+whole visit (confirmed by no further `HEAT-LOCK`/`baseHeat` log activity until leaving). A debounce
+that waits for "a second, truer reading" cannot work here either, because that second reading never
+arrives. **The lesson isn't about this clamp specifically - it's that an ordering theory built from
+one line's *printed* content, without lining its timestamp up against the event it's being
+compared to, is exactly as unverified as guessing which callback runs first out of the source** (the
+same warning as the paragraph above, one level more specific: even reading the log can still be
+guessing, if the two things being ordered are never actually placed on the same timeline). The real
+fix (`HeatLockSystem.cs`, `_pendingClampTotalLocks`/`_pendingClampAt`) defers the clamp instead of
+gating it on a reset: it lands after a short confirm window with nothing to contradict it (a real
+mid-floor armour shrink), and `ResetForScene` discards it outright on any scene change, since a shop
+transition is exactly the case needing protection and a non-shop transition is about to zero the
+locks anyway. `RecordBaseHeat`'s clamp now also logs unconditionally when it actually fires
+(`HEAT-LOCK] capacity shrink clamp: ...`), which is what caught the first fix's failure at all -
+without that line this would have shipped believed-fixed.
+
 **A harness that skips a step cannot fail at that step (§92).** `slugharness` reported the five
 GoonShroom gallery rows resolving cleanly throughout, because its `Emit` called
 `BuildGallerySlug(key, state)` directly while the game calls `ResolveEnemyKey(name)` first and
@@ -279,8 +310,23 @@ while heat is *below* `MaxHeat` — and it was still misread on its first run: f
 each cleared 4 ms later by `ClearOverheatAtLockFloor`, i.e. the one frame between vanilla failing to
 clear the latch and the mod clearing it. The predicate was right and the line was still wrong,
 because **a fix that runs on the next frame makes its own defect-shaped transient, every single
-time.** A `STUCK` line now needs the state to have *held* 0.5 s, and carries `held=Ns`. That is
-three misreadings of one instrument in three sessions (§134's 51%, §138's 53.1 s, §139's five
-lines): when an instrument is misread twice, change the instrument — the note beside it has already
-failed. And prefer a predicate that names a **duration**, since the reported defect was "unusable",
-which is a thing that lasts (§139).
+time.** §139's own fix was a 0.5 s dwell before a `STUCK` line could print, on the theory that a
+one-frame transient needs only a moment's grace to be told apart from a lasting one.
+
+**The dwell was a fourth misreading, not a fix to the third.** §152's run produced nine `STUCK`
+lines past that dwell, three of them held 1.5-2.5 s — and every one still cleared the instant heat
+reached the lock floor, because the window *was* the cum-cooldown drain the fix rides through, which
+can legitimately take seconds. **A dwell of any length cannot separate "the fix is still running"
+from "the defect is present", because both are just "the state has held for a while" — a transient
+and a lasting fault differ in *what produces them*, never in duration alone.** The predicate that
+actually distinguishes them was sitting in the same trace call the whole time: the defect is *still
+latched once heat has reached the floor*, a state vanilla's own clear should make unreachable
+regardless of how long the drain to get there took. Gate on that state directly —
+`heat <= floor + epsilon` — and the transient goes quiet for its whole natural length while the
+defect still fires the instant it exists.
+
+Four misreadings of one instrument in four sessions (§134's 51%, §138's 53.1 s, §139's five lines,
+§152's nine past its own dwell): **when a fix to an instrument is itself a duration threshold,
+check what actually bounds the transient before picking a number** — a dwell is a bet that the
+transient is short, and the bet is only as good as that bound. Prefer a predicate that names the
+condition the defect is *defined by*, not one that names how long the symptom has been visible.

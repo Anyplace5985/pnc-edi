@@ -4,7 +4,7 @@ What to measure in a frame, how to know the proxy is watching the right thing, a
 
 **Read this when:** picking what to track in a new scene, or a polarity flag (INV / ?) needs judging
 
-**Keywords:** proxy, polarity, inversion, correlation, region vs frame, alpha trim, alignment, jitter floor, residual, deep=0
+**Keywords:** proxy, polarity, inversion, correlation, region vs frame, alpha trim, alignment, jitter floor, residual, deep=0, onset detection, footfall, spectral flux, minimum gap
 
 ---
 
@@ -235,3 +235,20 @@ sprite height (3% works here) — `motion_proxy()` in `animcheck.py`.
 difference for stroke timing, so it removes drift without changing feel — and it stays harmless
 whether or not the scene actually loops. Above that you are changing the performance, which is a
 feel decision, not a measurement one. `code/retime.py` enforces the split.
+
+**An onset detector's minimum-gap parameter has to match the true event rate, or a swelling
+background reads as extra events.** Building the chaser stomp funscripts (§153) needed the real
+footfall cadence out of `DragonWalk.wav` and `Wendigo_walk.wav`, and a spectral-flux onset
+detector tuned with a 120-150 ms minimum gap between candidates found 150 dragon hits and 22-35
+wendigo hits — both wrong, both with high-variance gaps (dragon std 59 ms, wendigo std up to 143
+ms) that never settled no matter how the frequency band or threshold were retuned. The wendigo clip
+carries a low drone that swells and recedes between real footfalls (heard, not measured — "an
+ominous hum" was the description that broke the case), and a fine gate reads its rise as a
+transient of its own. Widening the minimum gap to 350 ms - roughly matched to the beat the ear
+already suspected - resolved both: dragon settled to 43 onsets at 605 ms mean gap (std 19 ms, and
+confirmed against a plain 43-by-ear count), wendigo to 12 onsets at 603 ms (std 37 ms). **A
+detector parameter that is supposed to reject noise cannot itself be tuned by the same detector** -
+each retry here only proved the gate was still too fine by producing the same shape of wrong
+answer (many hits, high variance) at every band and threshold tried; what actually broke the
+deadlock was a human ear giving the true count first, which then said which parameter was the
+free one. Trust it over the algorithm when they disagree and neither can explain why.

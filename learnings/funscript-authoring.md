@@ -109,14 +109,28 @@ still naming the old folder finds nothing. Worse, an overlay install keeps the o
 resolves, so the device plays a gallery nobody maintains and nothing says a word. `deploy.py` now
 reports a variant folder in an install that the tree does not build, for exactly that reason.
 
-**A backwards timestamp is invisible to every check this project has (§149).** Three femboy-witch
-masters end `61128 ms` then `60000 ms` — a tail written out of order, past the row's own duration.
-`speedcheck.analyse` drops any `dt <= 0` pair *before* it measures anything, so no speed, spacing or
-polarity check has ever had an opinion about them, and packages are not in `speedcheck` at all. A
-slew limiter is where it finally showed up, because a negative `dt` inverts the clamp and drags
-every position after it — which read as a *variant with more range than its master*. `variants.py`
-passes such a pair through untouched and reports the file: the master is what needs fixing, and a
-limiter quietly repairing its input would have hidden the defect a third time.
+**A backwards timestamp is invisible to every check this project has (§149), and can hide actions a
+`dt <= 0` filter never sees at all (§156).** Three femboy-witch masters ended with a tail written
+past the row's own duration — `femboy_witch_aura_0_b`, `_1`, `_3` each had one or more actions above
+`60000 ms` followed by one landing back at exactly `60000`. `speedcheck.analyse` drops any `dt <= 0`
+pair *before* it measures anything, so no speed, spacing or polarity check has ever had an opinion
+about them, and packages are not in `speedcheck` at all. A slew limiter is where it first showed up,
+because a negative `dt` inverts the clamp and drags every position after it — which read as a
+*variant with more range than its master*. `variants.py` passes such a pair through untouched and
+reports the file: the master is what needs fixing, and a limiter quietly repairing its input would
+have hidden the defect a third time. Worse, `dt <= 0` only catches a *decreasing* step —
+`femboy_witch_aura_0_b` had six actions strung past `60000` that were increasing relative to each
+other, invisible to that filter by construction.
+
+**The fix, and how it was proven safe: trace the loader, don't guess from the symptom's shape.**
+`FunscriptRepository.ReadGallery` (`Edi.Core/Gallery/Funscript/FunscriptRepository.cs`) filters
+`.Where(x.at >= StartTime && x.at <= EndTime).OrderBy(x.at)` before anything else, so any action past
+a row's declared `endTime` never plays regardless of file order or whether its `at` reads earlier or
+later than its neighbour — the tail was dead weight, not a misplaced closing stroke. §156 dropped
+every action with `at > endTime` from all three masters (verified each file's in-window last action
+already sat at exactly `endTime` with `pos` equal to the first action's — the honest wrap point was
+never missing) and found the identical defect duplicated in the package's hand-authored `handy1`
+copies, which `variants.py` does not regenerate for a package and so needed the same fix by hand.
 
 **Per-device versions are a variant, not a setting.** Edi picks the script by variant and the
 variant is the *folder name*, so `Gallery/handy1/` needs no mod change — a device's `Variant` in

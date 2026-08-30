@@ -51,6 +51,16 @@ public partial class Plugin : BaseUnityPlugin
 	private static bool _damageLeads;
 	private static bool _fillerPlaybackActive;
 
+	// What the device was playing right before a pause menu swapped it out for the base row, so
+	// closing the menu can put it back where it was rather than wherever the ladder would land
+	// fresh. This covers the filler and a real scene row alike (a grab, an interact scene) -
+	// null/-1 means there was nothing worth restoring. _fillerSavedWasFiller records which of the
+	// two it was, so the restore can pass SendPlay the right `filler` flag rather than always
+	// claiming the row back as filler.
+	private static string _fillerSavedGallery;
+	private static int _fillerSavedPhaseMs = -1;
+	private static bool _fillerSavedWasFiller;
+
 	// Whether the scene on screen is a menu, by the same name test OnSceneChanged has always
 	// used. Cached rather than re-read, because GoFiller is reached from a dozen places and the
 	// answer only changes when the scene does.
@@ -128,11 +138,11 @@ public partial class Plugin : BaseUnityPlugin
 		// The serpent's range hand-back is counted here rather than in the ladder: the case it
 		// exists for is a grab scene, which is exactly when the ladder is not being asked anything.
 		SerpentHypnosis.TickIntensityRelease();
-		// And the chaser aura is ticked here for the same reason and one more: a grab scene has
-		// to take the range back on the frame it starts, and the filler refresh the aura would
-		// otherwise live in stops being called at exactly that moment. It runs after the serpent
-		// so that a serpent release this frame is already visible to it.
-		ChaserAura.Tick();
+		// And the chaser stomp is ticked here for the same reason and one more: a grab scene has
+		// to take the range back on the frame it starts, and the filler refresh the row-selection
+		// half of it would otherwise live in stops being called at exactly that moment. It runs
+		// after the serpent so that a serpent release this frame is already visible to it.
+		ChaserStomp.Tick();
 		// MasterIntensity and RowIntensityScale are edited live from the mod manager, and a
 		// softening that only takes hold at the next scene change reads as not working. Polling
 		// them is a comparison of two ints and a string reference per frame; ApplyIntensity sends
@@ -580,7 +590,7 @@ public partial class Plugin : BaseUnityPlugin
 	// already mid-loop when the grab begins (`[GRAB-ANIM] ... t=335.68` in the 2026-08-22 log,
 	// against t=0.00 for all eleven other controllers). Without it that scene's script starts at
 	// 0 against an animation two-thirds through its cycle, which is the desync that was reported.
-	internal static void SendPlay(string galleryName, bool loop = true, bool inGame = true, bool filler = false, bool preservePhase = false, float animNormalizedTime = -1f, float animClipSeconds = 0f)
+	internal static void SendPlay(string galleryName, bool loop = true, bool inGame = true, bool filler = false, bool preservePhase = false, float animNormalizedTime = -1f, float animClipSeconds = 0f, int seekOverrideMs = -1)
 	{
 		if (string.IsNullOrEmpty(galleryName))
 		{
@@ -648,6 +658,14 @@ public partial class Plugin : BaseUnityPlugin
 						DBG("EDI-PHASE", $"{row} aligned to animation t={animNormalizedTime:0.00} ({cycles} cycle(s) of {clipMs:0}ms) -> seek {seekMs}ms");
 					}
 				}
+			}
+			// A caller-supplied seek - the pause-menu filler swap restoring its own saved row - is
+			// as authored a decision as the alias's own `?seek=` and outranks preservePhase's guess,
+			// which is comparing against the wrong outgoing row here anyway (the base filler, not
+			// the row being restored).
+			if (seek <= 0 && seekOverrideMs > 0)
+			{
+				seek = seekOverrideMs;
 			}
 			// An explicit `?seek=` in the alias is an authored decision about where that scene
 			// starts and outranks a phase carried over from the row before it.
@@ -836,14 +854,24 @@ public partial class Plugin : BaseUnityPlugin
 		RefreshFillerForCurrentHeat();
 	}
 
-	private static string GetFillerGallery()
+	private static string GetFillerGallery(out float animNormalizedTime, out float animClipSeconds)
 	{
+		animNormalizedTime = -1f;
+		animClipSeconds = 0f;
 		RefreshPlayerHeatSnapshot();
 		// The serpent's camera grab outranks both meters while it runs. It is a thing happening
 		// *to* the player rather than a state they are in, and it ends either in a grab - which
 		// dispatches its own scene over the top of this - or in the serpent breaking off, after
 		// which the meters answer again.
 		string gallery = SerpentHypnosis.CurrentGallery();
+		// A chaser boss close enough to stomp outranks the meters the same way, and for the same
+		// reason - it too is a thing happening to the player rather than a read on their state.
+		// It carries its own phase (an audio clock, not an Animator's), which is why this is the
+		// one provider in the chain that hands anything back through the out params.
+		if (string.IsNullOrEmpty(gallery))
+		{
+			gallery = ChaserStomp.CurrentGallery(out animNormalizedTime, out animClipSeconds);
+		}
 		if (string.IsNullOrEmpty(gallery))
 		{
 			gallery = ResolveFillerIntensity();
@@ -1027,13 +1055,70 @@ public partial class Plugin : BaseUnityPlugin
 			return;
 		}
 		string lastFillerGallery = _lastFillerGallery;
-		string fillerGallery = GetFillerGallery();
+		string fillerGallery = GetFillerGallery(out float animNormalizedTime, out float animClipSeconds);
 		if (!string.Equals(lastFillerGallery, fillerGallery, StringComparison.OrdinalIgnoreCase))
 		{
 			// Same ladder, shared grid, shared anchor: carry the phase over rather than
-			// restarting the device at the top of the new row.
-			SendPlay(fillerGallery, loop: true, inGame: true, filler: true, preservePhase: true);
+			// restarting the device at the top of the new row. If ChaserStomp handed back an
+			// audio phase instead, SendPlay tries that first and preservePhase is the fallback
+			// it never reaches.
+			SendPlay(fillerGallery, loop: true, inGame: true, filler: true, preservePhase: true,
+				animNormalizedTime: animNormalizedTime, animClipSeconds: animClipSeconds);
 		}
+	}
+
+	// Swaps whatever the device is playing out for the plain base row when the pause menu opens -
+	// the filler (a ladder rung, chaser stomp) or a real gallery row (a grab, an interact scene)
+	// alike - saving what it was and where in its loop so ResumeFillerFromMenu can put it back.
+	// Called only from the branch that would otherwise have left the interrupted row running
+	// unchanged, which read wrong to the ear regardless of which kind of row it was.
+	internal static void PauseFillerForMenu()
+	{
+		if (_fillerPlaybackActive)
+		{
+			_fillerSavedGallery = _lastFillerGallery;
+			_fillerSavedWasFiller = true;
+		}
+		else if (IsGalleryPlaybackActive)
+		{
+			_fillerSavedGallery = _lastSentRow;
+			_fillerSavedWasFiller = false;
+		}
+		else
+		{
+			_fillerSavedGallery = null;
+		}
+		_fillerSavedPhaseMs = CurrentLoopPhaseMs();
+		SendPlay(CfgFillerGallery.Value, loop: true, inGame: true, filler: true);
+		DBG("PAUSE", _fillerSavedGallery != null
+			? $"pause menu opened -> base filler ({CfgFillerGallery.Value}), saved {_fillerSavedGallery} at {_fillerSavedPhaseMs}ms"
+			: $"pause menu opened -> base filler ({CfgFillerGallery.Value}), nothing to save");
+	}
+
+	// The other half of PauseFillerForMenu: reissue the saved row at the phase it had reached
+	// when the menu opened, rather than let CanRefreshFillerForHeat's next tick pick whatever the
+	// ladder reads as *now*, which may have drifted while the base filler was standing in. Passes
+	// back the same `filler` flag the row was saved under, so a resumed scene row is not
+	// mistaken for filler by IsGalleryPlaybackActive and everything gated on it.
+	internal static void ResumeFillerFromMenu()
+	{
+		if (!string.IsNullOrEmpty(_fillerSavedGallery))
+		{
+			DBG("PAUSE", $"pause menu closed -> restore {_fillerSavedGallery} at {_fillerSavedPhaseMs}ms");
+			SendPlay(_fillerSavedGallery, loop: true, inGame: true, filler: _fillerSavedWasFiller, seekOverrideMs: _fillerSavedPhaseMs);
+		}
+		ClearSavedFillerForMenu();
+	}
+
+	// Scene changes while paused (quitting to the main menu) leave the game floor the saved row
+	// belonged to, so a later ResumeGame that never fires must not be able to replay it into
+	// whatever comes next. PauseHooks.ResetForNewScene calls this on every scene change made
+	// while GamePaused was true, whether or not this session ever ran PauseFillerForMenu.
+	internal static void ClearSavedFillerForMenu()
+	{
+		_fillerSavedGallery = null;
+		_fillerSavedPhaseMs = -1;
+		_fillerSavedWasFiller = false;
 	}
 
 	private static bool CanRefreshFillerForHeat()
@@ -1041,8 +1126,11 @@ public partial class Plugin : BaseUnityPlugin
 		// A charm circle owns the channel while the player is inside it (see AmbientProximity), so
 		// the filler must not push its own row on top when heat moves.
 		// The menu filler is a fixed row on purpose (GoMenuFiller), so nothing may push a
-		// ladder rung over it from percentages the ended run left behind.
-		if (!FillerEnabled || !_fillerPlaybackActive || _inMenuScene || PlayerDead || GalleryHooks.BlocksInGameEdiTracking() || CustomEnemyBridge.EdiChannelHeld)
+		// ladder rung over it from percentages the ended run left behind. The pause menu's own
+		// base-filler swap is the same idea for the same reason: PauseFillerForMenu already put
+		// the row this frame should show, and letting the ladder recompute over it during a pause
+		// is exactly the "keeps drifting while paused" bug the swap exists to fix.
+		if (!FillerEnabled || !_fillerPlaybackActive || _inMenuScene || PlayerDead || GalleryHooks.BlocksInGameEdiTracking() || CustomEnemyBridge.EdiChannelHeld || PauseHooks.GamePaused)
 		{
 			return false;
 		}
@@ -1171,8 +1259,12 @@ public partial class Plugin : BaseUnityPlugin
 		else
 		{
 			// No preservePhase here: GoFiller is the entry *into* filler from somewhere else -
-			// a scene ending, a reset, the hotkey - and there is no ladder phase to carry.
-			SendPlay(GetFillerGallery(), loop: true, inGame: true, filler: true);
+			// a scene ending, a reset, the hotkey - and there is no ladder phase to carry. A
+			// chaser stomp still carries its own audio phase, though: a scene can end right next
+			// to a stomping dragon, and the row should not restart the beat from 0 when it does.
+			string fillerGallery = GetFillerGallery(out float animNormalizedTime, out float animClipSeconds);
+			SendPlay(fillerGallery, loop: true, inGame: true, filler: true,
+				animNormalizedTime: animNormalizedTime, animClipSeconds: animClipSeconds);
 		}
 	}
 
@@ -1258,6 +1350,11 @@ public partial class Plugin : BaseUnityPlugin
 		else if (EdiPausedByFocus)
 		{
 			EdiPausedByFocus = false;
+			if (PauseHooks.GamePaused && PauseHooks.DevicePausedByMenu)
+			{
+				DBG("FOCUS", "regained while pause menu still holds device paused -> skip Resume");
+				return;
+			}
 			DBG("FOCUS", "regained -> Edi/Resume");
 			SendResume();
 			if (ShouldBeStopped)
@@ -1286,7 +1383,7 @@ public partial class Plugin : BaseUnityPlugin
 		PlayerDead = false;
 		EnemyKeepAliveHelper.ResetForScene();
 		GrappleDeathSequence.Reset("scene change");
-		HeatLockSystem.ResetForScene();
+		HeatLockSystem.ResetForScene(to.name);
 		_lastStateHash = 0;
 		_lastInteractStateHash = 0;
 		ResetImpGrappleTrackingOnly();
@@ -1295,7 +1392,7 @@ public partial class Plugin : BaseUnityPlugin
 		EnemySpawnShuffle.ClearCache();
 		GrabScreenAudioFill.ClearCache();
 		SerpentHypnosis.ResetNow();
-		ChaserAura.ResetNow();
+		ChaserStomp.ResetNow();
 		SceneEscapeGate.EndScene();
 		EnemyReactivationHelper.CancelScheduled();
 		MimicGrabGate.ResetForNewScene();
