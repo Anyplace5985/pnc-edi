@@ -256,9 +256,11 @@ Because of `LoadDefinitions`, a **new gallery name needs no code change**:
 `"behaviour": "charm-witch"` plus a tuning block — and a package that ships an assembly publishes
 the behaviours other packages then select. The framework itself contains none: `charm-witch` is
 built from `code/packages/charm-witch/` into `BepInEx/custom-enemies/femboy-witch/CharmWitch.dll`.
-A package's code is refused until `Custom Enemies / <id> code` is turned on, per package, because
-BepInEx has no sandbox — `BepInEx/custom-enemies/CUSTOM-ENEMIES.md` is the format and the consent
-rule, and `code/packageaudit.py` is what notices a stale or mismatched one.
+A package that ships code starts **switched off**, and its one switch — `Custom Enemies / <id>` — is
+both the on/off and the permission (§167): BepInEx has no sandbox, so consent is what the framework
+owes, and a second toggle beside the first only made both packages look enabled while doing nothing.
+`BepInEx/custom-enemies/CUSTOM-ENEMIES.md` is the format and that rule, and `code/packageaudit.py`
+is what notices a stale or mismatched assembly.
 
 **A whole new enemy needs no code change either**, since §127: drop a package under
 `BepInEx/custom-enemies/<name>/` with an `enemy.json`, its art and its funscripts, and

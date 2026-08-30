@@ -115,6 +115,11 @@ to ship a game binary, a signing certificate, an `EdiConfig.json` carrying your 
 config with an undeclared local tweak in it. Custom-enemy packages are their own downloads
 (`--package <name>`), so the main archive stays free of third-party media.
 
+A package may ship its own code, and one that does arrives **switched off**: its single switch in
+the mod manager (**F11**) is also the permission to run that code, it says so beside the switch, and
+the game needs a restart after it changes. A package that ships no code has the same switch without
+any of that.
+
 ## Where to read next
 
 | | |
