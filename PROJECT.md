@@ -314,7 +314,7 @@ working on the thing it checks — and because it is what `check.py` is made of 
 
 | command | tier | what it answers |
 |---|---|---|
-| `dotnet test code/tests/PncEdi.Tests.csproj` | fast | does the naming, alias and config layer still behave? (112 tests) |
+| `dotnet test code/tests/PncEdi.Tests.csproj` | fast | does the naming, alias and config layer still behave? (114 tests) |
 | `python3 code/patchaudit.py` | fast | does the mod still bind to the game, and is every patch class registered? (`--ai` also redoes the AI audit) |
 | `python3 code/cfgaudit.py` | fast | is every config entry in the section its `Bind()` names? |
 | `python3 code/bridgeaudit.py` | fast | is the custom-enemy seam still wired at both ends? Every `CustomEnemyBridge` delegate falls back to vanilla, so a dropped call is otherwise invisible (§132) |

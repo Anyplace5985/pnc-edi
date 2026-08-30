@@ -4,7 +4,7 @@ Patching and configuration mechanics: what runs when, and how a config entry goe
 
 **Read this when:** adding a patch or a config setting, or a setting appears to be ignored
 
-**Keywords:** Harmony, prefix, postfix, finalizer, BepInEx, Bind, section key, KeyboardShortcut, config default, cfgaudit
+**Keywords:** Harmony, prefix, postfix, finalizer, BepInEx, Bind, section key, KeyboardShortcut, config default, cfgaudit, display patches gated like writers, predicting a number the game computes, order of operations, armour bonus, pure arithmetic in a testable function
 
 ---
 
@@ -87,6 +87,25 @@ among others) read their own config with no profile in the path, because that is
 `GameplayProfiles.TweaksEnabled` — one call earlier, which the grep's match line does not show. The
 only way to answer "does this respect the profile" is to read the call chain up to the gate, not to
 count `ConfigEntry` reads and assume the nearest one is unguarded.
+
+**A patch that only *displays* a number is gated too, and it is the one everybody forgets.** §158
+found `ClassSelectionHooks` printing a scaled max-heat capacity with no profile check, while
+`ApplyToPlayerHeat` — the patch that actually writes the multiplier onto the player — was correctly
+gated; §162 fixed it. The asymmetry is easy to justify one patch at a time ("it only draws a
+label"), and it is still a lie to the player: under `Vanilla` the screen advertised a capacity that
+profile will never write. **A display and the writer it describes read the same gate.** Where the
+gate lives has to be the patch body rather than whether the patch is installed, because this tree's
+patches all stay installed under every profile so a mid-run switch has no half-patched state.
+
+**When you predict a number the game computes, mirror the game's *order*, not its ingredients.**
+The same screen multiplied an armour heat bonus by the class multiplier; the runtime cannot,
+because `ArmorData::ApplyStatModifiers` *adds* the bonus after `PlayerStats.ApplyStatModifiers` has
+already multiplied. Same two inputs, same two operations, and 300 shown against 275 played (§148,
+§162). A prediction assembled from the right values in the wrong order is not approximately right,
+it is wrong by whichever term got the extra factor — and it looks correct in review, because every
+value in it is real. **Where such arithmetic exists, make it a pure function taking floats rather
+than a Unity object**, and unit-test it against a figure measured in play: `PlayerClass` cannot be
+constructed in a test host, which is exactly why the wrong version survived.
 
 **Two plugins that cooperate must not reference each other.** BepInEx loads plugin DLLs
 independently and in no guaranteed order, so a hard assembly reference makes the first plugin fail

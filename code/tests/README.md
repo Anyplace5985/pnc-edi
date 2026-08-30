@@ -2,7 +2,7 @@
 
     dotnet test code/tests/PncEdi.Tests.csproj
 
-103 tests over the mod's naming, alias and config layer. They compile the **real** source files
+114 tests over the mod's naming, alias and config layer. They compile the **real** source files
 out of `../edimod/PncEdi/` — never a copy — so they cannot drift from what the mod does. That is
 the same rule `../slugharness/` has followed since §71, for the same reason.
 
@@ -23,7 +23,7 @@ pipeline in `PROJECT.md`:
 | `GalleryAliases.cs` + `GalleryTable.cs` | slug → gallery row, in-game vs shared, gap reporting |
 | `DioramaGalleryMap.cs` | `D13` → `ambient_*`, and the three routes to it |
 | `PeekGalleryMap.cs` | the four exact keys, in order, then the clip-name fallback |
-| `ClassHeatMultipliers.cs` | the one setting parsed as a number |
+| `ClassHeatMultipliers.cs` | the one setting parsed as a number, and `ScaleCapacity` — how a class multiplier and an armour heat bonus combine (§162) |
 
 **That is where this project's bugs have actually been.** §92 (the gallery menu passing
 `Goon Shroom` with a space), §80 (0.3.1 rewriting every peek display name into a joke), §96 (an
@@ -58,6 +58,7 @@ It was mutation-tested when it was written — the point of a test is that it fa
 | `SortLongestKeyFirst` reversed | 3 tests, incl. the peek clip map and the enemy remap |
 | split on the **last** `=` instead of the first | 3 tests, incl. the live-config target check |
 | `StripCloneSuffix` dropped from `ResolveEnemyKey` | **nothing, at first** |
+| `ScaleCapacity` as `(vanilla + armour) * multiplier` | `ArmourBonusIsAddedAfterTheMultiplier` (§162) |
 
 The third found a real hole: the clone strip was only tested on the function directly, never
 through the fallback path that a runtime-spawned unknown enemy takes. One extra line in

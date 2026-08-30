@@ -567,7 +567,7 @@ there.**
 
     dotnet test code/tests/PncEdi.Tests.csproj
 
-112 tests over the naming, alias and config layer, compiling the **real** source files rather
+114 tests over the naming, alias and config layer, compiling the **real** source files rather
 than copies. `code/tests/README.md` has the detail: what is testable and why the rest is not,
 the mutation testing the suite was checked with, and how to bring another file under test.
 
