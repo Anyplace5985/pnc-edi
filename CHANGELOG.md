@@ -10838,6 +10838,48 @@ installs are current. No mod-level warning or error in this session's log; the t
 lines it has (`gravy_minotaur_intro`, `gravy_minotaur_bjstart`) are the seed table's own
 intentional `-` targets for fade/intro states (`GalleryTable.cs`), not gaps.
 
+## 158. The gameplay-profile audit: `Vanilla` really is vanilla, and one display-only gap found instead
+
+The open item asking whether `Vanilla` actually leaves combat, health, heat and spawning to the
+game — never audited before, and flagged as likely to have gaps because a patch only obeys
+`GameplayProfileRules`'s truth table if it *asks*. Read `GameplayProfileRules.cs` and
+`GameplayProfiles.cs` first, then all 30 `[HarmonyPatch]` classes in `code/edimod/PncEdi`, tracing
+what each does under `Vanilla` specifically rather than trusting a grep for `ConfigEntry`.
+
+**The five configs the open item named as suspects turned out not to be gaps at all.**
+`CumDamageGate`, `EnemyGrabGate`, `GrabEndHelper`'s reactivation cooldown, `HeatPotionLocks` and
+`GrabScreenAudioFill` all read `Plugin.GameplayTweaksEnabled` (or `HeatLockSystem.Enabled`, which
+resolves the same way) before doing anything - the original grep found the raw `ConfigEntry` reads
+and stopped one level short of the indirection that gates them. Same for `ClearOverheatAtLockFloor`,
+`CumCooldownEndsAtLockFloor` and `FullLockHoldsCum`, this time confirmed by reading the call sites
+(`HeatLockSystem.cs:1498`, `:289`, `:129`/`:167`) rather than assumed inert because there is nothing
+for them to act on. Everything else with no profile reference at all - `GrabHooks`, `GrabEndHooks`,
+`PauseHooks`, `GalleryHooks`, `PathfindingSpamFix`, `InteractDiag`, `FreeCamHooks` - was grepped for
+`PlayerStats`/`SetMaxHeat`/`SetHealth`/`TakeDamage`/`SpawnCount`/`EnemyAI`/`Multiplier`/
+`CanBeGrabbed` and came back empty: device-playback, UI and diagnostic plumbing, correctly always
+on. `GrabScreenHeatParam` is correctly unconditional for a different reason - it mirrors vanilla's
+own `SetBool` onto a misnamed animator parameter so *vanilla's own* state machine transitions,
+which matters even with every mod tweak off. `GalleryUnlockHooks` is a standalone cheat toggle,
+deliberately never wired to the profile at all.
+
+**One real gap did turn up, and it is not on the original list: `ClassSelectionHooks.cs`.** The
+class-select screen's heat bar and "Max Heat (EDI ×N)" stat line call `ClassHeatMultipliers
+.GetEffectiveHeatCapacity`/`GetMultiplier` with no profile check whatsoever - unlike
+`ApplyToPlayerHeat`, the thing that actually writes the multiplier onto the player from
+`GameplayProfiles.OnProfileChanged`, correctly gated on `ReleaseModeEnabled`. So under `Vanilla` or
+`GodMode` the screen shows a scaled max-heat figure that can never happen in that run. The same
+species of bug as the armour-bonus item already open from the release-thread feedback (post 112
+item 3), a different cause: that one is the order two multiplies happen in, this one is a display
+that never asks whether they happen at all.
+
+**Left open by choice rather than fixed this session** - the fix (gate the three
+`ClassSelectionHooks` postfixes on `GameplayProfiles.UsesClassHeatScaling`, falling back to
+`GetVanillaHeatCapacity` unmultiplied) is small and needs no play to verify, but it shares a screen
+and a decision with the still-open armour-bonus item, and doing them together beats doing them
+twice. `TODO.md` carries both.
+
+No code changed this session; nothing to build, test or deploy.
+
 ## Tried and reverted — do not redo
 
 - **Trimming loop seams.** 14 galleries end on a different position than they start.

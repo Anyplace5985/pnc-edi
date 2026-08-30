@@ -80,6 +80,14 @@ each of them already did. The converse matters too: nothing is ever *un*patched 
 Harmony unpatching a running game is how you get half-patched state. Startup diagnostics can stay
 behind a gate — they are one-shot and there is nothing to switch on later.
 
+**A grep for a raw `ConfigEntry` read is not evidence a patch bypasses the profile.** §158's audit
+opened suspecting several gameplay patches (`CumDamageGate`, `EnemyGrabGate`, `HeatPotionLocks`,
+among others) read their own config with no profile in the path, because that is what a grep for
+`Cfg*.Value` shows. Every one of them in fact checked `Plugin.GameplayTweaksEnabled` — itself
+`GameplayProfiles.TweaksEnabled` — one call earlier, which the grep's match line does not show. The
+only way to answer "does this respect the profile" is to read the call chain up to the gate, not to
+count `ConfigEntry` reads and assume the nearest one is unguarded.
+
 **Two plugins that cooperate must not reference each other.** BepInEx loads plugin DLLs
 independently and in no guaranteed order, so a hard assembly reference makes the first plugin fail
 to load wherever the second is absent or a different version. Use one late-bound read of a public
