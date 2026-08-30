@@ -1,14 +1,15 @@
 using System;
+using PncCustomEnemies.Api;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-namespace PncEdi;
+namespace CharmWitch;
 
 // The charm circle is the witch's readable tell: the player has to see where the aura ends before
 // stepping into it. A LineRenderer hairline is nearly invisible on a lit floor, so the ring is a
 // pair of ground-projected rune discs plus a scan ring that rises through the field to give it
 // volume, and an arc that fills as the next horny lock charges.
-internal sealed class WitchAuraCircle : MonoBehaviour
+internal sealed class WitchAuraCircle : MonoBehaviour, IPackageOwnedVisual
 {
 	private const int RingSegments = 72;
 	private const float RiserPeriod = 2.6f;

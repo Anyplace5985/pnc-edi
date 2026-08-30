@@ -6,6 +6,20 @@ transparent PNG sprite sheets, and a manifest.
 
     BepInEx/custom-enemies/<package>/wall-trap.json
 
+**A wall trap is a package that ships code.** Unlike a custom enemy - which is data, and can borrow
+a behaviour another package published - the trap *is* a behaviour, with its own manifest kind, its
+own placement rules and its own gallery entries, so it lives in an assembly beside its manifest
+(`WallPictureTrap.dll`, §165). That has one consequence worth knowing before anything below makes
+sense: **the mod will not run it until you allow it**, per package:
+
+    Custom Enemies / joker_wall code = true
+
+in `com.edi.pnc.customenemies.cfg`, or press **Allow code** under the package in the mod manager
+(**F11**), then restart.
+BepInEx has no sandbox, so a package's assembly runs with the game's full privileges and the only
+honest thing the loader can do is ask first. Until it is on, the package's art and funscripts are
+installed and no trap appears.
+
 Everything here is read at startup. Diagnostics go to `BepInEx/LogOutput.log` under
 `[WallPictureTrap]`, and that log is the first thing to read when a trap does not behave.
 
@@ -35,8 +49,9 @@ a trap you watched being hung is not much of an ambush.
 **F10** places a trap on the vertical wall you are aiming at, up to 35 metres away, and falls back
 to the automatic wall search if you are not aiming at anything suitable. It first destroys **every**
 trap of that package already in the scene, so it repositions rather than accumulates. The key is
-`Tools / SpawnWallPictureTrapKey` in `com.edi.pnc.customenemies.cfg`, and it needs
-`Tools / EnableDebugEnemySpawn` in `com.edi.pnc.cfg`.
+`Wall Picture Traps / PlaceTrapKey` in `com.edi.pnc.customenemies.cfg` - the package binds it
+itself, in its own section, since §165 - and it needs `Tools / EnableDebugEnemySpawn` in
+`com.edi.pnc.cfg`, which is one gate for every debug spawn key in the install.
 
 ## What it does
 
@@ -164,5 +179,7 @@ silently retargeting the existing row. Rename the stage's `gallery` if you hit i
 
 Every trap package gets a switch in the mod manager (**F11**) under **PNC Custom Enemies →
 Custom Enemies**, saved in `BepInEx/config/com.edi.pnc.customenemies.cfg`, which overrides the
-manifest's `enabled`. Disabling removes placed traps of that package at once and stops future
+manifest's `enabled`. **The mod binds that switch itself**, before the package's code is allowed to
+load, so a package whose code is blocked still has something to enable (§166); the "Allow code"
+button sits under it. Disabling removes placed traps of that package at once and stops future
 placement; re-enabling places new ones as you explore.

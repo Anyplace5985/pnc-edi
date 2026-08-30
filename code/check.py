@@ -81,6 +81,8 @@ STEPS = [
          kind="grep", bad=r"\bUNMAPPED\b", needs=("dotnet",)),
     Step("webmify", [PY, "code/webmify.py", "--check"],
          "does every custom-enemy video have a WebM, so it plays on Linux?"),
+    Step("packageaudit", [PY, "code/packageaudit.py"],
+         "does every package that declares an assembly ship a current one?"),
     Step("deploy", [PY, "code/deploy.py", "--check"],
          "are the game installs current?",
          needs=("game",)),

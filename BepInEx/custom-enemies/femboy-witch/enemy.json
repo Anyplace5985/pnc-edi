@@ -7,6 +7,12 @@
   "includeInRandomSpawns": true,
   "spawnWeight": 0.2,
   "baseEnemy": "plantasha",
+  "behaviour": "charm-witch",
+  "assembly": {
+    "file": "CharmWitch.dll",
+    "module": "CharmWitch.CharmWitchModule",
+    "api": 1
+  },
   "stripBaseEnemy": true,
   "nameAliases": [
     "FemboyWitch",
@@ -69,7 +75,7 @@
       }
     ]
   },
-  "witch": {
+  "charm-witch": {
     "enabled": true,
     "auraRadius": 8.5,
     "heatPerSecond": 7,
@@ -92,15 +98,26 @@
     "circleBreakSeconds": 10,
     "circleBreakCooldownSeconds": 10,
     "auraGallery": "femboy_witch_aura",
-    "captureGallery": "femboy_witch_capture",
-    "dreamVideos": [
+    "captureGallery": "femboy_witch_capture"
+  },
+  "galleryVideos": {
+    "files": [
       "dream-1.mp4",
       "dream-2.mp4",
       "dream-3.mp4",
       "dream-4.mp4",
       "dream-5.mp4"
     ],
-    "videoVolume": 1.0
+    "labels": [
+      "Dream 1",
+      "Dream 2",
+      "Dream 3",
+      "Dream 4",
+      "Capture"
+    ],
+    "volume": 1.0,
+    "gallery": "femboy_witch_aura",
+    "lastGallery": "femboy_witch_capture"
   },
   "galleryAnimations": [
     "Idle"

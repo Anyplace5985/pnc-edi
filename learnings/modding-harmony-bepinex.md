@@ -149,3 +149,34 @@ its own `com.edi.pnc.customenemies.cfg`, including each package's on/off switch 
 The exception proves the rule: `Tools / EnableDebugEnemySpawn` stays in the core mod's file, because
 it is one gate for every debug spawn key in the install and two settings of that name in two files
 is how they end up disagreeing (§131).
+
+**A third-party assembly cannot be given `InternalsVisibleTo`, so plan the forwarding surface before
+you move code out.** The plugin split (§131) was cheap because both assemblies are built by one
+command from one repo and `InternalsVisibleTo` kept the moved code compiling unchanged. Moving a
+behaviour into a *package* has no such escape: whatever it needs must be public, and "make this
+member public, the behaviour needs it" ends with the whole mod bound to by anything that references
+the DLL. §165's answer is one file, `ModServices`, that forwards a named list — play a row, release
+to the filler, ask what the gallery knows, take an aura lock, the escape hint, the AI type table,
+the pause flag, a reinforcement prefab, three log levels. Every member is there because code that
+already existed needed it, which is a stricter filter than designing the surface in advance.
+
+**Moving a compiled-in behaviour into the package that uses it deletes a capability unless the
+behaviour stays reachable by name.** Before §165 a manifest could say `"witch": { ... }` and get a
+charm-circle boss over its own artwork with no compiler anywhere; that was the framework's whole
+promise to authors who do not code. Extracting the behaviour into the witch's package would have
+made a DLL the price of that. So a package's module *publishes* a behaviour under a name
+(`charm-witch`) and any manifest selects it with `"behaviour": "<name>"` and a tuning block. The
+general shape: when code moves from a shared place into one owner, ask what the shared place was
+*providing to everyone else* before deciding the move is only a relocation.
+
+**A package's data does not survive `Object.Instantiate` any more than the framework's does.** The
+runtime-ScriptableObject trick (`CustomEnemyRuntimeData`, §131) has to be repeated inside a package
+assembly for that package's own settings — `CharmWitchRuntimeData` is the same pattern, one clone
+boundary further out — because after §165 the framework never sees a behaviour's settings at all.
+
+**A package assembly is the one build output nothing else reads, so a stale one survives every other
+check.** A plugin DLL that is a build behind shows up the moment anything uses it; a package DLL
+sits in a package directory and is loaded by filename at startup. `code/packageaudit.py` compares
+its mtime against the sources of the project that builds into that package, checks the declared API
+version against `PackageApi.Version`, and checks that a manifest naming a behaviour names one some
+package publishes (§165).

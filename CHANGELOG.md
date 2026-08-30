@@ -11058,6 +11058,103 @@ a negative about the other, and changes what `deploy.py --check` means). The sta
 written into `TODO.md` instead: a change to how a row is built is a change in two places, and
 `--check` calling an install stale is what it looks like when it is made in one (§129).
 
+## 165. Packages may ship their own code, and the framework carries none of the enemies'
+
+§164 took the decision; this built it. `PncCustomEnemies.dll` is now a loader with no enemy in it:
+the charm-circle boss it used to contain lives in the Femboy Witch package as `CharmWitch.dll`,
+compiled from `code/packages/charm-witch/` against nothing but a public API.
+
+**The API is the whole design.** `PncCustomEnemies.Api` is one small, deliberate surface —
+`IPackageModule` (a package's entry point, named by its manifest), `IPackageBehaviourFactory` and a
+behaviour registry, `IPackageSceneOwner` / `IPackageEdiChannelOwner` / `IPackageOwnedVisual` (the
+questions the framework used to answer by testing for a type it contained), `PackageMedia` (WAV,
+sprite sheets, and the `.webm`-sibling rule that is the difference between a video and a black
+rectangle on Linux), and `ModServices` (play a row, take an aura lock, ask what the gallery knows).
+`ModServices` exists because `InternalsVisibleTo` cannot be granted to a third party: the framework
+holds PncEdi's internals and forwards exactly eleven things, each one there because code that was
+already written needed it. The witch package therefore compiles against precisely what a stranger's
+package can reach, which is what makes it a test of the seam rather than a privileged tenant.
+
+**A behaviour is published by name, not owned by its package** — and that is the part that took a
+second look. Moving the witch's code into the witch's package would have quietly deleted a
+capability: today anyone can write `"witch": { ... }` in a plain `enemy.json`, point it at their own
+art, and get a charm-circle boss without a compiler. So a module publishes `charm-witch` into a
+registry and any manifest selects it with `"behaviour": "charm-witch"` plus a tuning block of the
+same name. Install the witch package once and the behaviour is available to every data-only package
+after it. **The no-code path was the original author's whole intent and it is narrower than it
+sounds** — it covers reskins, scenes, gallery rows and tuning, never a genuinely new behaviour —
+but it is not this change's business to narrow it further.
+
+**Consent is per package and off by default.** A manifest's `"assembly": { "file", "module", "api" }`
+is refused unless `Custom Enemies / <id> code` is on in `com.edi.pnc.customenemies.cfg` — which the
+mod manager (F11) renders like any other setting — and every launch logs, by name, that a package
+shipped code and whether it ran. An `api` mismatch is refused outright rather than tried, because
+the alternative is a `MissingMethodException` mid-run in a stack that blames the package. The
+package archive's README now says all of this above the fold, since disclosure a player reads after
+extracting is not disclosure.
+
+**Two things generalised on the way out.** Gallery videos moved from the witch's block to a
+framework-level `galleryVideos` (files, labels, volume, rows), because they are media: they play in
+the gallery with the package's code switched off, and the behaviour reads the same list rather than
+the manifest carrying two. And `CustomEnemyRuntimeData` no longer holds a behaviour's settings — a
+package that clones a template needs the same ScriptableObject trick for its own data, and
+`CharmWitchRuntimeData` is that, inside the package.
+
+**`code/packageaudit.py` is the check this seam needs**, wired into `check.py` (10 fast gates now).
+Every failure mode here is silent by design — a missing DLL loads as a reskin, an unpublished
+behaviour name leaves the enemy without it, a stale package DLL is the one build output nothing else
+reads — so the tree gets the strict version: the file exists, it is newer than its sources, its
+`api` matches, and a named behaviour is one some package publishes. `release.py --package` enforces
+the first of those for what gets posted.
+
+**The wall-picture trap moved too, and it needed a second API.** It is not a behaviour but a package
+*kind* — its own manifest (`wall-trap.json`), its own placement, its own gallery entries and its own
+Harmony patch — so `IPackageGalleryProvider` grew a `Describe` returning a
+`PackageGalleryPresentation`: stages of sprites, a row each, an optional sound. **The framework kept
+the viewer.** A package says what its entry looks like; the stepping, the unscaled-time frame clock,
+the audio and the Edi dispatch stay on the mod's side, so every package's gallery behaves the same
+way and a package cannot get between the viewer and the device. `PackageMedia` gained sprite-sheet
+loading and the mod's sprite material; `PackageGallery` exposes row registration, the
+`Definitions.csv` merge and the funscript comparison the trap needs to sync its own scripts.
+`WallPictureTrapRegistry` no longer scans for manifests — a module is handed its own — and its F10
+key is now its own config entry in its own section, bound by the package rather than by the loader.
+
+**`patchaudit.py` caught the one real mistake in that move**, which is the whole reason it exists.
+The trap's Harmony patch was first registered through a helper the audit cannot see, and it reported
+`WallPictureTrapPull carries [HarmonyPatch] members but is not registered […] - it is compiled in and
+does nothing`. The fix was to follow the convention rather than teach the check: a package's module
+is now its registration list, named class by class, and the audit reads `code/packages/*/` as a
+third source tree. It also learned the direct `new Harmony(id).PatchAll(typeof(X))` spelling, which
+is what a package uses because it has no helper of the framework's.
+
+`PncCustomEnemies` now contains no enemy at all: 2,600 lines of behaviour live in the two packages
+that use them, and what is left is a loader, a gallery viewer and an API.
+
+## 166. The settings window, made to read like something a player chose
+
+§165's consent switch was correct and unusable. The custom-enemy panel lists every bool in the
+`Custom Enemies` section as its own row, so two installed packages showed as three toggles -
+**"femboy witch", "femboy witch code", "joker wall code"** - with no indication that two of them
+belonged to the first two, and no way to tell a package's on/off switch from permission to run its
+code.
+
+Worse, one switch was missing. **A package that binds its own on/off switch has none until its code
+is allowed to run**, and the wall trap bound its own: with code blocked - the shipped default -
+`joker_wall` appeared only as a `code` toggle, so the panel offered permission for a package that
+looked like it was not installed. The framework now binds the switch for every package it discovers,
+before any package code loads, reading the display name out of the manifest it is already parsing;
+an `enemy.json` package keeps the enemy registry's switch, since that one was already bound from a
+manifest the framework parses anyway. `PackageContext.EnabledEntry` hands it to the module, so a
+package reacts to the switch moving instead of binding a second one of the same name.
+
+**The window now draws consent under the package it belongs to** - the package's row, then a line
+saying either "Runs its own code. Third-party code with the game's full privileges." or "Ships its
+own code, which is blocked. Its art and funscripts still work.", with the toggle beside it and a
+status line reminding that it needs a restart. The panel header counts blocked packages. The pairing
+is a key convention (`<id>` and `<id> code`) rather than a type, because `PncModManager` references
+neither of the other two assemblies and reads what it needs out of key names and descriptions -
+which is how it already titles these rows.
+
 ## Tried and reverted — do not redo
 
 - **Trimming loop seams.** 14 galleries end on a different position than they start.

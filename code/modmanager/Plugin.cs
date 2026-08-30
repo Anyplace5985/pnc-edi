@@ -765,26 +765,37 @@ public sealed class Plugin : BaseUnityPlugin
 
 	private void DrawCustomEnemiesPanel(PluginView plugin)
 	{
-		List<ConfigEntryBase> enemies = plugin.Config.Values
+		// A package's consent switch is a second bool named "<package> code", and listing it as its
+		// own row made three toggles out of two packages and read as gibberish - "femboy witch",
+		// "femboy witch code", "joker wall code" (§166). It belongs *to* a package, so it is drawn
+		// under the package it belongs to. This window still references nothing: the pairing is a
+		// key convention the framework owns, the same way the titles here are read out of the
+		// descriptions rather than from a type this assembly would have to know.
+		List<ConfigEntryBase> toggles = plugin.Config.Values
 			.Where(IsCustomEnemyToggle)
 			.OrderBy(entry => entry.Definition.Key, StringComparer.OrdinalIgnoreCase)
 			.ToList();
-		if (enemies.Count == 0)
+		List<ConfigEntryBase> packages = toggles.Where(entry => !IsCodeConsentToggle(entry)).ToList();
+		if (packages.Count == 0)
 		{
 			return;
 		}
 
-		int enabledCount = enemies.Count(entry => (bool)entry.BoxedValue);
+		int enabledCount = packages.Count(entry => (bool)entry.BoxedValue);
+		int blocked = toggles.Count(entry => IsCodeConsentToggle(entry) && !(bool)entry.BoxedValue);
+		string summary = enabledCount + " of " + packages.Count + " enabled"
+			+ (blocked > 0 ? ", " + blocked + " with code blocked" : string.Empty);
 		GUILayout.Space(8f);
 		GUILayout.BeginVertical(_profilePanelStyle);
-		if (DrawPanelHeader("CUSTOM ENEMIES", plugin.Info.Metadata.GUID + "|Panel|CustomEnemies", enabledCount + " of " + enemies.Count + " enabled"))
+		if (DrawPanelHeader("CUSTOM ENEMIES", plugin.Info.Metadata.GUID + "|Panel|CustomEnemies", summary))
 		{
 			GUILayout.Label("Installed custom enemy packages. Each switch applies immediately to future spawns and the custom gallery.", _descriptionStyle);
-			foreach (ConfigEntryBase entry in enemies)
+			foreach (ConfigEntryBase entry in packages)
 			{
 				string id = plugin.Info.Metadata.GUID + "|" + entry.Definition.Section + "|" + entry.Definition.Key;
 				bool enabled = (bool)entry.BoxedValue;
-				GUILayout.BeginHorizontal(GUI.skin.box);
+				GUILayout.BeginVertical(GUI.skin.box);
+				GUILayout.BeginHorizontal();
 				GUILayout.BeginVertical(GUILayout.ExpandWidth(true));
 				GUILayout.Label(CustomEnemyTitle(entry), _titleStyle);
 				GUILayout.Label(entry.Definition.Key, _descriptionStyle);
@@ -795,9 +806,41 @@ public sealed class Plugin : BaseUnityPlugin
 					ApplyValue(entry, !enabled, id);
 				}
 				GUILayout.EndHorizontal();
+
+				ConfigEntryBase consent = toggles.FirstOrDefault(candidate =>
+					IsCodeConsentToggle(candidate)
+					&& candidate.Definition.Key.StartsWith(entry.Definition.Key + " ", StringComparison.OrdinalIgnoreCase));
+				if (consent != null)
+				{
+					bool allowed = (bool)consent.BoxedValue;
+					GUILayout.BeginHorizontal();
+					GUILayout.Label(allowed
+						? "Runs its own code. Third-party code with the game's full privileges."
+						: "Ships its own code, which is blocked. Its art and funscripts still work.", _descriptionStyle);
+					if (GUILayout.Button(allowed ? "Code allowed" : "Allow code", GUILayout.Width(120f), GUILayout.MinHeight(30f)))
+					{
+						string consentId = plugin.Info.Metadata.GUID + "|" + consent.Definition.Section + "|" + consent.Definition.Key;
+						ApplyValue(consent, !allowed, consentId);
+						_status = (allowed ? "Blocked " : "Allowed ") + CustomEnemyTitle(entry) + "'s code - restart the game for it to take effect";
+					}
+					GUILayout.EndHorizontal();
+				}
+				GUILayout.EndVertical();
 			}
 		}
 		GUILayout.EndVertical();
+	}
+
+	/// <summary>
+	/// A package's "may it run the code it ships" switch, told apart from its on/off switch by the
+	/// key the framework binds it under: `&lt;package id&gt; code`. Convention rather than a type,
+	/// because this assembly deliberately references neither of the others.
+	/// </summary>
+	private static bool IsCodeConsentToggle(ConfigEntryBase entry)
+	{
+		return entry.SettingType == typeof(bool)
+			&& entry.Definition.Section.Equals("Custom Enemies", StringComparison.OrdinalIgnoreCase)
+			&& entry.Definition.Key.EndsWith(" code", StringComparison.OrdinalIgnoreCase);
 	}
 
 	private static string CustomEnemyTitle(ConfigEntryBase entry)

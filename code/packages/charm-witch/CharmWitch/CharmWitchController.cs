@@ -3,15 +3,16 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using HarmonyLib;
+using PncCustomEnemies.Api;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.UI;
 using UnityEngine.Video;
 
-namespace PncEdi;
+namespace CharmWitch;
 
 [Serializable]
-public sealed class CustomEnemyWitchBehaviour
+public sealed class CharmWitchSettings
 {
 	public bool enabled = true;
 	public float auraRadius = 8.5f;
@@ -34,13 +35,17 @@ public sealed class CustomEnemyWitchBehaviour
 	public float circleBreakCooldownSeconds = 10f;
 	public string lockSound = "";
 	public float lockSoundVolume = 0.85f;
-	public string auraGallery = "femboy_witch_aura";
-	public string captureGallery = "femboy_witch_capture";
+	// No default row names here: a package's gallery rows are the package's own, and a behaviour
+	// that ships one enemy's names as its fallback silently plays that enemy's scripts for anyone
+	// who omits the field. Empty resolves to null in ResolveCurrentAuraGallery, which is the same
+	// "no row" the manifest asked for.
+	public string auraGallery = "";
+	public string captureGallery = "";
 	public string[] dreamVideos = Array.Empty<string>();
 	public float videoVolume = 1f;
 }
 
-internal sealed class CharmWitchController : MonoBehaviour
+internal sealed class CharmWitchController : MonoBehaviour, IPackageSceneOwner, IPackageEdiChannelOwner
 {
 	private static readonly List<CharmWitchController> ActiveControllers = new List<CharmWitchController>();
 	private static Sprite _dreamCloudSprite;
@@ -63,13 +68,13 @@ internal sealed class CharmWitchController : MonoBehaviour
 		}
 	}
 	[SerializeField]
-	private CustomEnemyWitchBehaviour _settings;
+	private CharmWitchSettings _settings;
 	[SerializeField]
 	private string _packageDirectory;
 	[SerializeField]
 	private string _enemyId;
 	[SerializeField]
-	private CustomEnemyRuntimeData _data;
+	private CharmWitchRuntimeData _data;
 	private Transform _player;
 	private SpinningEnemyAI _spinAi;
 	private WitchAuraCircle _auraCircle;
@@ -104,11 +109,21 @@ internal sealed class CharmWitchController : MonoBehaviour
 	private AudioSource _videoAudio;
 	private Text _escapeLabel;
 
-	internal float MinimumSceneSeconds => Mathf.Max(0f, _settings?.minimumSceneSeconds ?? 20f);
+	public float MinimumSceneSeconds => Mathf.Max(0f, _settings?.minimumSceneSeconds ?? 20f);
+
+	// The three questions PncEdi asks about any scene a package owns, answered through the package
+	// API rather than by the framework testing for this type (§165). Her capture runs through
+	// vanilla's GrabScreen with this GameObject as the "enemy", and the aura holds the device
+	// between scenes, which is what keeps the filler off the channel while the player stands in it.
+	public bool OwnsGrabScene => _capturing;
+
+	public bool OwnsSceneVisual => false;
+
+	public bool HoldsEdiChannel => isActiveAndEnabled && _insideAura && !CircleBroken;
 
 	private bool CircleBroken => Time.time < _circleBrokenUntil;
 
-	internal static void Attach(GameObject root, string packageDirectory, CustomEnemyWitchBehaviour settings, string enemyId)
+	internal static void Attach(GameObject root, string packageDirectory, CharmWitchSettings settings, string enemyId)
 	{
 		if (root == null || settings == null || !settings.enabled)
 		{
@@ -120,8 +135,8 @@ internal sealed class CharmWitchController : MonoBehaviour
 		controller._settings = settings;
 		controller._packageDirectory = packageDirectory;
 		controller._enemyId = enemyId;
-		controller._data = CustomEnemyRuntimeData.Find(enemyId);
-		Plugin.Log?.LogInfo("[CharmWitch] attached boss behaviour to '" + enemyId + "' with " + (settings.dreamVideos?.Length ?? 0) + " dream video(s)");
+		controller._data = CharmWitchRuntimeData.Find(enemyId);
+		ModServices.Log("[CharmWitch] attached boss behaviour to '" + enemyId + "' with " + (settings.dreamVideos?.Length ?? 0) + " dream video(s)");
 	}
 
 	private static void ValidateVideos(string packageDirectory, string[] videos)
@@ -159,7 +174,7 @@ internal sealed class CharmWitchController : MonoBehaviour
 		{
 			return cached;
 		}
-		AudioClip clip = RuntimeWav.Load(path, "witch_lock_" + Path.GetFileNameWithoutExtension(path));
+		AudioClip clip = PackageMedia.LoadWav(path, "witch_lock_" + Path.GetFileNameWithoutExtension(path));
 		LockSounds[path] = clip;
 		return clip;
 	}
@@ -171,14 +186,14 @@ internal sealed class CharmWitchController : MonoBehaviour
 			ActiveControllers.Add(this);
 		}
 		// Clones made by the game's spawners and the debug spawner lose the custom-class
-		// _settings field (see CustomEnemyRuntimeData); the runtime data holder's reference
+		// _settings field (see CharmWitchRuntimeData); the runtime data holder's reference
 		// survives, so the whole configuration is restored from it before anything else runs.
 		if (_settings == null && _data != null)
 		{
-			_settings = _data.Witch;
+			_settings = _data.Settings;
 			_packageDirectory = _data.PackageDirectory;
 			_enemyId = _data.EnemyId;
-			Plugin.Log?.LogInfo("[CharmWitch] restored boss settings from runtime data for '" + (_enemyId ?? "?") + "'");
+			ModServices.Log("[CharmWitch] restored boss settings from runtime data for '" + (_enemyId ?? "?") + "'");
 		}
 		if (_settings == null)
 		{
@@ -224,7 +239,7 @@ internal sealed class CharmWitchController : MonoBehaviour
 		}
 		_attackClocks = clocks.ToArray();
 		if (_spinAi != null) _spinAi.canGrab = false;
-		Plugin.Log?.LogInfo("[CharmWitch] '" + _enemyId + "' movement-only: holding " + _attackClocks.Length + " attack cooldown(s) on " + ai.GetType().Name);
+		ModServices.Log("[CharmWitch] '" + _enemyId + "' movement-only: holding " + _attackClocks.Length + " attack cooldown(s) on " + ai.GetType().Name);
 	}
 
 	private void SuppressBaseAttacks()
@@ -248,7 +263,7 @@ internal sealed class CharmWitchController : MonoBehaviour
 			return;
 		}
 		SuppressBaseAttacks();
-		if (_videoAudio != null) _videoAudio.mute = PauseHooks.GamePaused;
+		if (_videoAudio != null) _videoAudio.mute = ModServices.GamePaused;
 		UpdateCircleBreak();
 		if (_player == null)
 		{
@@ -286,7 +301,7 @@ internal sealed class CharmWitchController : MonoBehaviour
 		if (distance < _closestApproach - 0.1f)
 		{
 			_closestApproach = distance;
-			Plugin.Log?.LogInfo("[CharmWitch] '" + _enemyId + "' closest approach " + distance.ToString("0.00")
+			ModServices.Log("[CharmWitch] '" + _enemyId + "' closest approach " + distance.ToString("0.00")
 				+ "m (capture at " + Mathf.Max(0.35f, _settings.captureDistance).ToString("0.00") + "m)");
 		}
 		if (distance <= Mathf.Max(0.35f, _settings.captureDistance))
@@ -325,7 +340,7 @@ internal sealed class CharmWitchController : MonoBehaviour
 		{
 			return null;
 		}
-		int locks = HeatLockSystem.CurrentLocks;
+		int locks = ModServices.CurrentHeatLocks;
 		List<string> pool = new List<string>();
 
 		if (locks <= 0)
@@ -333,7 +348,7 @@ internal sealed class CharmWitchController : MonoBehaviour
 			string[] tier0Variants = new[] { baseGallery, baseGallery + "_0_b", baseGallery + "_0_c" };
 			foreach (string candidate in tier0Variants)
 			{
-				if (GalleryRegistry.IsKnown(candidate))
+				if (ModServices.IsGalleryRow(candidate))
 				{
 					pool.Add(candidate);
 				}
@@ -346,7 +361,7 @@ internal sealed class CharmWitchController : MonoBehaviour
 				string[] tierVariants = new[] { baseGallery + "_" + tier, baseGallery + "_" + tier + "_b", baseGallery + "_" + tier + "_c" };
 				foreach (string candidate in tierVariants)
 				{
-					if (GalleryRegistry.IsKnown(candidate))
+					if (ModServices.IsGalleryRow(candidate))
 					{
 						pool.Add(candidate);
 					}
@@ -376,7 +391,7 @@ internal sealed class CharmWitchController : MonoBehaviour
 
 	private void UpdateAuraExposure()
 	{
-		int locks = HeatLockSystem.CurrentLocks;
+		int locks = ModServices.CurrentHeatLocks;
 		string targetGallery = ResolveCurrentAuraGallery();
 
 		if (!_insideAura)
@@ -387,10 +402,10 @@ internal sealed class CharmWitchController : MonoBehaviour
 			CreateDreamOverlay(capture: false);
 			if (!string.IsNullOrWhiteSpace(targetGallery))
 			{
-				Plugin.SendPlay(targetGallery, loop: true, inGame: true);
+				ModServices.PlayGallery(targetGallery, loop: true, inGame: true);
 				_ediAuraPlaying = true;
 			}
-			Plugin.DBG("WITCH", _enemyId + " aura entered (locks=" + locks + ", gallery=" + targetGallery + ")");
+			ModServices.Debug("WITCH", _enemyId + " aura entered (locks=" + locks + ", gallery=" + targetGallery + ")");
 		}
 		else if (_ediAuraPlaying && locks != _lastAuraLocks)
 		{
@@ -399,8 +414,8 @@ internal sealed class CharmWitchController : MonoBehaviour
 			if (!string.IsNullOrWhiteSpace(nextGallery) && !string.Equals(nextGallery, _currentAuraPlayingGallery, StringComparison.OrdinalIgnoreCase))
 			{
 				_currentAuraPlayingGallery = nextGallery;
-				Plugin.SendPlay(nextGallery, loop: true, inGame: true);
-				Plugin.DBG("WITCH", _enemyId + " aura escalated with locks=" + locks + " -> " + nextGallery);
+				ModServices.PlayGallery(nextGallery, loop: true, inGame: true);
+				ModServices.Debug("WITCH", _enemyId + " aura escalated with locks=" + locks + " -> " + nextGallery);
 			}
 		}
 
@@ -432,10 +447,10 @@ internal sealed class CharmWitchController : MonoBehaviour
 		while (_auraExposure >= lockInterval)
 		{
 			_auraExposure -= lockInterval;
-			if (HeatLockSystem.AddTimedAuraLock(_enemyId))
+			if (ModServices.AddAuraLock(_enemyId))
 			{
 				PlayLockSound();
-				int newLocks = HeatLockSystem.CurrentLocks;
+				int newLocks = ModServices.CurrentHeatLocks;
 				if (newLocks != _lastAuraLocks)
 				{
 					_lastAuraLocks = newLocks;
@@ -443,8 +458,8 @@ internal sealed class CharmWitchController : MonoBehaviour
 					if (!string.IsNullOrWhiteSpace(escalated) && !string.Equals(escalated, _currentAuraPlayingGallery, StringComparison.OrdinalIgnoreCase))
 					{
 						_currentAuraPlayingGallery = escalated;
-						Plugin.SendPlay(escalated, loop: true, inGame: true);
-						Plugin.DBG("WITCH", _enemyId + " lock gained in aura -> " + escalated);
+						ModServices.PlayGallery(escalated, loop: true, inGame: true);
+						ModServices.Debug("WITCH", _enemyId + " lock gained in aura -> " + escalated);
 					}
 				}
 			}
@@ -463,9 +478,9 @@ internal sealed class CharmWitchController : MonoBehaviour
 		if (_ediAuraPlaying)
 		{
 			_ediAuraPlaying = false;
-			Plugin.GoFiller();
+			ModServices.ReleaseToFiller();
 		}
-		Plugin.DBG("WITCH", _enemyId + " aura exited -> handed over to filler");
+		ModServices.Debug("WITCH", _enemyId + " aura exited -> handed over to filler");
 	}
 
 	// Sustained damage collapses the charm circle: circleBreakDamage points of damage take it down
@@ -493,7 +508,7 @@ internal sealed class CharmWitchController : MonoBehaviour
 		if (_circleBreakAnnounced)
 		{
 			_circleBreakAnnounced = false;
-			Plugin.DBG("WITCH", _enemyId + " charm circle restored, unbreakable for " + Mathf.Max(0f, _settings.circleBreakCooldownSeconds).ToString("0.0") + "s");
+			ModServices.Debug("WITCH", _enemyId + " charm circle restored, unbreakable for " + Mathf.Max(0f, _settings.circleBreakCooldownSeconds).ToString("0.0") + "s");
 		}
 		if (previous == int.MinValue || health >= previous || _settings.circleBreakDamage <= 0 || Time.time < _circleArmedAt)
 		{
@@ -513,7 +528,7 @@ internal sealed class CharmWitchController : MonoBehaviour
 		_circleArmedAt = _circleBrokenUntil + Mathf.Max(0f, _settings.circleBreakCooldownSeconds);
 		_circleBreakAnnounced = true;
 		StopAura();
-		Plugin.Log?.LogInfo("[CharmWitch] '" + _enemyId + "' took " + _settings.circleBreakDamage + " damage: charm circle down for " + Mathf.Max(0f, _settings.circleBreakSeconds).ToString("0.0") + "s");
+		ModServices.Log("[CharmWitch] '" + _enemyId + "' took " + _settings.circleBreakDamage + " damage: charm circle down for " + Mathf.Max(0f, _settings.circleBreakSeconds).ToString("0.0") + "s");
 	}
 
 	private float _closestApproach = float.MaxValue;
@@ -534,19 +549,19 @@ internal sealed class CharmWitchController : MonoBehaviour
 		_healthAi = null;
 		_healthField = null;
 		MonoBehaviour ai = _spinAi;
-		for (int i = 0; ai == null && i < EnemyAiTypes.All.Length; i++)
+		for (int i = 0; ai == null && i < ModServices.EnemyAiTypes.Length; i++)
 		{
-			ai = (MonoBehaviour)GetComponentInChildren(EnemyAiTypes.All[i], true);
+			ai = (MonoBehaviour)GetComponentInChildren(ModServices.EnemyAiTypes[i], true);
 		}
 		if (ai == null)
 		{
-			Plugin.Log?.LogWarning("[CharmWitch] '" + _enemyId + "' has no enemy AI: the charm circle cannot be broken by damage");
+			ModServices.LogWarning("[CharmWitch] '" + _enemyId + "' has no enemy AI: the charm circle cannot be broken by damage");
 			return;
 		}
 		Traverse field = Traverse.Create(ai).Field("currentHealth");
 		if (!field.FieldExists())
 		{
-			Plugin.Log?.LogWarning("[CharmWitch] '" + _enemyId + "' AI " + ai.GetType().Name + " has no currentHealth field: the charm circle cannot be broken by damage");
+			ModServices.LogWarning("[CharmWitch] '" + _enemyId + "' AI " + ai.GetType().Name + " has no currentHealth field: the charm circle cannot be broken by damage");
 			return;
 		}
 		_healthAi = ai;
@@ -564,7 +579,7 @@ internal sealed class CharmWitchController : MonoBehaviour
 		{
 			if (wasAuraPlaying)
 			{
-				Plugin.GoFiller();
+				ModServices.ReleaseToFiller();
 			}
 			return;
 		}
@@ -579,14 +594,14 @@ internal sealed class CharmWitchController : MonoBehaviour
 			_restoreStruggleButton = screen.StruggleButton.interactable;
 			screen.StruggleButton.interactable = false;
 		}
-		PackageGrabArt.Hide(screen);
+		PackageMedia.HideVanillaGrabArt(screen);
 		CreateDreamOverlay(capture: true);
 		if (!string.IsNullOrWhiteSpace(_settings.captureGallery))
 		{
-			Plugin.SendPlay(_settings.captureGallery, loop: true, inGame: true);
+			ModServices.PlayGallery(_settings.captureGallery, loop: true, inGame: true);
 			_ediCapturePlaying = true;
 		}
-		Plugin.Log?.LogInfo("[CharmWitch] player captured by '" + _enemyId + "' for at least " + MinimumSceneSeconds.ToString("0.0") + "s");
+		ModServices.Log("[CharmWitch] player captured by '" + _enemyId + "' for at least " + MinimumSceneSeconds.ToString("0.0") + "s");
 	}
 
 	private void UpdateCapture()
@@ -597,8 +612,8 @@ internal sealed class CharmWitchController : MonoBehaviour
 			EndCapture();
 			return;
 		}
-		if (_mediaCanvas != null) _mediaCanvas.sortingOrder = PauseHooks.GamePaused ? -1000 : 32000;
-		if (_escapeLabel != null) _escapeLabel.text = SceneEscapeGate.BuildHintText();
+		if (_mediaCanvas != null) _mediaCanvas.sortingOrder = ModServices.GamePaused ? -1000 : 32000;
+		if (_escapeLabel != null) _escapeLabel.text = ModServices.EscapeHintText();
 	}
 
 	private void EndCapture()
@@ -615,7 +630,7 @@ internal sealed class CharmWitchController : MonoBehaviour
 		if (_ediCapturePlaying)
 		{
 			_ediCapturePlaying = false;
-			Plugin.GoFiller();
+			ModServices.ReleaseToFiller();
 		}
 	}
 
@@ -625,7 +640,7 @@ internal sealed class CharmWitchController : MonoBehaviour
 		_mediaOverlay = new GameObject(capture ? "CharmWitchCaptureDream" : "CharmWitchAuraDream", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler));
 		_mediaCanvas = _mediaOverlay.GetComponent<Canvas>();
 		_mediaCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-		_mediaCanvas.sortingOrder = PauseHooks.GamePaused ? -1000 : (capture ? 32000 : 31000);
+		_mediaCanvas.sortingOrder = ModServices.GamePaused ? -1000 : (capture ? 32000 : 31000);
 		CanvasScaler scaler = _mediaOverlay.GetComponent<CanvasScaler>();
 		scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
 		scaler.referenceResolution = new Vector2(1920f, 1080f);
@@ -662,7 +677,7 @@ internal sealed class CharmWitchController : MonoBehaviour
 		_videoAudio.loop = true;
 		_videoAudio.spatialBlend = 0f;
 		_videoAudio.volume = Mathf.Clamp01(_settings?.videoVolume ?? 1f);
-		_videoAudio.mute = PauseHooks.GamePaused;
+		_videoAudio.mute = ModServices.GamePaused;
 		_videoPlayer = _mediaOverlay.AddComponent<VideoPlayer>();
 		_videoPlayer.playOnAwake = false;
 		_videoPlayer.isLooping = true;
@@ -677,7 +692,7 @@ internal sealed class CharmWitchController : MonoBehaviour
 		// PackageVideo, not a bare file:// URL: it prefers a WebM sibling, because Unity's
 		// VideoPlayer has no H.264 decoder on Linux and would otherwise leave this overlay blank
 		// with nothing said about it.
-		string videoUrl = PackageVideo.ResolveUrl(_packageDirectory, PickDreamVideo());
+		string videoUrl = PackageMedia.ResolveVideoUrl(_packageDirectory, PickDreamVideo());
 		if (!string.IsNullOrEmpty(videoUrl))
 		{
 			_videoPlayer.url = videoUrl;
@@ -689,7 +704,7 @@ internal sealed class CharmWitchController : MonoBehaviour
 		{
 			GameObject labelObject = UiObject("EscapeCountdown", _mediaOverlay.transform);
 			_escapeLabel = labelObject.AddComponent<Text>();
-			_escapeLabel.text = SceneEscapeGate.BuildHintText();
+			_escapeLabel.text = ModServices.EscapeHintText();
 			_escapeLabel.alignment = TextAnchor.MiddleCenter;
 			_escapeLabel.fontSize = 30;
 			_escapeLabel.color = Color.white;
@@ -794,7 +809,7 @@ internal sealed class CharmWitchController : MonoBehaviour
 		}
 		catch (Exception ex)
 		{
-			Plugin.Log?.LogError("[CharmWitch] lock sound unavailable for '" + _enemyId + "': " + ex.Message);
+			ModServices.LogError("[CharmWitch] lock sound unavailable for '" + _enemyId + "': " + ex.Message);
 			return;
 		}
 		_lockAudio = gameObject.AddComponent<AudioSource>();
@@ -870,7 +885,7 @@ internal sealed class CharmWitchController : MonoBehaviour
 		StartCoroutine(PortalBurst(destination));
 		yield return FadeVisual(0f, 1f, Mathf.Max(0.02f, _settings.blinkSeconds) * 1.4f);
 		_blinking = false;
-		Plugin.DBG("WITCH", _enemyId + (towardPlayer ? " chase portal " : " scatter portal ") + origin.ToString("F1") + " -> " + destination.ToString("F1"));
+		ModServices.Debug("WITCH", _enemyId + (towardPlayer ? " chase portal " : " scatter portal ") + origin.ToString("F1") + " -> " + destination.ToString("F1"));
 	}
 
 	private IEnumerator FadeVisual(float from, float to, float seconds)
@@ -932,15 +947,15 @@ internal sealed class CharmWitchController : MonoBehaviour
 	{
 		_reinforcements.RemoveAll(IsGoneOrDead);
 		if (_reinforcements.Count >= Mathf.Max(0, _settings.maxReinforcements) || _player == null) return;
-		GameObject prefab = EnemySpawnShuffle.PickNormalReinforcementPrefab();
+		GameObject prefab = ModServices.PickReinforcementPrefab();
 		if (prefab == null || !TryFindGround(_player.position, 8f, 15f, out Vector3 position)) return;
 		Vector3 facing = _player.position - position;
 		facing.y = 0f;
 		Quaternion rotation = facing.sqrMagnitude > 0.01f ? Quaternion.LookRotation(facing.normalized, Vector3.up) : Quaternion.identity;
 		GameObject enemy = Instantiate(prefab, position, rotation);
-		DebugEnemySpawn.EnsureSpawnActive(enemy);
+		ModServices.EnsureSpawnActive(enemy);
 		_reinforcements.Add(enemy);
-		Plugin.Log?.LogInfo("[CharmWitch] boss pressure spawned reinforcement '" + NameRemap.StripCloneSuffix(prefab.name) + "' (" + _reinforcements.Count + "/" + _settings.maxReinforcements + ")");
+		ModServices.Log("[CharmWitch] boss pressure spawned reinforcement '" + ModServices.StripCloneSuffix(prefab.name) + "' (" + _reinforcements.Count + "/" + _settings.maxReinforcements + ")");
 	}
 
 	private static bool IsGoneOrDead(GameObject enemy)

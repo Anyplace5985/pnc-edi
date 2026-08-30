@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using HarmonyLib;
+using PncCustomEnemies;
+using PncCustomEnemies.Api;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Video;
@@ -48,7 +50,7 @@ internal static class CustomGallerySectionHooks
 		internal Graphic[] HiddenGrabGraphics;
 		internal AudioSource HiddenGrabAudio;
 		internal GameObject GrabOverlay;
-		internal WallTrapGalleryAnimationDriver Driver;
+		internal PackageStageGalleryDriver Driver;
 		internal CustomEnemyGallerySceneDriver SceneDriver;
 		internal Image PortraitImage;
 	}
@@ -295,7 +297,7 @@ internal static class CustomGallerySectionHooks
 		FieldInfo field = AccessTools.Field(typeof(EnemyGalleryUI), "allEnemies");
 		List<EnemyGalleryEntry> current = field?.GetValue(gallery) as List<EnemyGalleryEntry>;
 		List<EnemyGalleryEntry> vanilla = current != null
-			? current.FindAll(entry => !CustomEnemyRegistry.IsCustomGalleryEntry(entry) && !WallPictureTrapRegistry.IsGalleryEntry(entry))
+			? current.FindAll(entry => !CustomEnemyRegistry.IsCustomGalleryEntry(entry) && !PackageGalleryEntries.IsProvided(entry))
 			: new List<EnemyGalleryEntry>();
 		SectionStates[controller] = new GallerySectionState
 		{
@@ -325,7 +327,7 @@ internal static class CustomGallerySectionHooks
 		if (list == null) return;
 		list.Clear();
 		foreach (EnemyGalleryEntry entry in CustomEnemyRegistry.GetGalleryEntries()) list.Add(entry);
-		foreach (EnemyGalleryEntry entry in WallPictureTrapRegistry.GetGalleryEntries()) list.Add(entry);
+		foreach (EnemyGalleryEntry entry in PackageGalleryEntries.All()) list.Add(entry);
 
 		List<EnemyGalleryEntry> displayed = AccessTools.Field(typeof(EnemyGalleryUI), "displayedEnemies")?.GetValue(state.Gallery) as List<EnemyGalleryEntry>;
 		if (displayed != null)
@@ -430,7 +432,7 @@ internal static class CustomGallerySectionHooks
 	{
 		int count = 0;
 		foreach (EnemyGalleryEntry unused in CustomEnemyRegistry.GetGalleryEntries()) count++;
-		foreach (EnemyGalleryEntry unused in WallPictureTrapRegistry.GetGalleryEntries()) count++;
+		foreach (EnemyGalleryEntry unused in PackageGalleryEntries.All()) count++;
 		return count;
 	}
 
@@ -470,7 +472,7 @@ internal static class CustomGallerySectionHooks
 	[HarmonyPostfix]
 	private static void HasGrabScenePostfix(EnemyGalleryEntry __instance, ref bool __result)
 	{
-		if (WallPictureTrapRegistry.IsGalleryEntry(__instance))
+		if (PackageGalleryEntries.IsProvided(__instance))
 		{
 			__result = true;
 			return;
@@ -479,7 +481,7 @@ internal static class CustomGallerySectionHooks
 		if (def != null)
 		{
 			if ((def.GalleryEntry != null && def.GalleryEntry.grabAnimations != null && def.GalleryEntry.grabAnimations.Length > 0)
-				|| (def.Manifest.witch != null && def.Manifest.witch.dreamVideos != null && def.Manifest.witch.dreamVideos.Length > 0)
+				|| (def.Manifest.galleryVideos != null && def.Manifest.galleryVideos.files != null && def.Manifest.galleryVideos.files.Length > 0)
 				|| (def.Manifest.scenes != null && def.Manifest.scenes.Length > 0))
 			{
 				__result = true;
@@ -522,18 +524,18 @@ internal static class CustomGallerySectionHooks
 			state.OriginalAnimator = Traverse.Create(__instance).Field("displayAnimator").GetValue<Animator>();
 		}
 
-		WallPictureTrapPackage wallPackage = WallPictureTrapRegistry.FindGalleryEntry(enemy);
+		PackageGalleryPresentation provided = PackageGalleryEntries.Describe(enemy);
 		CustomEnemyDefinition customDef = CustomEnemyRegistry.Find(enemy);
 
-		if (wallPackage == null && customDef == null) return;
+		if (provided == null && customDef == null) return;
 
 		// 1. Enemy icon in header / UI
 		Image icon = Traverse.Create(__instance).Field("enemyIconImage").GetValue<Image>();
 		Sprite iconSprite = null;
-		if (wallPackage != null)
+		if (provided != null)
 		{
-			iconSprite = (wallPackage.Portrait != null && wallPackage.Portrait.Frames != null && wallPackage.Portrait.Frames.Length > 0 ? wallPackage.Portrait.Frames[0] : null)
-				?? (wallPackage.Animations != null && wallPackage.Animations.Length > 0 && wallPackage.Animations[0].Frames != null && wallPackage.Animations[0].Frames.Length > 0 ? wallPackage.Animations[0].Frames[0] : null);
+			PackageSpriteAnimation first = PackageGalleryEntries.StageAnimation(provided, 0);
+			iconSprite = first != null && first.Frames != null && first.Frames.Length > 0 ? first.Frames[0] : null;
 		}
 		else if (customDef != null)
 		{
@@ -593,16 +595,23 @@ internal static class CustomGallerySectionHooks
 		Traverse.Create(__instance).Field("displayAnimator").SetValue(null);
 
 		RuntimeSpriteAnimationData[] animsToPlay = null;
-		if (wallPackage != null)
+		if (provided != null)
 		{
-			if (wallPackage.Animations != null && wallPackage.Animations.Length > 0)
+			// A provided presentation carries the package's own animation type, which is public API;
+			// the viewer's driver takes the framework's. One conversion here rather than a second
+			// driver: the frames and the rate are all either side has.
+			List<RuntimeSpriteAnimationData> stages = new List<RuntimeSpriteAnimationData>();
+			foreach (PackageGalleryStage stage in provided.Stages ?? System.Array.Empty<PackageGalleryStage>())
 			{
-				animsToPlay = wallPackage.Animations;
+				if (stage?.Animation?.Frames == null || stage.Animation.Frames.Length == 0) continue;
+				stages.Add(new RuntimeSpriteAnimationData
+				{
+					Name = stage.Name ?? stage.Animation.Name,
+					Frames = stage.Animation.Frames,
+					Fps = stage.Animation.Fps
+				});
 			}
-			else if (wallPackage.Portrait != null)
-			{
-				animsToPlay = new[] { wallPackage.Portrait };
-			}
+			if (stages.Count > 0) animsToPlay = stages.ToArray();
 		}
 		else if (customDef != null)
 		{
@@ -646,9 +655,9 @@ internal static class CustomGallerySectionHooks
 		Button grabBtn = Traverse.Create(__instance).Field("viewGrabSceneButton").GetValue<Button>();
 		if (grabBtn != null)
 		{
-			bool hasGrab = (wallPackage != null)
+			bool hasGrab = (provided != null)
 				|| (customDef != null && ((customDef.GalleryEntry != null && customDef.GalleryEntry.grabAnimations != null && customDef.GalleryEntry.grabAnimations.Length > 0)
-					|| (customDef.Manifest.witch != null && customDef.Manifest.witch.dreamVideos != null && customDef.Manifest.witch.dreamVideos.Length > 0)
+					|| (customDef.Manifest.galleryVideos != null && customDef.Manifest.galleryVideos.files != null && customDef.Manifest.galleryVideos.files.Length > 0)
 					|| (customDef.Manifest.scenes != null && customDef.Manifest.scenes.Length > 0)));
 			grabBtn.gameObject.SetActive(hasGrab);
 		}
@@ -676,9 +685,9 @@ internal static class CustomGallerySectionHooks
 	{
 		EnemyGalleryEntry currentEnemy = __instance.GetCurrentEnemy();
 		if (currentEnemy == null) return;
-		WallPictureTrapPackage wallPackage = WallPictureTrapRegistry.FindGalleryEntry(currentEnemy);
+		PackageGalleryPresentation provided = PackageGalleryEntries.Describe(currentEnemy);
 		CustomEnemyDefinition customDef = CustomEnemyRegistry.Find(currentEnemy);
-		if (wallPackage == null && customDef == null) return;
+		if (provided == null && customDef == null) return;
 
 		WallViewerState state = GetState(__instance);
 		GameObject panel = Traverse.Create(__instance).Field("grabScenePanel").GetValue<GameObject>();
@@ -775,15 +784,15 @@ internal static class CustomGallerySectionHooks
 			animText.transform.SetAsLastSibling();
 		}
 
-		if (wallPackage != null)
+		if (provided != null)
 		{
 			GameObject imageObject = UiObject("Animation", overlay.transform);
 			Image image = imageObject.AddComponent<Image>();
 			image.preserveAspect = true;
 			image.raycastTarget = false;
 			Stretch(imageObject.GetComponent<RectTransform>());
-			WallTrapGalleryAnimationDriver driver = overlay.AddComponent<WallTrapGalleryAnimationDriver>();
-			driver.Initialize(wallPackage, image);
+			PackageStageGalleryDriver driver = overlay.AddComponent<PackageStageGalleryDriver>();
+			driver.Initialize(provided, image);
 			state.GrabOverlay = overlay;
 			state.Driver = driver;
 			SetGalleryStage(__instance, state);
@@ -969,25 +978,35 @@ internal static class CustomGallerySectionHooks
 	}
 }
 
-internal sealed class WallTrapGalleryAnimationDriver : MonoBehaviour
+/// <summary>
+/// The viewer for a gallery entry a package contributed: its stages of sprites, its sound, and the
+/// row each stage plays.
+///
+/// **The framework draws it, not the package** (§165). A package describes what its entry looks
+/// like through `PackageGalleryPresentation`; everything here - the stepping, the frame clock on
+/// unscaled time so it survives a pause, the audio, the Edi dispatch - is the mod's, so every
+/// package's gallery behaves the same way and a package cannot get between the viewer and the
+/// device.
+/// </summary>
+internal sealed class PackageStageGalleryDriver : MonoBehaviour
 {
-	private WallPictureTrapPackage _package;
+	private PackageGalleryPresentation _presentation;
 	private Image _image;
 	private int _stage;
 	private int _frame;
 	private float _clock;
 	private AudioSource _audio;
 
-	internal void Initialize(WallPictureTrapPackage package, Image image)
+	internal void Initialize(PackageGalleryPresentation presentation, Image image)
 	{
-		_package = package;
+		_presentation = presentation;
 		_image = image;
-		if (package.CaptureSound != null)
+		if (presentation?.Sound != null)
 		{
 			_audio = gameObject.AddComponent<AudioSource>();
-			_audio.clip = package.CaptureSound;
-			_audio.loop = package.Manifest.captureSoundLoop;
-			_audio.volume = Mathf.Clamp01(package.Manifest.captureSoundVolume);
+			_audio.clip = presentation.Sound;
+			_audio.loop = presentation.SoundLoops;
+			_audio.volume = Mathf.Clamp01(presentation.SoundVolume);
 			_audio.playOnAwake = false;
 			_audio.spatialBlend = 0f;
 			_audio.ignoreListenerPause = true;
@@ -998,12 +1017,12 @@ internal sealed class WallTrapGalleryAnimationDriver : MonoBehaviour
 
 	internal void SetStage(int stage)
 	{
-		if (_package == null || _package.Animations.Length == 0) return;
-		_stage = Mathf.Clamp(stage, 0, _package.Animations.Length - 1);
+		if (_presentation?.Stages == null || _presentation.Stages.Length == 0) return;
+		_stage = Mathf.Clamp(stage, 0, _presentation.Stages.Length - 1);
 		_frame = 0;
 		_clock = 0f;
 		Draw();
-		string gallery = WallPictureTrapRegistry.GetGalleryName(_package, _stage);
+		string gallery = _presentation.Stages[_stage]?.Gallery;
 		if (!string.IsNullOrWhiteSpace(gallery))
 		{
 			Plugin.SendPlay(gallery, loop: true, inGame: false);
@@ -1013,8 +1032,8 @@ internal sealed class WallTrapGalleryAnimationDriver : MonoBehaviour
 
 	private void Update()
 	{
-		if (_package == null || _image == null) return;
-		RuntimeSpriteAnimationData animation = _package.Animations[_stage];
+		PackageSpriteAnimation animation = PackageGalleryEntries.StageAnimation(_presentation, _stage);
+		if (animation?.Frames == null || animation.Frames.Length == 0 || _image == null) return;
 		_clock += Time.unscaledDeltaTime;
 		float duration = 1f / Mathf.Max(0.01f, animation.Fps);
 		while (_clock >= duration)
@@ -1027,7 +1046,9 @@ internal sealed class WallTrapGalleryAnimationDriver : MonoBehaviour
 
 	private void Draw()
 	{
-		_image.sprite = _package.Animations[_stage].Frames[_frame];
+		PackageSpriteAnimation animation = PackageGalleryEntries.StageAnimation(_presentation, _stage);
+		if (animation?.Frames == null || animation.Frames.Length == 0 || _image == null) return;
+		_image.sprite = animation.Frames[Mathf.Clamp(_frame, 0, animation.Frames.Length - 1)];
 		_image.SetAllDirty();
 	}
 
@@ -1063,7 +1084,7 @@ internal sealed class CustomEnemyGallerySceneDriver : MonoBehaviour
 		_videoAudio.loop = true;
 		_videoAudio.spatialBlend = 0f;
 		_videoAudio.ignoreListenerPause = true;
-		_videoAudio.volume = Mathf.Clamp01(definition?.Manifest.witch?.videoVolume ?? 1f);
+		_videoAudio.volume = Mathf.Clamp01(definition?.Manifest.galleryVideos?.volume ?? 1f);
 
 		_videoPlayer = gameObject.AddComponent<VideoPlayer>();
 		_videoPlayer.playOnAwake = false;
@@ -1087,14 +1108,12 @@ internal sealed class CustomEnemyGallerySceneDriver : MonoBehaviour
 		string videoPath = null;
 		string galleryName = null;
 
-		if (_definition.Manifest.witch != null && _definition.Manifest.witch.dreamVideos != null && _definition.Manifest.witch.dreamVideos.Length > 0)
+		CustomEnemyGalleryVideos videos = _definition.Manifest.galleryVideos;
+		if (videos != null && videos.files != null && videos.files.Length > 0)
 		{
-			string[] videos = _definition.Manifest.witch.dreamVideos;
-			int vidIndex = Mathf.Clamp(stage, 0, videos.Length - 1);
-			videoPath = Path.GetFullPath(Path.Combine(_definition.Directory, videos[vidIndex]));
-			galleryName = (vidIndex == videos.Length - 1 && !string.IsNullOrWhiteSpace(_definition.Manifest.witch.captureGallery))
-				? _definition.Manifest.witch.captureGallery
-				: _definition.Manifest.witch.auraGallery;
+			int vidIndex = Mathf.Clamp(stage, 0, videos.files.Length - 1);
+			videoPath = Path.GetFullPath(Path.Combine(_definition.Directory, videos.files[vidIndex]));
+			galleryName = CustomEnemyRegistry.GalleryVideoRow(videos, vidIndex);
 			if (string.IsNullOrWhiteSpace(galleryName)) galleryName = _definition.Id + "_scene_" + stage;
 		}
 		else if (_definition.Manifest.scenes != null && _definition.Manifest.scenes.Length > 0)

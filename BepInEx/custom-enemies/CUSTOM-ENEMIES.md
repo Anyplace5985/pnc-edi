@@ -51,8 +51,11 @@ enemy already walking around stays until the scene changes.
 
 ## Spawning one to look at it
 
-**F9** spawns the package whose `id` matches `Tools / SpawnCustomEnemyId` (default `femboy_witch`)
-in `com.edi.pnc.customenemies.cfg`, `Tools / SpawnEnemyDistance` metres in front of the player. It
+**F9** spawns the package whose `id` matches `Tools / SpawnCustomEnemyId` in
+`com.edi.pnc.customenemies.cfg`, `Tools / SpawnEnemyDistance` metres in front of the player. That
+setting **ships empty**, which spawns the only installed package when there is exactly one and
+otherwise logs the ids to choose from: the framework ships no packages, so no package's id is a
+default here. It
 needs `Tools / EnableDebugEnemySpawn` in `com.edi.pnc.cfg` - that switch stays with the core mod,
 because it is one gate for every debug spawn key in the install.
 
@@ -200,11 +203,67 @@ the same origin and scale as the standard model. Without them the gallery keeps 
 and uses the supplied animator controllers, which is what a sprite-and-controller replacement
 wants.
 
-## The portal-witch behaviour
+## Behaviours, and where they come from
 
-A clone manifest may add a `witch` object. It borrows the base enemy's health bar, damage model and
-navigation and replaces everything else with an animated charm circle, timed heat locks, portal
-blinks, proximity capture, dream-cloud video overlays, Edi playback, and alive-only reinforcements.
+Everything above is a **reskin**: the manifest borrows a vanilla enemy and replaces what it looks
+like, what it plays and what it is called. A *behaviour* is the other half - what the enemy actually
+does - and it is code.
+
+**A behaviour is published by name, and any manifest can ask for one:**
+
+```json
+"behaviour": "charm-witch",
+"charm-witch": { "auraRadius": 8.5, "heatPerSecond": 7 }
+```
+
+`behaviour` names one; the block named the same way tunes it. **A package that only asks for a
+behaviour is still pure data** - no compiler, no Unity Editor, nothing but JSON, art and funscripts.
+What it does need is that some *installed* package published that name. If none did, the enemy still
+loads as a reskin and the log says which behaviour was wanted and what is published instead.
+
+Behaviours that exist today, both published by the packages that ship them:
+
+| name | published by | what it is |
+|---|---|---|
+| `charm-witch` | the Femboy Witch package | the portal-walking boss described below |
+
+A package can also be a *kind* of its own rather than a behaviour another manifest attaches: the
+Joker package's wall traps have their own manifest (`wall-trap.json`), their own placement and their
+own gallery entries, all inside that package's assembly. See
+[WALL-PICTURE-TRAPS.md](WALL-PICTURE-TRAPS.md).
+
+### Shipping a behaviour of your own
+
+A package may ship a .NET assembly and publish behaviours from it:
+
+```json
+"assembly": { "file": "MyBoss.dll", "module": "MyBoss.MyModule", "api": 1 }
+```
+
+`file` is package-relative, `module` is a type in it with a public parameterless constructor
+implementing `PncCustomEnemies.Api.IPackageModule`, and `api` is the framework API version the
+assembly was built against - a mismatch is refused with a log line saying which side is behind,
+rather than failing halfway through a run. Compile against `PncCustomEnemies.dll` and the game's own
+assemblies; the whole surface is `PncCustomEnemies.Api`, and `code/packages/charm-witch/` in the
+mod's repo is a working example of every part of it.
+
+**A package's code is not run until you allow it.** BepInEx has no sandbox: an assembly in a package
+runs with the game's full privileges, exactly like any other plugin, and nothing the loader does can
+change that. So each package that ships one gets its own switch, **off by default**:
+
+    Custom Enemies / <package id> code = true
+
+in `com.edi.pnc.customenemies.cfg`, or - easier - open the mod manager (**F11**), find the package
+under **PNC Custom Enemies** and press **Allow code** on it. Restart afterwards either way:
+assemblies load at startup. Until it is on, the package's art, sounds, funscripts and
+gallery rows all work and its behaviour does not, and the log says so by name at every launch.
+
+## The portal-witch behaviour - `charm-witch`
+
+The behaviour the Femboy Witch package publishes, and available to any manifest that names it. It
+borrows the base enemy's health bar, damage model and navigation and replaces everything else with
+an animated charm circle, timed heat locks, portal blinks, proximity capture, dream-cloud video
+overlays, Edi playback, and alive-only reinforcements.
 
 ```json
 "witch": {
@@ -212,7 +271,7 @@ blinks, proximity capture, dream-cloud video overlays, Edi playback, and alive-o
   "auraRadius": 8.5,
   "heatPerSecond": 7,
   "lockIntervalSeconds": 0,
-  "lockSound": "magical-whoosh.wav",
+  "lockSound": "charm-lock.wav",
   "lockSoundVolume": 0.85,
   "videoVolume": 1.0,
   "captureDistance": 1.25,
@@ -230,8 +289,8 @@ blinks, proximity capture, dream-cloud video overlays, Edi playback, and alive-o
   "circleBreakDamage": 80,
   "circleBreakSeconds": 10,
   "circleBreakCooldownSeconds": 10,
-  "auraGallery": "femboy_witch_aura",
-  "captureGallery": "femboy_witch_capture",
+  "auraGallery": "bog_witch_aura",
+  "captureGallery": "bog_witch_capture",
   "dreamVideos": ["dream-1.mp4", "dream-2.mp4"]
 }
 ```
@@ -275,11 +334,29 @@ heat-lock profile is off, because only a real gain triggers it. `lockSoundVolume
 the cue is non-positional, so it sounds the same anywhere inside the circle.
 
 `auraGallery` and `captureGallery` should also appear in `scenes`, so their funscripts are copied
-and registered like any other.
+and registered like any other. **Neither has a default**: omit one and that scene sends no row,
+rather than falling back to some other package's.
 
-### Dream videos, and Linux
+### Gallery videos, and Linux
 
-`dreamVideos` are package-relative video files. **Unity has no H.264 decoder outside Windows and
+A package's videos are declared once, at the top level of the manifest rather than inside a
+behaviour's block, because they are media rather than behaviour - the gallery plays them with the
+package's code switched off, and `charm-witch` reads the same list for its in-game dream clouds:
+
+```json
+"galleryVideos": {
+  "files":  ["dream-1.mp4", "dream-2.mp4", "capture.mp4"],
+  "labels": ["Dream 1", "Dream 2", "Capture"],
+  "volume": 1.0,
+  "gallery": "my_boss_aura",
+  "lastGallery": "my_boss_capture"
+}
+```
+
+`labels` are what the gallery's step list shows, and what a row is looked up by; `gallery` is the
+row every video sends, except the last one when `lastGallery` names another.
+
+`files` are package-relative video files. **Unity has no H.264 decoder outside Windows and
 macOS**, so an MP4 that plays fine on Windows is a blank rectangle on the native Linux build. What
 Unity carries on every platform is libvpx, so the mod prefers a `.webm` sibling of whatever the
 manifest names, on every platform - ship both and one package works everywhere.
@@ -288,8 +365,8 @@ From this repo, `python3 code/webmify.py` writes those siblings for every instal
 (`--check` reports what is missing without converting). If a video is going to be blank, `[VIDEO]`
 in the log says so by name before it happens.
 
-`videoVolume` (0-1) scales the dream-cloud and capture overlays; video audio is muted while the
-game is paused.
+`volume` (0-1) scales the dream-cloud and capture overlays; video audio is muted while the game is
+paused.
 
 ## Funscripts
 

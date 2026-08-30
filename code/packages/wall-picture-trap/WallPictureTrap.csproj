@@ -1,0 +1,136 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>WallPictureTrap</AssemblyName>
+    <RootNamespace>WallPictureTraps</RootNamespace>
+    <GenerateAssemblyInfo>False</GenerateAssemblyInfo>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <Deterministic>true</Deterministic>
+    <RepoDir>$(MSBuildThisFileDirectory)..\..\..\</RepoDir>
+    <!-- Same reason as the plugins: an unmapped Release build puts the build machine's absolute
+         paths in the PE debug directory and the PDB, and this DLL ships in a package (§143).   -->
+    <PathMap>$([System.IO.Path]::GetFullPath('$(RepoDir)'))=./</PathMap>
+    <GameDir Condition="'$(GameDir)' == ''">$(RepoDir)game-windows\</GameDir>
+    <ManagedDir>$(GameDir)Post Nut Calamity_Data\Managed\</ManagedDir>
+    <BepInExDir>$(RepoDir)code\dist\bepinex\core\</BepInExDir>
+    <!-- A package's assembly lives in the package, beside the manifest that names it. That is also
+         how it reaches a game install: deploy.py copies whatever the package directory holds.  -->
+    <PackageDir>$(RepoDir)BepInEx\custom-enemies\joker-wall\</PackageDir>
+    <CustomEnemiesRefPath Condition="'$(CustomEnemiesRefPath)' == ''">$(RepoDir)BepInEx\plugins\PncCustomEnemies.dll</CustomEnemiesRefPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The framework, and **only** its public API: no PncEdi reference and no InternalsVisibleTo.
+         A package is third-party code, so what it can reach is exactly what any stranger's package
+         can reach - which is what makes this package a working example of the seam rather than a
+         privileged one (§165). If something here needs a member the API does not have, the fix is
+         to add it to PackageApi/ModServices deliberately, not to widen the reference.          -->
+    <Reference Include="PncCustomEnemies">
+      <HintPath>$(CustomEnemiesRefPath)</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="BepInEx.Core">
+      <HintPath>$(BepInExDir)BepInEx.Core.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="BepInEx.Unity.Mono">
+      <HintPath>$(BepInExDir)BepInEx.Unity.Mono.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="BepInEx.Unity.Common">
+      <HintPath>$(BepInExDir)BepInEx.Unity.Common.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="SemanticVersioning">
+      <HintPath>$(BepInExDir)SemanticVersioning.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.InputLegacyModule">
+      <HintPath>$(ManagedDir)UnityEngine.InputLegacyModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="PackageTools">
+      <HintPath>$(ManagedDir)PackageTools.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="0Harmony">
+      <HintPath>$(BepInExDir)0Harmony.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>$(ManagedDir)Assembly-CSharp.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Assembly-CSharp-firstpass">
+      <HintPath>$(ManagedDir)Assembly-CSharp-firstpass.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine">
+      <HintPath>$(ManagedDir)UnityEngine.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(ManagedDir)UnityEngine.CoreModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.AnimationModule">
+      <HintPath>$(ManagedDir)UnityEngine.AnimationModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.PhysicsModule">
+      <HintPath>$(ManagedDir)UnityEngine.PhysicsModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.AudioModule">
+      <HintPath>$(ManagedDir)UnityEngine.AudioModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>$(ManagedDir)UnityEngine.UI.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UIModule">
+      <HintPath>$(ManagedDir)UnityEngine.UIModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.TextRenderingModule">
+      <HintPath>$(ManagedDir)UnityEngine.TextRenderingModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.VideoModule">
+      <HintPath>$(ManagedDir)UnityEngine.VideoModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.ImageConversionModule">
+      <HintPath>$(ManagedDir)UnityEngine.ImageConversionModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.AIModule">
+      <HintPath>$(ManagedDir)UnityEngine.AIModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.JSONSerializeModule">
+      <HintPath>$(ManagedDir)UnityEngine.JSONSerializeModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Drawing">
+      <HintPath>$(ManagedDir)Drawing.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="AstarPathfindingProject">
+      <HintPath>$(ManagedDir)AstarPathfindingProject.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+  </ItemGroup>
+
+  <Target Name="CheckRefs" BeforeTargets="ResolveAssemblyReferences">
+    <Error Condition="!Exists('$(CustomEnemiesRefPath)')"
+           Text="No PncCustomEnemies.dll at $(CustomEnemiesRefPath) to compile against. Build the mod first: dotnet build code/edimod/PncEdi.csproj -c Release" />
+  </Target>
+
+  <Target Name="DeployToPackage" AfterTargets="Build">
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(PackageDir)" SkipUnchangedFiles="true" />
+    <Message Importance="high" Text="Deployed $(TargetFileName) -&gt; $(PackageDir)" />
+  </Target>
+</Project>

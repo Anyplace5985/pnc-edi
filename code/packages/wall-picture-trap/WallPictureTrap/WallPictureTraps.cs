@@ -9,13 +9,14 @@ using BepInEx;
 using BepInEx.Configuration;
 using HarmonyLib;
 using PixelCrushers.GridController;
+using PncCustomEnemies.Api;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 using PncCustomEnemies;
 
-namespace PncEdi;
+namespace WallPictureTraps;
 
 [Serializable]
 public sealed class WallPictureTrapManifest
@@ -76,8 +77,8 @@ internal sealed class WallPictureTrapPackage
 {
 	internal WallPictureTrapManifest Manifest;
 	internal string Directory;
-	internal RuntimeSpriteAnimationData Portrait;
-	internal RuntimeSpriteAnimationData[] Animations;
+	internal PackageSpriteAnimation Portrait;
+	internal PackageSpriteAnimation[] Animations = System.Array.Empty<PackageSpriteAnimation>();
 	internal AudioClip CaptureSound;
 	internal EnemyGalleryEntry GalleryEntry;
 	internal GameObject GalleryPrefab;
@@ -98,17 +99,79 @@ internal static class WallPictureTrapRegistry
 	private static readonly Regex FunscriptAt = new Regex("\\\"at\\\"\\s*:\\s*(\\d+)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 	private static bool _initialized;
 
-	internal static void Initialize()
+	/// <summary>
+	/// One package's manifest, loaded when its module is initialised.
+	///
+	/// **This used to scan every package directory for `wall-trap.json`** - it was the framework, so
+	/// it could. A module is handed its own manifest and nothing else (§165), so a second wall-trap
+	/// package now arrives as a second module with its own assembly, and the shared statics here are
+	/// per-assembly rather than per-install. That is the right shape: two packages of the same kind
+	/// are two packages, not one registry with two rows.
+	/// </summary>
+	internal static void Initialize(string manifestPath)
 	{
+		Load(manifestPath);
+		if (Packages.Count == 0) return;
 		if (_initialized) return;
 		_initialized = true;
-		string root = Path.Combine(Paths.BepInExRootPath, "custom-enemies");
-		foreach (string path in Directory.GetFiles(root, "wall-trap.json", SearchOption.AllDirectories)) Load(path);
-		if (Packages.Count == 0) return;
-		if (CustomEnemyPlugin.Instance.GetComponent<WallPictureTrapPlacer>() == null) CustomEnemyPlugin.Instance.gameObject.AddComponent<WallPictureTrapPlacer>();
+		GameObject host = WallPictureTrapModule.Host;
+		if (host.GetComponent<WallPictureTrapPlacer>() == null) host.AddComponent<WallPictureTrapPlacer>();
 		SceneManager.activeSceneChanged += OnSceneChanged;
-		CustomEnemyPlugin.Instance.StartCoroutine(SpawnForScene(SceneManager.GetActiveScene()));
-		Plugin.Log?.LogInfo("[WallPictureTrap] loaded " + Packages.Count + " package(s); F10 places the first trap on the aimed wall");
+		WallPictureTrapModule.Runner.StartCoroutine(SpawnForScene(SceneManager.GetActiveScene()));
+		ModServices.Log("[WallPictureTrap] loaded " + Packages.Count + " package(s); the placement key puts the first trap on the aimed wall");
+	}
+
+	/// <summary>The gallery entries this package owns - nothing while the package is switched off, which is how a disabled package leaves the gallery.</summary>
+	internal static IEnumerable<EnemyGalleryEntry> GalleryEntries()
+	{
+		foreach (WallPictureTrapPackage package in Packages)
+		{
+			if (package.Enabled && package.GalleryEntry != null) yield return package.GalleryEntry;
+		}
+	}
+
+	/// <summary>How the framework should draw one of this package's gallery entries: a stage per animation, each with its own row.</summary>
+	internal static PackageGalleryPresentation Describe(EnemyGalleryEntry entry)
+	{
+		WallPictureTrapPackage package = FindGalleryEntry(entry);
+		if (package == null) return null;
+		List<PackageGalleryStage> stages = new List<PackageGalleryStage>();
+		for (int i = 0; i < package.Animations.Length; i++)
+		{
+			stages.Add(new PackageGalleryStage
+			{
+				Name = i < package.Manifest.animations.Length ? package.Manifest.animations[i].name : "Stage " + (i + 1),
+				Animation = package.Animations[i],
+				Gallery = GetGalleryName(package, i)
+			});
+		}
+		if (stages.Count == 0 && package.Portrait != null)
+		{
+			stages.Add(new PackageGalleryStage { Name = "Idle", Animation = package.Portrait, Gallery = null });
+		}
+		return new PackageGalleryPresentation
+		{
+			Stages = stages.ToArray(),
+			Sound = package.CaptureSound,
+			SoundLoops = package.Manifest.captureSoundLoop,
+			SoundVolume = package.Manifest.captureSoundVolume
+		};
+	}
+
+	/// <summary>The row one of this package's entries plays at one animation label (§138 - the viewer steps by label, not by index).</summary>
+	internal static string ResolveGalleryRow(EnemyGalleryEntry entry, string animationName)
+	{
+		WallPictureTrapPackage package = FindGalleryEntry(entry);
+		WallPictureTrapAnimation[] stages = package?.Manifest?.animations;
+		if (stages == null) return null;
+		for (int i = 0; i < stages.Length; i++)
+		{
+			if (stages[i] != null && string.Equals(stages[i].name, animationName, StringComparison.OrdinalIgnoreCase))
+			{
+				return GetGalleryName(package, i);
+			}
+		}
+		return null;
 	}
 
 	internal static void Shutdown()
@@ -138,33 +201,25 @@ internal static class WallPictureTrapRegistry
 				Manifest = manifest,
 				Directory = directory
 			};
-			package.EnabledEntry = CustomEnemyPlugin.Instance.Config.Bind(
-				"Custom Enemies",
-				manifest.id,
-				manifest.enabled,
-				"Enable " + manifest.displayName + ". Disabled wall traps stop spawning, are removed from the level, and disappear from the custom gallery until re-enabled.");
-			package.EnabledEntry.SettingChanged += (_, __) => ApplyEnabledState(package);
-			CustomEnemySpriteVisual visual = new CustomEnemySpriteVisual { pixelsPerUnit = manifest.portraitPixelsPerUnit, pivot = "0.5,0.5" };
-			CustomEnemySpriteAnimation portraitSpec = new CustomEnemySpriteAnimation { name = "portrait", file = manifest.portrait, columns = 1, rows = 1, frameCount = 1 };
-			List<RuntimeSpriteAnimationData> animations = new List<RuntimeSpriteAnimationData>();
+			// The switch is the framework's, bound before this assembly was allowed to load, so a
+			// package whose code is blocked still has something to enable (§166). Binding a second
+			// one here would have been two settings of the same name in one file.
+			package.EnabledEntry = WallPictureTrapModule.EnabledEntry;
+			if (package.EnabledEntry != null)
+			{
+				package.EnabledEntry.SettingChanged += (_, __) => ApplyEnabledState(package);
+			}
+			List<PackageSpriteAnimation> animations = new List<PackageSpriteAnimation>();
 			foreach (WallPictureTrapAnimation stage in manifest.animations)
 			{
-				CustomEnemySpriteAnimation spec = new CustomEnemySpriteAnimation
-				{
-					name = stage.name,
-					file = stage.file,
-					fps = stage.fps,
-					loop = stage.loop,
-					columns = stage.columns,
-					rows = stage.rows,
-					frameCount = stage.frameCount
-				};
-				animations.Add(RuntimeSpriteVisual.LoadAnimation(directory, visual, spec));
+				animations.Add(PackageMedia.LoadSpriteSheet(directory, stage.file, stage.name,
+					stage.columns, stage.rows, stage.frameCount, stage.fps, manifest.portraitPixelsPerUnit, "0.5,0.5", stage.loop));
 			}
-			package.Portrait = RuntimeSpriteVisual.LoadAnimation(directory, visual, portraitSpec);
+			package.Portrait = PackageMedia.LoadSpriteSheet(directory, manifest.portrait, "portrait",
+				1, 1, 1, 1f, manifest.portraitPixelsPerUnit, "0.5,0.5");
 			package.Animations = animations.ToArray();
 			if (!string.IsNullOrWhiteSpace(manifest.captureSound))
-				package.CaptureSound = RuntimeWav.Load(Path.Combine(directory, manifest.captureSound), manifest.id + "_capture");
+				package.CaptureSound = PackageMedia.LoadWav(Path.Combine(directory, manifest.captureSound), manifest.id + "_capture");
 			CreateGalleryAssets(package);
 			RegisterScenes(package);
 			SyncFunscripts(package);
@@ -172,7 +227,7 @@ internal static class WallPictureTrapRegistry
 		}
 		catch (Exception ex)
 		{
-			Plugin.Log?.LogError("[WallPictureTrap] " + path + ": " + ex);
+			ModServices.LogError("[WallPictureTrap] " + path + ": " + ex);
 		}
 	}
 
@@ -201,7 +256,7 @@ internal static class WallPictureTrapRegistry
 		GameObject galleryPrefab = new GameObject("WallPictureGallery_" + manifest.id);
 		galleryPrefab.SetActive(false);
 		SpriteRenderer renderer = galleryPrefab.AddComponent<SpriteRenderer>();
-		Material spriteMat = CustomEnemyRegistry.GetSpriteMaterial();
+		Material spriteMat = PackageMedia.SpriteMaterial;
 		if (spriteMat != null)
 		{
 			renderer.sharedMaterial = spriteMat;
@@ -209,11 +264,9 @@ internal static class WallPictureTrapRegistry
 		renderer.sprite = sprite;
 		renderer.color = Color.white;
 		renderer.sortingOrder = 100;
-		if (package.Animations != null && package.Animations.Length > 0)
-		{
-			RuntimeSpriteVisual visual = galleryPrefab.AddComponent<RuntimeSpriteVisual>();
-			visual.InitializeGallery(renderer, package.Animations, 0);
-		}
+		// No animator on the gallery prefab any more: since §165 the framework draws a provided
+		// entry from what `Describe` returns, so this object is only the still the viewer falls back
+		// to. The frames it would have played are the same ones the presentation carries.
 		UnityEngine.Object.DontDestroyOnLoad(galleryPrefab);
 		package.GalleryPrefab = galleryPrefab;
 	}
@@ -240,17 +293,17 @@ internal static class WallPictureTrapRegistry
 			}
 			if (GalleryProgressManager.Instance != null)
 			{
-				CustomEnemyRegistry.InjectGallery(GalleryProgressManager.Instance);
+				PackageGallery.RefreshGallery(GalleryProgressManager.Instance);
 			}
 			foreach (EnemyGalleryUI gallery in UnityEngine.Object.FindObjectsByType<EnemyGalleryUI>(FindObjectsInactive.Include, FindObjectsSortMode.None))
 			{
-				CustomEnemyRegistry.InjectGallery(gallery);
+				PackageGallery.RefreshGallery(gallery);
 			}
-			Plugin.Log?.LogInfo("[WallPictureTrap] '" + package.Manifest.id + "' " + (package.Enabled ? "enabled" : "disabled") + " from configuration");
+			ModServices.Log("[WallPictureTrap] '" + package.Manifest.id + "' " + (package.Enabled ? "enabled" : "disabled") + " from configuration");
 		}
 		catch (Exception ex)
 		{
-			Plugin.Log?.LogError("[WallPictureTrap] could not apply enabled state for '" + package.Manifest.id + "': " + ex);
+			ModServices.LogError("[WallPictureTrap] could not apply enabled state for '" + package.Manifest.id + "': " + ex);
 		}
 	}
 
@@ -258,12 +311,12 @@ internal static class WallPictureTrapRegistry
 	{
 		if (package == null || package.Manifest.animations == null || package.Manifest.animations.Length == 0) return null;
 		WallPictureTrapAnimation stage = package.Manifest.animations[Mathf.Clamp(stageIndex, 0, package.Manifest.animations.Length - 1)];
-		return string.IsNullOrWhiteSpace(stage.gallery) ? package.Manifest.id + "_" + NameRemap.Slug(stage.name) : stage.gallery.Trim();
+		return string.IsNullOrWhiteSpace(stage.gallery) ? package.Manifest.id + "_" + ModServices.Slug(stage.name) : stage.gallery.Trim();
 	}
 
 	private static void RegisterScenes(WallPictureTrapPackage package)
 	{
-		for (int i = 0; i < package.Manifest.animations.Length; i++) GalleryRegistry.Register(GetGalleryName(package, i));
+		for (int i = 0; i < package.Manifest.animations.Length; i++) PackageGallery.RegisterRow(GetGalleryName(package, i));
 	}
 
 	private static void SyncFunscripts(WallPictureTrapPackage package)
@@ -273,7 +326,7 @@ internal static class WallPictureTrapRegistry
 		string galleryRoot = Path.Combine(Paths.GameRootPath, "Edi", "Gallery");
 		if (!Directory.Exists(galleryRoot))
 		{
-			Plugin.Log?.LogWarning("[WallPictureTrap] Edi/Gallery not found; funscripts for '" + package.Manifest.id + "' were not installed");
+			ModServices.LogWarning("[WallPictureTrap] Edi/Gallery not found; funscripts for '" + package.Manifest.id + "' were not installed");
 			return;
 		}
 		foreach (string variantDir in Directory.GetDirectories(sourceRoot))
@@ -288,9 +341,9 @@ internal static class WallPictureTrapRegistry
 				// a real row names it must not be able to overwrite it. Identical content copies
 				// silently, which is the normal case - deploy.py has put these here already.
 				string target = Path.Combine(targetDir, Path.GetFileName(source));
-				if (File.Exists(target) && !CustomEnemyRegistry.SameFileContent(source, target))
+				if (File.Exists(target) && !PackageGallery.SameFileContent(source, target))
 				{
-					Plugin.Log?.LogWarning("[WallPictureTrap] '" + package.Manifest.id + "' ships "
+					ModServices.LogWarning("[WallPictureTrap] '" + package.Manifest.id + "' ships "
 						+ Path.GetFileName(source) + ", but a different script of that name is already in "
 						+ Path.GetFileName(targetDir) + " - kept the existing one; rename the package's script");
 					continue;
@@ -313,7 +366,7 @@ internal static class WallPictureTrapRegistry
 			if (end <= 0) continue;
 			rows.Add(string.Join(",", gallery, file, "0", end.ToString(CultureInfo.InvariantCulture), "gallery", "true"));
 		}
-		CustomEnemyRegistry.MergeDefinitions("WallPictureTrap", package.Manifest.id, package.Directory, galleryRoot, rows);
+		PackageGallery.MergeRows("WallPictureTrap", package.Manifest.id, package.Directory, galleryRoot, rows);
 	}
 
 	private static int FindFunscriptEnd(string root, string file)
@@ -368,7 +421,7 @@ internal static class WallPictureTrapRegistry
 
 	private static void OnSceneChanged(Scene oldScene, Scene newScene)
 	{
-		if (CustomEnemyPlugin.Instance != null) CustomEnemyPlugin.Instance.StartCoroutine(SpawnForScene(newScene));
+		if (WallPictureTrapModule.Runner != null) WallPictureTrapModule.Runner.StartCoroutine(SpawnForScene(newScene));
 	}
 
 	private static IEnumerator SpawnForScene(Scene scene)
@@ -391,7 +444,7 @@ internal static class WallPictureTrapRegistry
 				occupied.Add(hit.point);
 			}
 			if (occupied.Count < desired)
-				Plugin.Log?.LogWarning("[WallPictureTrap] placed " + occupied.Count + "/" + desired + " '" + package.Manifest.id + "' trap(s); no more suitably separated walls were found");
+				ModServices.LogWarning("[WallPictureTrap] placed " + occupied.Count + "/" + desired + " '" + package.Manifest.id + "' trap(s); no more suitably separated walls were found");
 		}
 	}
 
@@ -474,7 +527,7 @@ internal static class WallPictureTrapRegistry
 		WallPictureTrapPackage package = Packages.Find(p => p.Enabled) ?? (Packages.Count > 0 ? Packages[0] : null);
 		if (package == null)
 		{
-			Plugin.Log?.LogWarning("[WallPictureTrap] F10: no loaded wall-trap package");
+			ModServices.LogWarning("[WallPictureTrap] F10: no loaded wall-trap package");
 			return null;
 		}
 
@@ -515,7 +568,7 @@ internal static class WallPictureTrapRegistry
 
 		if (!foundWall)
 		{
-			Plugin.Log?.LogWarning("[WallPictureTrap] F10: could not find a vertical wall in view or nearby");
+			ModServices.LogWarning("[WallPictureTrap] F10: could not find a vertical wall in view or nearby");
 			return null;
 		}
 
@@ -537,7 +590,7 @@ internal static class WallPictureTrapRegistry
 		root.transform.rotation = Quaternion.LookRotation(normal, Vector3.up);
 		root.transform.localScale = ParseScale(package.Manifest.portraitScale);
 		SpriteRenderer renderer = root.AddComponent<SpriteRenderer>();
-		Material spriteMat = CustomEnemyRegistry.GetSpriteMaterial();
+		Material spriteMat = PackageMedia.SpriteMaterial;
 		if (spriteMat != null) renderer.sharedMaterial = spriteMat;
 		renderer.sprite = package.Portrait.Frames[0];
 		float brightness = Mathf.Clamp01(package.Manifest.portraitBrightness);
@@ -551,7 +604,7 @@ internal static class WallPictureTrapRegistry
 		hitbox.isTrigger = false;
 		WallPictureTrap trap = root.AddComponent<WallPictureTrap>();
 		trap.Initialize(package, renderer);
-		Plugin.Log?.LogInfo("[WallPictureTrap] placed '" + package.Manifest.id + "' at " + root.transform.position);
+		ModServices.Log("[WallPictureTrap] placed '" + package.Manifest.id + "' at " + root.transform.position);
 		return trap;
 	}
 
@@ -631,9 +684,9 @@ internal sealed class WallPictureTrapPlacer : MonoBehaviour
 
 	private void Update()
 	{
-		if (Plugin.CfgEnableDebugEnemySpawn == null || Plugin.CfgEnableDebugEnemySpawn.Value)
+		if (ModServices.DebugSpawnEnabled)
 		{
-			if (CustomEnemyPlugin.CfgKeySpawnWallPictureTrap != null ? Hotkeys.IsDown(CustomEnemyPlugin.CfgKeySpawnWallPictureTrap) : SafeInput.GetKeyDown(KeyCode.F10))
+			if (ModServices.HotkeyPressed(WallPictureTrapModule.SpawnKey))
 			{
 				WallPictureTrapRegistry.SpawnFirstAtAim();
 			}
@@ -747,7 +800,7 @@ internal sealed class WallPictureTrap : MonoBehaviour, IDamageable
 
 	private bool IsAnySceneActive()
 	{
-		if (GrabEndHelper.IsEscapeSceneActive()) return true;
+		if (ModServices.EscapeSceneActive) return true;
 		GrabScreen screen = GrabScreen.Instance;
 		return screen != null && screen.IsGrabbed;
 	}
@@ -780,9 +833,9 @@ internal sealed class WallPictureTrap : MonoBehaviour, IDamageable
 			float flash = Mathf.Max(_basePortraitColor.r, 0.75f);
 			_portrait.color = new Color(flash, flash * 0.35f, flash * 0.35f, 1f);
 		}
-		Plugin.Log?.LogInfo("[WallPictureTrap] '" + Id + "' took " + damage + " damage (" + _health + "/" + _package.Manifest.maxHealth + ")");
+		ModServices.Log("[WallPictureTrap] '" + Id + "' took " + damage + " damage (" + _health + "/" + _package.Manifest.maxHealth + ")");
 		if (_health > 0) return;
-		Plugin.Log?.LogInfo("[WallPictureTrap] '" + Id + "' was destroyed");
+		ModServices.Log("[WallPictureTrap] '" + Id + "' was destroyed");
 		if (_capturing && GrabScreen.Instance != null && GrabScreen.Instance.GrabbingEnemy == gameObject)
 			GrabScreen.Instance.EndGrab();
 		Destroy(gameObject);
@@ -791,14 +844,14 @@ internal sealed class WallPictureTrap : MonoBehaviour, IDamageable
 	private void CreateHealthBar()
 	{
 		_healthBarTexture = new Texture2D(1, 1, TextureFormat.RGBA32, false);
-		_healthBarTexture.name = "JokerHealthBarPixel";
+		_healthBarTexture.name = "WallPictureTrapHealthBarPixel";
 		_healthBarTexture.filterMode = FilterMode.Point;
 		_healthBarTexture.SetPixel(0, 0, Color.white);
 		_healthBarTexture.Apply(false, true);
 		_healthBarSprite = Sprite.Create(_healthBarTexture, new Rect(0f, 0f, 1f, 1f), new Vector2(0.5f, 0.5f), 1f);
-		_healthBarSprite.name = "JokerHealthBarSprite";
+		_healthBarSprite.name = "WallPictureTrapHealthBarSprite";
 
-		_healthBar = new GameObject("JokerEnemyHealthBar");
+		_healthBar = new GameObject("WallPictureTrapHealthBar");
 		_healthBar.transform.SetParent(transform, false);
 		_healthBar.transform.localPosition = new Vector3(0f, (_portrait?.sprite?.bounds.max.y ?? 1f) + 0.18f, 0.08f);
 		_healthBar.transform.localRotation = Quaternion.identity;
@@ -818,7 +871,7 @@ internal sealed class WallPictureTrap : MonoBehaviour, IDamageable
 	{
 		GameObject part = new GameObject(name);
 		SpriteRenderer renderer = part.AddComponent<SpriteRenderer>();
-		Material spriteMat = CustomEnemyRegistry.GetSpriteMaterial();
+		Material spriteMat = PackageMedia.SpriteMaterial;
 		if (spriteMat != null) renderer.sharedMaterial = spriteMat;
 		renderer.sprite = _healthBarSprite;
 		renderer.color = color;
@@ -859,7 +912,7 @@ internal sealed class WallPictureTrap : MonoBehaviour, IDamageable
 		// A paused game must not be grabbed by a picture: Update runs at timeScale zero, and every
 		// clock here is unscaled, so without this the trap arms, pulls and captures behind the
 		// pause menu or the mod manager's window.
-		if (PauseHooks.SceneClockHeld) return;
+		if (ModServices.SceneClockHeld) return;
 		// Every one of these ends the pull rather than merely skipping a frame of it: the pull now
 		// lives on until something clears it, so an early return that leaves `_pulling` set is an
 		// invisible drag on the player for as long as the condition holds.
@@ -872,7 +925,7 @@ internal sealed class WallPictureTrap : MonoBehaviour, IDamageable
 		{
 			if (_pulling)
 			{
-				Plugin.Log?.LogInfo("[WallPictureTrap] another scene is active - pull suspended for '" + Id + "'");
+				ModServices.Log("[WallPictureTrap] another scene is active - pull suspended for '" + Id + "'");
 				StopPulling();
 			}
 			return;
@@ -888,7 +941,7 @@ internal sealed class WallPictureTrap : MonoBehaviour, IDamageable
 		// capture below has long since fired, so there is nothing to pull towards either way.
 		if (distance > _package.Manifest.pullRadius || distance < 0.01f)
 		{
-			if (_pulling) Plugin.Log?.LogInfo("[WallPictureTrap] player escaped pull range for '" + Id + "'");
+			if (_pulling) ModServices.Log("[WallPictureTrap] player escaped pull range for '" + Id + "'");
 			StopPulling();
 			return;
 		}
@@ -899,7 +952,7 @@ internal sealed class WallPictureTrap : MonoBehaviour, IDamageable
 			_pulling = true;
 			_pullSpeed = 0f;
 			WallPictureTrapPull.Add(this);
-			Plugin.Log?.LogInfo("[WallPictureTrap] pulling player into '" + Id + "' from " + distance.ToString("F2") + "m");
+			ModServices.Log("[WallPictureTrap] pulling player into '" + Id + "' from " + distance.ToString("F2") + "m");
 		}
 
 		// `pullStrength` is an acceleration, so it is integrated rather than used as a speed: the
@@ -934,14 +987,14 @@ internal sealed class WallPictureTrap : MonoBehaviour, IDamageable
 		GrabScreen screen = GrabScreen.Instance;
 		if (screen == null || screen.IsGrabbed)
 		{
-			Plugin.Log?.LogWarning("[WallPictureTrap] capture blocked: GrabScreen unavailable or already active");
+			ModServices.LogWarning("[WallPictureTrap] capture blocked: GrabScreen unavailable or already active");
 			return;
 		}
-		Plugin.Log?.LogInfo("[WallPictureTrap] capture threshold reached for '" + Id + "'");
+		ModServices.Log("[WallPictureTrap] capture threshold reached for '" + Id + "'");
 		screen.StartGrab(gameObject, null, default, default, true);
 		if (!screen.IsGrabbed || screen.GrabbingEnemy != gameObject)
 		{
-			Plugin.Log?.LogWarning("[WallPictureTrap] GrabScreen refused capture (player may have grab immunity)");
+			ModServices.LogWarning("[WallPictureTrap] GrabScreen refused capture (player may have grab immunity)");
 			_cooldownUntil = Time.unscaledTime + 1f;
 			return;
 		}
@@ -950,7 +1003,7 @@ internal sealed class WallPictureTrap : MonoBehaviour, IDamageable
 			_restoreStruggleButton = screen.StruggleButton.interactable;
 			screen.StruggleButton.interactable = false;
 		}
-		PackageGrabArt.Hide(screen);
+		PackageMedia.HideVanillaGrabArt(screen);
 		if (_portrait != null) _portrait.enabled = false;
 		if (_hitbox != null) _hitbox.enabled = false;
 		_capturing = true;
@@ -962,7 +1015,7 @@ internal sealed class WallPictureTrap : MonoBehaviour, IDamageable
 		SetOverlayFrame();
 		if (_captureAudio != null) _captureAudio.Play();
 		PlayStageFunscript();
-		Plugin.Log?.LogInfo("[WallPictureTrap] erotic animation started for '" + Id + "': phase=" + _package.Manifest.animations[0].name + " frames=" + _package.Animations[0].Frames.Length + " fps=" + _package.Animations[0].Fps);
+		ModServices.Log("[WallPictureTrap] erotic animation started for '" + Id + "': phase=" + _package.Manifest.animations[0].name + " frames=" + _package.Animations[0].Frames.Length + " fps=" + _package.Animations[0].Fps);
 	}
 
 	private void UpdateCapture()
@@ -973,13 +1026,13 @@ internal sealed class WallPictureTrap : MonoBehaviour, IDamageable
 			EndCapture();
 			return;
 		}
-		if (_escapeLabel != null) _escapeLabel.text = SceneEscapeGate.BuildHintText();
-		if (_overlayCanvas != null) _overlayCanvas.sortingOrder = PauseHooks.GamePaused ? -1000 : 32000;
+		if (_escapeLabel != null) _escapeLabel.text = ModServices.EscapeHintText();
+		if (_overlayCanvas != null) _overlayCanvas.sortingOrder = ModServices.GamePaused ? -1000 : 32000;
 		// The overlay was already put behind the pause menu on the line above; the clock has to
 		// stop too, or the stages keep advancing - and each stage POSTs a row to Edi.
-		if (PauseHooks.SceneClockHeld) return;
+		if (ModServices.SceneClockHeld) return;
 		WallPictureTrapAnimation stageSpec = _package.Manifest.animations[_stage];
-		RuntimeSpriteAnimationData animation = _package.Animations[_stage];
+		PackageSpriteAnimation animation = _package.Animations[_stage];
 		float dt = Time.unscaledDeltaTime;
 		_frameClock += dt;
 		_stageClock += dt;
@@ -999,7 +1052,7 @@ internal sealed class WallPictureTrap : MonoBehaviour, IDamageable
 			_stageClock = 0f;
 			SetOverlayFrame();
 			PlayStageFunscript();
-			Plugin.Log?.LogInfo("[WallPictureTrap] animation phase -> " + _package.Manifest.animations[_stage].name + " frames=" + _package.Animations[_stage].Frames.Length);
+			ModServices.Log("[WallPictureTrap] animation phase -> " + _package.Manifest.animations[_stage].name + " frames=" + _package.Animations[_stage].Frames.Length);
 		}
 	}
 
@@ -1010,7 +1063,7 @@ internal sealed class WallPictureTrap : MonoBehaviour, IDamageable
 		_cooldownUntil = Time.unscaledTime + _package.Manifest.cooldown;
 		if (_overlay != null) Destroy(_overlay);
 		if (_captureAudio != null) _captureAudio.Stop();
-		if (_ediPlaying) Plugin.SendStop();
+		if (_ediPlaying) ModServices.StopDevice();
 		_ediPlaying = false;
 		_overlay = null;
 		_overlayCanvas = null;
@@ -1027,7 +1080,7 @@ internal sealed class WallPictureTrap : MonoBehaviour, IDamageable
 	{
 		string gallery = WallPictureTrapRegistry.GetGalleryName(_package, _stage);
 		if (string.IsNullOrWhiteSpace(gallery)) return;
-		Plugin.SendPlay(gallery, loop: true, inGame: true);
+		ModServices.PlayGallery(gallery, loop: true, inGame: true);
 		_ediPlaying = true;
 	}
 
@@ -1038,7 +1091,7 @@ internal sealed class WallPictureTrap : MonoBehaviour, IDamageable
 		_overlay = new GameObject("WallPictureTrapGrabOverlay", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler));
 		_overlayCanvas = _overlay.GetComponent<Canvas>();
 		_overlayCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-		_overlayCanvas.sortingOrder = PauseHooks.GamePaused ? -1000 : 32000;
+		_overlayCanvas.sortingOrder = ModServices.GamePaused ? -1000 : 32000;
 		CanvasScaler scaler = _overlay.GetComponent<CanvasScaler>();
 		scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
 		scaler.referenceResolution = new Vector2(1920f, 1080f);
@@ -1061,7 +1114,7 @@ internal sealed class WallPictureTrap : MonoBehaviour, IDamageable
 
 		GameObject labelObject = UiObject("EscapeCountdown", _overlay.transform);
 		_escapeLabel = labelObject.AddComponent<Text>();
-		_escapeLabel.text = SceneEscapeGate.BuildHintText();
+		_escapeLabel.text = ModServices.EscapeHintText();
 		_escapeLabel.alignment = TextAnchor.MiddleCenter;
 		_escapeLabel.fontSize = 28;
 		_escapeLabel.color = Color.white;

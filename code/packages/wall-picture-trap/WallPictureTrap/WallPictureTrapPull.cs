@@ -1,9 +1,10 @@
 using System.Collections.Generic;
 using CMF;
 using HarmonyLib;
+using PncCustomEnemies.Api;
 using UnityEngine;
 
-namespace PncEdi;
+namespace WallPictureTraps;
 
 /// <summary>
 /// The seam a wall trap has to use to move the player, and why an ordinary force does not.

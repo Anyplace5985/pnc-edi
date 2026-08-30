@@ -788,7 +788,7 @@ adds one directory:
 That is all it does. The mod reads the manifest at startup, copies the funscripts into
 Edi/Gallery/ and registers the package's gallery rows itself, so there is nothing else to
 install and nothing to edit.
-
+{code_note}
 Requires {mod} {version_note}, which carries PncCustomEnemies.dll - the plugin that reads
 packages. Without that DLL this archive does nothing at all.
 
@@ -835,6 +835,29 @@ def build_package(directory: Path, out_dir: Path, check: bool) -> None:
         fail(f"{name}: no WebM beside {', '.join(missing)} - blank overlays on Linux. "
              f"Run `.venv/bin/python code/webmify.py` first")
 
+    # A package may ship its own code (§165), and two things follow from that. It has to actually
+    # be in the archive - a manifest naming a DLL that is not there is a download that silently
+    # does nothing - and the person downloading it has to be told, in the README, before they
+    # extract it. There is no sandbox: a package assembly runs with the game's full privileges, so
+    # what the archive owes is disclosure. The switch it lands behind is default-off.
+    assembly = manifest.get("assembly") or {}
+    assembly_file = str(assembly.get("file") or "").strip()
+    code_note = ""
+    if assembly_file:
+        if not (directory / assembly_file).is_file():
+            fail(f"{name}: the manifest declares {assembly_file} and the package does not have it. "
+                 f"Build it first, or drop the \"assembly\" block")
+        package_id = str(manifest.get("id") or name)
+        code_note = (
+            f"\nTHIS PACKAGE SHIPS CODE: {assembly_file}\n\n"
+            f"Its behaviour is a .NET assembly, not data, and it runs with the game's full\n"
+            f"privileges - the same as any BepInEx plugin, and it cannot be sandboxed. The mod\n"
+            f"therefore will not run it until you say so: set\n\n"
+            f"    Custom Enemies / {package_id} code = true\n\n"
+            f"in BepInEx/config/com.edi.pnc.customenemies.cfg (or turn it on in the mod manager,\n"
+            f"F11) and restart the game. Until then the package's art, sounds and funscripts work\n"
+            f"and its behaviour does not.\n")
+
     scripts = [s for a, s in files if s.suffix == ".funscript"]
     if not scripts:
         print(f"  WARNING: {name} carries no funscripts, so it drives no device")
@@ -871,7 +894,7 @@ def build_package(directory: Path, out_dir: Path, check: bool) -> None:
     entries[f"{MOD_NAME}-{slug}-README.txt"] = PACKAGE_README.format(
         display=display, mod=MOD_NAME, game=GAME_VERSION, directory=name,
         version_note=f"{plugin_version()} or newer",
-        sources=source.read_text(encoding="utf-8").strip(),
+        code_note=code_note, sources=source.read_text(encoding="utf-8").strip(),
     ).replace("\n", "\r\n").encode("utf-8")
 
     media = sum(len(v) for a, v in entries.items() if not a.endswith((".funscript", ".json",

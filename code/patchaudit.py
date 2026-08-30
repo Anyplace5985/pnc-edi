@@ -51,10 +51,20 @@ SRC = ROOT / "code/edimod/PncEdi"
 # so both are audited, and the registry check is run once per (tree, list) pair rather than being
 # taught about two lists at once. PncModManager has no game patches at all - it only reads BepInEx
 # config - so it is not here.
+# §165 added a third kind: a package's own assembly, which patches the game itself with its own
+# Harmony id and its own registration call. A patch that binds to the game is a patch wherever it
+# lives, and a package's is the *most* likely to rot unnoticed - it is built into a package
+# directory that nothing else reads.
 SOURCES = [
     (SRC, "PluginPatches.cs"),
     (ROOT / "code/customenemies/PncCustomEnemies", "CustomEnemyPlugin.cs"),
 ]
+for _project in sorted((ROOT / "code/packages").glob("*/")):
+    _sources = _project / _project.name.rstrip("/")
+    for _tree in sorted(p for p in _project.iterdir() if p.is_dir() and p.name not in ("obj", "bin")):
+        _registrations = [f.name for f in sorted(_tree.glob("*Module.cs"))]
+        if _registrations:
+            SOURCES.append((_tree, _registrations[0]))
 
 # Assemblies the mod patches into. Anything else a typeof() names (UnityEngine, our own types) is
 # not the game's and cannot drift with a game release.
@@ -308,8 +318,13 @@ def registry_audit_one(SRC: Path, REGISTRY: str) -> list[str]:
                 declared[decl.group(1)] = path.name
 
     reg = (SRC / REGISTRY).read_text(encoding="utf-8")
+    # Two spellings, because the trees register two ways: the plugins go through their own
+    # `Patch("id", typeof(X))` helper, and a package assembly (§165) calls Harmony directly -
+    # `new Harmony("id").PatchAll(typeof(X))` - since it has no helper of the framework's to use.
     registered = {m.group(1) for m in
                   re.finditer(r'\b(?:Try)?Patch\(\s*"[^"]+"\s*,\s*typeof\((\w+)\)', reg)}
+    registered |= {m.group(1) for m in
+                   re.finditer(r'\bPatchAll\(\s*typeof\((\w+)\)', reg)}
 
     problems = []
     for cls, where in sorted(declared.items()):

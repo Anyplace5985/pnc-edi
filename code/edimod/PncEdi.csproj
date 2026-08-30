@@ -173,7 +173,22 @@
              RemoveProperties="OutputPath;PluginDeployDir;TargetFramework" />
   </Target>
 
-  <Target Name="PatchGameInstalls" AfterTargets="BuildCustomEnemies" Condition="'$(DeployToGames)' == 'true'">
+  <!-- The behaviour assemblies packages ship (§165). They compile against PncCustomEnemies.dll's
+       public API only, so they build after it, and each copies itself into its own package
+       directory rather than into plugins/ - a package's code lives in the package. Building them
+       here is what keeps "one command builds everything" true now that a behaviour is no longer
+       part of the framework: a package DLL left one build behind is a stale behaviour that every
+       check would otherwise pass over, because nothing else reads it. -->
+  <Target Name="BuildPackageAssemblies" AfterTargets="BuildCustomEnemies">
+    <ItemGroup>
+      <PackageProject Include="..\packages\*\*.csproj" />
+    </ItemGroup>
+    <MSBuild Projects="@(PackageProject)"
+             Properties="Configuration=$(Configuration)"
+             RemoveProperties="OutputPath;PluginDeployDir;TargetFramework" />
+  </Target>
+
+  <Target Name="PatchGameInstalls" AfterTargets="BuildPackageAssemblies" Condition="'$(DeployToGames)' == 'true'">
     <Exec Command="python3 &quot;$(RepoDir)code/deploy.py&quot; --dll-only"
           WorkingDirectory="$(RepoDir)" ContinueOnError="WarnAndContinue" />
   </Target>

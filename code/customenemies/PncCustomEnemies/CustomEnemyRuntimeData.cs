@@ -11,10 +11,13 @@ namespace PncEdi;
 // its entry while two custom-class fields on the same component arrived null.
 //
 // Custom enemies build their whole configuration at runtime and are then cloned by the game's
-// spawners, the debug spawner and the gallery, so every clone would lose the witch settings and
-// the sprite animation set - exactly the "static sprite, no charm circle, no dream bubbles"
-// failure. The data therefore travels inside a runtime ScriptableObject: only the reference
-// crosses the clone boundary, and the object itself is never cloned.
+// spawners, the debug spawner and the gallery, so every clone would lose the sprite animation set -
+// exactly the "static sprite, nothing animating" failure. The data therefore travels inside a
+// runtime ScriptableObject: only the reference crosses the clone boundary, and the object itself is
+// never cloned.
+//
+// A package's behaviour has the same problem with its own settings and must solve it the same way,
+// inside its own assembly: this holds the framework's data, not a package's (§165).
 internal sealed class CustomEnemyRuntimeData : ScriptableObject
 {
 	private static readonly Dictionary<string, CustomEnemyRuntimeData> Registry = new Dictionary<string, CustomEnemyRuntimeData>(StringComparer.OrdinalIgnoreCase);
@@ -24,8 +27,6 @@ internal sealed class CustomEnemyRuntimeData : ScriptableObject
 	internal string PackageDirectory;
 
 	internal CustomEnemySpriteVisual SpriteVisual;
-
-	internal CustomEnemyWitchBehaviour Witch;
 
 	internal RuntimeSpriteAnimationData[] Animations = Array.Empty<RuntimeSpriteAnimationData>();
 
@@ -45,7 +46,6 @@ internal sealed class CustomEnemyRuntimeData : ScriptableObject
 		data.EnemyId = definition.Id;
 		data.PackageDirectory = definition.Directory;
 		data.SpriteVisual = definition.Manifest.spriteVisual;
-		data.Witch = definition.Manifest.witch;
 		Registry[definition.Id] = data;
 		return data;
 	}

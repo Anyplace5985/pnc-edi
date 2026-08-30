@@ -9,7 +9,7 @@ It ships as **three plugins**, built by one command and each owning one job:
 | plugin | owns | references |
 |---|---|---|
 | `PncEdi` | the device integration and the gameplay rules — the Edi channel, the gallery registry and aliases, heat and locks, and every patch that shapes vanilla combat | neither of the others |
-| `PncCustomEnemies` | the custom-enemy framework (§131): package loading, sprite animation, the custom gallery section, and the two behaviours that ship with it | `PncEdi`, because a package's scenes are Edi content |
+| `PncCustomEnemies` | the custom-enemy framework (§131): package loading, sprite animation, the custom gallery section, and — since §165 — the public API a package's own behaviour assembly compiles against. It carries no enemy of its own | `PncEdi`, because a package's scenes are Edi content |
 | `PncModManager` | the in-game settings window on F11 (§127) — it edits whatever plugins are loaded | nothing, and nothing references it |
 
 The dependency runs one way only, and `code/README.md` has the three checks that keep it that
@@ -106,6 +106,10 @@ pnc-edi/                                  the repo: nothing here belongs to the 
 │   ├── modmanager/                       the settings window - built by edimod's ProjectReference
 │   ├── customenemies/                    the custom-enemy plugin - built by edimod's own target,
 │   │                                      and the only one that references PncEdi (§131)
+│   ├── packages/                         behaviour assemblies that ship *inside* a package, one
+│   │                                      project each (charm-witch/ builds femboy-witch's
+│   │                                      CharmWitch.dll). Same build command; they see only
+│   │                                      PncCustomEnemies' public API, never PncEdi (§165)
 │   ├── tests/                            dotnet test - the naming/alias/config layer (§118)
 │   ├── pncpaths.py                       where the repo and the game are - imported, not run
 │   ├── deploy.py                         patches the game installs from the working tree
@@ -248,6 +252,14 @@ Because of `LoadDefinitions`, a **new gallery name needs no code change**:
    no copy of a row plays nothing for it (§149)
 5. `python3 code/deploy.py --no-build` — none of the above is in a game until it is deployed
 
+**A behaviour is code, and it belongs to a package** (§165). A manifest selects one by name —
+`"behaviour": "charm-witch"` plus a tuning block — and a package that ships an assembly publishes
+the behaviours other packages then select. The framework itself contains none: `charm-witch` is
+built from `code/packages/charm-witch/` into `BepInEx/custom-enemies/femboy-witch/CharmWitch.dll`.
+A package's code is refused until `Custom Enemies / <id> code` is turned on, per package, because
+BepInEx has no sandbox — `BepInEx/custom-enemies/CUSTOM-ENEMIES.md` is the format and the consent
+rule, and `code/packageaudit.py` is what notices a stale or mismatched one.
+
 **A whole new enemy needs no code change either**, since §127: drop a package under
 `BepInEx/custom-enemies/<name>/` with an `enemy.json`, its art and its funscripts, and
 `deploy.py --no-build`. The manifest declares its own gallery rows, aliases and scenes;
@@ -329,6 +341,7 @@ working on the thing it checks — and because it is what `check.py` is made of 
 | `.venv/bin/python code/refvideo.py --verify` | full | is every reference video still the frames of its clip, in order? |
 | `.venv/bin/python code/dioramaaudit.py` | full | does every ambient `Patterns` entry still match a clip or a looping source in the build? |
 | `python3 code/webmify.py --check` | fast | does every custom-enemy video have a WebM? Unity cannot decode H.264 on Linux, so an MP4-only package is a blank overlay there (§127) |
+| `python3 code/packageaudit.py` | fast | does every package that declares an assembly ship a current one, at this API version, and does a manifest's named behaviour exist? Every failure here is silent at runtime by design (§165) |
 | `python3 code/deploy.py --check` | fast | are the game installs current? |
 | `python3 code/release.py --check` | fast | would a release build succeed? |
 

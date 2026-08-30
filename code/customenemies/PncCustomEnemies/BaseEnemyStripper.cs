@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using PncCustomEnemies.Api;
 using UnityEngine;
 
 namespace PncEdi;
@@ -35,13 +36,16 @@ internal sealed class BaseEnemyStripper : MonoBehaviour
 		Plugin.Log?.LogInfo("[CustomEnemies] stripped base enemy from '" + enemyId + "': " + renderers + " renderer(s), " + particles + " particle system(s), " + lights + " light(s), " + sources + " audio source(s), " + fields + " asset reference(s)");
 	}
 
-	// The package's own artwork and the witch's charm circle are built as children of the enemy, so
-	// protection is by ownership: anything under a PncEdi-owned object survives the strip.
+	// The package's own artwork and anything a package's behaviour built - a charm circle, a trap
+	// overlay - are children of the enemy, so protection is by ownership: anything under an object
+	// the mod or a package owns survives the strip. A package marks its own with
+	// `IPackageOwnedVisual`, which is the seam's answer to what used to be a hardcoded test for the
+	// one behaviour the framework happened to contain (§165).
 	private static bool IsOwnedByMod(Transform transform)
 	{
 		while (transform != null)
 		{
-			if (transform.GetComponent<RuntimeSpriteVisual>() != null || transform.GetComponent<WitchAuraCircle>() != null)
+			if (transform.GetComponent<RuntimeSpriteVisual>() != null || transform.GetComponent<IPackageOwnedVisual>() != null)
 			{
 				return true;
 			}

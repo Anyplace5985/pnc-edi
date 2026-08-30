@@ -414,8 +414,10 @@ cannot unload an assembly, so what it bought was a way to leave a mod half-destr
 ### The custom-enemy plugin — `code/customenemies/` (§131)
 
 `PncCustomEnemies` is the custom-enemy framework: package loading, sprite animation, the gallery
-section, the two behaviours that ship with it (the charm witch and the wall-picture trap), and the
-runtime WAV and video loaders they need. It was part of PncEdi until §131.
+section, the runtime WAV and video loaders, and the public API a package's own behaviour assembly
+compiles against. It was part of PncEdi until §131, and until §165 it also contained two
+behaviours; both now live in the packages that use them - the charm witch in Femboy Witch, the
+wall-picture trap in Joker - and this assembly carries no enemy at all.
 
 **This one depends on PncEdi, and only in that direction.** A package's scenes are Edi content — it
 registers gallery rows and aliases, plays rows, takes heat locks — so pretending otherwise would
@@ -442,6 +444,39 @@ registration lists; and `code/bridgeaudit.py` catches the case neither of those 
 matters because every delegate falls back to vanilla, so a call deleted during a refactor looks
 exactly like a deleted DLL and nothing reports it until someone plays. Treat those calls as
 load-bearing.
+
+### A package's own code — `code/packages/` (§165)
+
+A package may ship a .NET assembly and publish behaviours from it by name. One project per
+behaviour assembly under `code/packages/`, built by the same `dotnet build code/edimod/PncEdi.csproj
+-c Release` (the `BuildPackageAssemblies` target picks up `code/packages/*/*.csproj`), each copying
+itself into the package directory it belongs to — `charm-witch/` into
+`BepInEx/custom-enemies/femboy-witch/CharmWitch.dll`, which is then deployed like any other package
+file.
+
+**A package project references `PncCustomEnemies.dll` and nothing else of the mod.** No PncEdi
+reference, no `InternalsVisibleTo`: it reaches exactly what a stranger's package reaches, which is
+what makes the witch a test of the seam rather than a privileged tenant. The whole surface is
+`PncCustomEnemies.Api` — `IPackageModule`, the behaviour registry, the three scene-ownership
+interfaces, `PackageMedia`, and `ModServices`, which forwards the eleven PncEdi internals a
+behaviour actually needed. Adding a twelfth is a deliberate act; widening the reference is not an
+option.
+
+**Consent is per package and off by default**, because BepInEx has no sandbox and a package DLL has
+the game's full privileges. `Custom Enemies / <id> code` in `com.edi.pnc.customenemies.cfg` gates
+it; the mod manager draws it as an **Allow code** button under the package it belongs to (§166,
+paired by key convention because `PncModManager` references neither of the other assemblies), and
+every launch logs by name whether a package shipped code and whether it ran. The framework binds
+each package's on/off switch itself, before any package code loads, so a blocked package is never
+a bare consent toggle with nothing to enable. `release.py --package` refuses to build an archive whose
+manifest names a DLL the package does not have, and puts the disclosure at the top of that
+archive's README.
+
+**`code/packageaudit.py` is the gate** (in `check.py`): the declared assembly exists, is newer than
+the sources of the project that builds it, declares this framework's `PackageApi.Version`, and any
+`behaviour` a manifest names is one some package publishes. Every one of those fails silently at
+runtime by design, a stale package DLL most quietly of all — it is the only build output nothing
+else in the repo reads.
 
 **A package's capture runs vanilla's own grab screen** (§134). Both shipped behaviours call
 `GrabScreen.StartGrab` with their own GameObject as the "enemy", so every PncEdi patch on `StartGrab`

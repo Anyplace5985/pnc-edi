@@ -37,10 +37,37 @@ public sealed class CustomEnemyManifest
 	public string icon;
 	public string[] galleryAnimations = Array.Empty<string>();
 	public CustomEnemySpriteVisual spriteVisual;
-	public CustomEnemyWitchBehaviour witch;
+	public CustomEnemyGalleryVideos galleryVideos;
+	// The name of a behaviour some installed package published, e.g. "charm-witch". The framework
+	// neither knows nor cares what one does: it looks the name up in PackageBehaviours and hands
+	// over the template plus this manifest's block of the same name. A manifest naming a behaviour
+	// nothing provides still loads as a reskin, and the log says so.
+	public string behaviour;
 	public CustomEnemyScene[] scenes = Array.Empty<CustomEnemyScene>();
 	public CustomEnemyField[] fields = Array.Empty<CustomEnemyField>();
 	public string[] nameAliases = Array.Empty<string>();
+}
+
+/// <summary>
+/// Videos the custom gallery plays for this package, and the rows they send.
+///
+/// This is framework vocabulary rather than a behaviour's, because it has to work with a package's
+/// code switched off: the videos are media, like the sprite sheets, and a player who never allows a
+/// package to run its code still gets its gallery. A behaviour that shows the same clips in-game
+/// reads this same block out of the manifest rather than the manifest listing them twice (§165 -
+/// before it, these four fields lived in the compiled-in `witch` block and no other package could
+/// have gallery videos at all).
+/// </summary>
+[Serializable]
+public sealed class CustomEnemyGalleryVideos
+{
+	public string[] files = Array.Empty<string>();
+	public string[] labels = Array.Empty<string>();
+	public float volume = 1f;
+	/// <summary>The gallery row every video sends, unless it is the last and <see cref="lastGallery"/> names another.</summary>
+	public string gallery;
+	/// <summary>The row the final video sends - the scene a package usually ends on.</summary>
+	public string lastGallery;
 }
 
 [Serializable]
@@ -94,6 +121,8 @@ public sealed class CustomEnemyField
 internal sealed class CustomEnemyDefinition
 {
 	internal CustomEnemyManifest Manifest;
+	/// <summary>The manifest as it was written. A package's behaviour parses its own vocabulary out of this, which the framework never learns.</summary>
+	internal string ManifestJson;
 	internal string Directory;
 	internal AssetBundle Bundle;
 	internal GameObject Template;
@@ -182,6 +211,7 @@ internal static class CustomEnemyRegistry
 			CustomEnemyDefinition definition = new CustomEnemyDefinition
 			{
 				Manifest = manifest,
+				ManifestJson = json,
 				Directory = Path.GetDirectoryName(path)
 			};
 			definition.EnabledEntry = CustomEnemyPlugin.Instance.Config.Bind(
@@ -239,11 +269,50 @@ internal static class CustomEnemyRegistry
 		if (manifest.spriteVisual != null && (manifest.spriteVisual.animations == null || manifest.spriteVisual.animations.Length == 0))
 			manifest.spriteVisual.animations = ParseSpriteAnimations(spriteJson);
 
-		string witchJson = ExtractObject(json, "witch");
-		if (manifest.witch == null && witchJson != null)
-			manifest.witch = JsonUtility.FromJson<CustomEnemyWitchBehaviour>(witchJson);
-		if (manifest.witch != null && (manifest.witch.dreamVideos == null || manifest.witch.dreamVideos.Length == 0))
-			manifest.witch.dreamVideos = ParseStringArray(witchJson, "dreamVideos");
+		string videosJson = ExtractObject(json, "galleryVideos");
+		if (manifest.galleryVideos == null && videosJson != null)
+			manifest.galleryVideos = JsonUtility.FromJson<CustomEnemyGalleryVideos>(videosJson);
+		if (manifest.galleryVideos != null && (manifest.galleryVideos.files == null || manifest.galleryVideos.files.Length == 0))
+			manifest.galleryVideos.files = ParseStringArray(videosJson, "files");
+		if (manifest.galleryVideos != null && (manifest.galleryVideos.labels == null || manifest.galleryVideos.labels.Length == 0))
+			manifest.galleryVideos.labels = ParseStringArray(videosJson, "labels");
+	}
+
+	/// <summary>
+	/// What one gallery video is called in the viewer's step list: the package's own label where it
+	/// gave one, and `Video n` where it did not. The label is also what the gallery asks
+	/// `GalleryRowResolver` about, so a package that renames one renames what its row is looked up
+	/// by (§138).
+	/// </summary>
+	internal static string GalleryVideoLabel(CustomEnemyGalleryVideos videos, int index)
+	{
+		string[] labels = videos?.labels;
+		if (labels != null && index >= 0 && index < labels.Length && !string.IsNullOrWhiteSpace(labels[index]))
+		{
+			return labels[index].Trim();
+		}
+		return "Video " + (index + 1);
+	}
+
+	/// <summary>The gallery row one video sends: the package's `lastGallery` for the final one where it named it, otherwise `gallery`.</summary>
+	internal static string GalleryVideoRow(CustomEnemyGalleryVideos videos, int index)
+	{
+		if (videos == null || videos.files == null || videos.files.Length == 0)
+		{
+			return null;
+		}
+		bool last = index == videos.files.Length - 1;
+		return last && !string.IsNullOrWhiteSpace(videos.lastGallery) ? videos.lastGallery : videos.gallery;
+	}
+
+	/// <summary>
+	/// The manifest block a named behaviour is tuned by: the object named after the behaviour
+	/// itself. Null is a legitimate answer - a behaviour with nothing to tune, or one that keeps an
+	/// older block name and reads the whole manifest instead.
+	/// </summary>
+	internal static string BehaviourSettings(string json, string behaviour)
+	{
+		return string.IsNullOrWhiteSpace(behaviour) ? null : ExtractObject(json, behaviour.Trim());
 	}
 
 	private static CustomEnemySpriteAnimation[] ParseSpriteAnimations(string json)
@@ -442,12 +511,34 @@ internal static class CustomEnemyRegistry
 		return Enemies.Exists(x => x.Id.Equals(key, StringComparison.OrdinalIgnoreCase));
 	}
 
+	/// <summary>
+	/// Whether a package is switched on, by id. A package that ships code asks this through its
+	/// <see cref="Api.PackageContext.IsEnabled"/>; a package kind the framework does not know has no
+	/// enemy definition here, and answers true rather than pretending to a switch it never bound.
+	/// </summary>
+	internal static bool IsPackageEnabled(string id)
+	{
+		CustomEnemyDefinition definition = Enemies.Find(x => x.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
+		return definition == null || definition.Enabled;
+	}
+
 	internal static GameObject SpawnById(string id, string logLabel = null)
 	{
+		// An empty id is the shipped default, because the framework ships no packages and naming one
+		// here would make a package the loader's own. With exactly one installed there is nothing to
+		// choose between, so the debug key spawns it; with several, say which ones rather than pick.
 		if (string.IsNullOrWhiteSpace(id))
 		{
-			Plugin.DBG("SPAWN", "custom: empty enemy id");
-			return null;
+			IReadOnlyList<CustomEnemyDefinition> loaded = LoadedEnemies;
+			if (loaded.Count == 1)
+			{
+				id = loaded[0].Id;
+			}
+			else
+			{
+				Plugin.DBG("SPAWN", "custom: SpawnCustomEnemyId is unset and " + loaded.Count + " package(s) are installed - set it to one of: " + DescribeLoadedIds());
+				return null;
+			}
 		}
 		string wanted = id.Trim();
 		string label = logLabel ?? ("custom:" + wanted);
@@ -635,7 +726,17 @@ internal static class CustomEnemyRegistry
 		CustomEnemyRuntimeData.For(definition);
 		RuntimeSpriteVisual.Attach(template, definition.Directory, definition.Manifest.spriteVisual, definition.Id);
 		BaseEnemyStripper.Apply(template, definition.Manifest.stripBaseEnemy, definition.Id);
-		CharmWitchController.Attach(template, definition.Directory, definition.Manifest.witch, definition.Id);
+		// A behaviour comes from a package, never from here. The name is looked up among what the
+		// installed packages published; the tuning is this manifest's own block; and a package that
+		// ships the behaviour it uses is just the case where those two are the same package.
+		PackageBehaviours.Attach(
+			definition.Manifest.behaviour,
+			template,
+			definition.Id,
+			definition.Directory,
+			BehaviourSettings(definition.ManifestJson, definition.Manifest.behaviour),
+			definition.ManifestJson);
+		PackageAssemblies.RaiseTemplatePrepared(definition.Id, template);
 		CreateGalleryAssets(definition);
 		definition.EnemyData = ScriptableObject.CreateInstance<EnemyData>();
 		definition.EnemyData.name = "CustomEnemyData_" + definition.Id;
@@ -845,18 +946,12 @@ internal static class CustomEnemyRegistry
 		}
 		entry.availableAnimations = (manifest.galleryAnimations != null && manifest.galleryAnimations.Length > 0) ? manifest.galleryAnimations : new[] { "Idle" };
 		List<GrabAnimationData> grabAnimations = new List<GrabAnimationData>();
-		if (manifest.witch != null && manifest.witch.dreamVideos != null && manifest.witch.dreamVideos.Length > 0)
+		string[] galleryVideos = manifest.galleryVideos?.files;
+		if (galleryVideos != null && galleryVideos.Length > 0)
 		{
-			for (int i = 0; i < manifest.witch.dreamVideos.Length; i++)
+			for (int i = 0; i < galleryVideos.Length; i++)
 			{
-				string animName = manifest.witch.dreamVideos.Length == 1
-					? "Dream Video"
-					: (manifest.witch.dreamVideos.Length == 2
-						? (i == 0 ? "Aura" : "Capture")
-						: (i == manifest.witch.dreamVideos.Length - 1 && !string.IsNullOrWhiteSpace(manifest.witch.captureGallery)
-							? "Capture"
-							: "Dream " + (i + 1)));
-				grabAnimations.Add(new GrabAnimationData { animationName = animName });
+				grabAnimations.Add(new GrabAnimationData { animationName = GalleryVideoLabel(manifest.galleryVideos, i) });
 			}
 		}
 		else if (manifest.scenes != null)
@@ -1233,15 +1328,17 @@ internal static class CustomEnemyRegistry
 		if (target is EnemyGalleryUI ui)
 		{
 			bool customSection = IsCustomGallerySection(ui);
-			list.RemoveAll(entry => IsCustomGalleryEntry(entry) || WallPictureTrapRegistry.IsGalleryEntry(entry));
+			list.RemoveAll(entry => IsCustomGalleryEntry(entry) || PackageGalleryEntries.IsProvided(entry));
 			if (!customSection) return;
 			list.Clear();
 			foreach (EnemyGalleryEntry entry in GetGalleryEntries()) list.Add(entry);
-			foreach (EnemyGalleryEntry entry in WallPictureTrapRegistry.GetGalleryEntries()) list.Add(entry);
+			foreach (EnemyGalleryEntry entry in PackageGalleryEntries.All()) list.Add(entry);
 			return;
 		}
 		list.RemoveAll(entry => IsCustomGalleryEntry(entry) && Find(entry)?.Enabled != true);
-		list.RemoveAll(entry => WallPictureTrapRegistry.IsGalleryEntry(entry) && WallPictureTrapRegistry.FindGalleryEntry(entry)?.Enabled != true);
+		// A provided entry's on/off state is the provider's business: `GalleryEntries` returns what
+		// that package wants shown, so a switched-off package simply lists nothing. The framework
+		// used to filter these itself, back when it also owned the registry behind them (§165).
 		foreach (CustomEnemyDefinition definition in Enemies)
 		{
 			if (definition.Enabled && definition.GalleryEntry != null && !list.Exists(x => x != null && string.Equals(x.enemyID, definition.Id, StringComparison.OrdinalIgnoreCase)))
@@ -1249,7 +1346,7 @@ internal static class CustomEnemyRegistry
 				list.Add(definition.GalleryEntry);
 			}
 		}
-		foreach (EnemyGalleryEntry entry in WallPictureTrapRegistry.GetGalleryEntries())
+		foreach (EnemyGalleryEntry entry in PackageGalleryEntries.All())
 			if (!list.Contains(entry)) list.Add(entry);
 	}
 

@@ -1,6 +1,11 @@
 {
   "id": "joker_wall",
   "displayName": "Joker",
+  "assembly": {
+    "file": "WallPictureTrap.dll",
+    "module": "WallPictureTraps.WallPictureTrapModule",
+    "api": 1
+  },
   "enabled": true,
   "autoPlace": true,
   "spawnCount": 0,
