@@ -11025,6 +11025,33 @@ buzz sections §161 identified, not the seam defect), then `python3 code/release
 `2230f060…`. Still Edi v1.0.4 + PR #15, for the reason `PROJECT.md` gives: the PR is merged but
 v1.0.4 is still the newest tag. What is left is posting it.
 
+## 164. The two custom-enemy packaging decisions, taken
+
+§160 left two questions that were decisions rather than work. Both are answered; no code moved.
+
+**A package may ship its own assembly.** The alternative was to grow the manifest vocabulary until
+packages stop needing new behaviours, and that is a chase with no end — every third package wants
+one more verb. So the framework will load code out of a package directory, and the honest way to
+say what that costs is that BepInEx runs on Mono with no sandbox: a package's DLL has the game's
+full privileges and no loader design changes that. What the design therefore owes is **consent and
+disclosure** rather than containment — default-off per package in
+`com.edi.pnc.customenemies.cfg`, a log line naming the assembly, and `CUSTOM-ENEMIES.md` plus the
+release README saying plainly that a package is no longer only data. The seam itself (discovery by
+interface or attribute, named from the manifest, with a version field that refuses a mismatch) is
+public API from the first third-party package that compiles against it, which is the part worth
+designing slowly. `TODO.md` carries the open questions; nothing is blocked, because the two
+compiled behaviours cover both packages that exist.
+
+**The gallery stays duplicated.** Edi reads one gallery, so package scripts are copied into
+`Edi/Gallery/<variant>/` and rows merged into `Definitions.csv` — by `deploy.py`'s
+`custom_enemy_gallery` from a working tree, and by `SyncFunscripts` / `UpsertDefinitions` from the
+mod for a player who has neither repo nor Python. Both writers are needed and both stay. Rejected:
+asking upstream for a per-directory gallery (real, since #15 was merged, but it makes this project's
+correctness wait on someone else's release), and collapsing to one writer (which would mean proving
+a negative about the other, and changes what `deploy.py --check` means). The standing cost is
+written into `TODO.md` instead: a change to how a row is built is a change in two places, and
+`--check` calling an install stale is what it looks like when it is made in one (§129).
+
 ## Tried and reverted — do not redo
 
 - **Trimming loop seams.** 14 galleries end on a different position than they start.
