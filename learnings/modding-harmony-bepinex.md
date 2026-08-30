@@ -174,6 +174,16 @@ runtime-ScriptableObject trick (`CustomEnemyRuntimeData`, §131) has to be repea
 assembly for that package's own settings — `CharmWitchRuntimeData` is the same pattern, one clone
 boundary further out — because after §165 the framework never sees a behaviour's settings at all.
 
+**A consent switch that sits beside an on/off switch is one switch too many — put the consent *on*
+the on/off switch and warn there.** §165 gave a code-shipping package two bools: `<id>` to enable it
+and `<id> code` to allow its assembly. Both had to be on, so the first play of it (§167) had both
+packages enabled and inert, and the answer was not discoverable from the thing that looked wrong.
+The two questions were never actually separate: an enabled package whose code is blocked does
+nothing at all, so "do I want this package" *is* "may it run". One switch, defaulting to off when
+the package ships code, with the warning drawn where it is turned on. The general rule: before
+adding a permission toggle beside a feature toggle, check whether the feature does anything in the
+state where they disagree — if it does not, the permission belongs on the feature's own switch.
+
 **A package assembly is the one build output nothing else reads, so a stale one survives every other
 check.** A plugin DLL that is a build behind shows up the moment anything uses it; a package DLL
 sits in a package directory and is loaded by filename at startup. `code/packageaudit.py` compares

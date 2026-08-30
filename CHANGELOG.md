@@ -11155,6 +11155,42 @@ is a key convention (`<id>` and `<id> code`) rather than a type, because `PncMod
 neither of the other two assemblies and reads what it needs out of key names and descriptions -
 which is how it already titles these rows.
 
+## 167. One switch per package, and it is the consent
+
+**The first play of §165 found the shape of the mistake immediately: both packages were enabled and
+did nothing.** They only worked after finding the second switch, allowing the code and restarting —
+which is exactly the failure §166 had already half-noticed and answered with a better-drawn version
+of the same two questions.
+
+The two were never separate questions. A package that is enabled and code-blocked does nothing at
+all: no enemy, no traps, no gallery rows, because the registry drops a disabled package's rows and a
+blocked package never registers a behaviour to attach. So "do I want this package" and "may it run
+its code" have one answer, and asking twice buys nothing but a way to get it wrong. `<id> code` is
+gone. A package that declares an `assembly` block now has one bool, `Custom Enemies / <id>`,
+**bound by `PackageAssemblies` before anything loads and defaulting to `false`** — the consent §164
+owes is the default-off plus what the switch says about itself, not a second switch.
+
+`CustomEnemyRegistry` asks `PackageAssemblies.EnabledEntryFor` before binding its own, so an
+`enemy.json` package that ships a DLL gets one entry rather than two `Bind()` calls with different
+defaults over one key. A package that ships no code is untouched: its switch still defaults to the
+manifest's `enabled`, still takes effect without a restart, and carries no warning at all.
+
+**The settings window draws the warning where the switch is, and no button beside it.**
+`PncModManager` decides which packages get it by matching "ships its own code" in the config
+description — convention, like the title it already parses out of the same text, because it
+references neither of the other assemblies. Turning one on sets the status line to *restart the game
+for it to take effect*.
+
+**All the player-facing wording was cut back at the same time.** The old text explained Mono, BepInEx
+privileges and sandboxing to someone who wanted to switch on a witch; it now says the package ships
+its own code, that the code runs like any other mod, that they should only turn it on if they trust
+where they got it, and that the game needs a restart. Same disclosure, in one breath. `release.py`'s
+package README, `CUSTOM-ENEMIES.md` and `WALL-PICTURE-TRAPS.md` all match.
+
+One thing that changed with it: a code package that is off no longer shows its gallery rows or plays
+its funscripts, because off now means off. Every document that promised "its art and funscripts work
+either way" was corrected rather than left to be discovered.
+
 ## Tried and reverted — do not redo
 
 - **Trimming loop seams.** 14 galleries end on a different position than they start.

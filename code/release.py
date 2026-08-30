@@ -850,13 +850,11 @@ def build_package(directory: Path, out_dir: Path, check: bool) -> None:
         package_id = str(manifest.get("id") or name)
         code_note = (
             f"\nTHIS PACKAGE SHIPS CODE: {assembly_file}\n\n"
-            f"Its behaviour is a .NET assembly, not data, and it runs with the game's full\n"
-            f"privileges - the same as any BepInEx plugin, and it cannot be sandboxed. The mod\n"
-            f"therefore will not run it until you say so: set\n\n"
-            f"    Custom Enemies / {package_id} code = true\n\n"
-            f"in BepInEx/config/com.edi.pnc.customenemies.cfg (or turn it on in the mod manager,\n"
-            f"F11) and restart the game. Until then the package's art, sounds and funscripts work\n"
-            f"and its behaviour does not.\n")
+            f"Its behaviour is a program, not just art and funscripts, and it runs like any other\n"
+            f"mod - so only turn it on if you trust where you got it. It arrives switched off:\n\n"
+            f"    Custom Enemies / {package_id} = true\n\n"
+            f"in BepInEx/config/com.edi.pnc.customenemies.cfg, or turn it on in the mod manager\n"
+            f"(F11). Restart the game afterwards. Until then the package does nothing.\n")
 
     scripts = [s for a, s in files if s.suffix == ".funscript"]
     if not scripts:

@@ -463,12 +463,16 @@ behaviour actually needed. Adding a twelfth is a deliberate act; widening the re
 option.
 
 **Consent is per package and off by default**, because BepInEx has no sandbox and a package DLL has
-the game's full privileges. `Custom Enemies / <id> code` in `com.edi.pnc.customenemies.cfg` gates
-it; the mod manager draws it as an **Allow code** button under the package it belongs to (§166,
-paired by key convention because `PncModManager` references neither of the other assemblies), and
-every launch logs by name whether a package shipped code and whether it ran. The framework binds
-each package's on/off switch itself, before any package code loads, so a blocked package is never
-a bare consent toggle with nothing to enable. `release.py --package` refuses to build an archive whose
+the game's full privileges. **It is the package's own on/off switch** — `Custom Enemies / <id>` in
+`com.edi.pnc.customenemies.cfg`, bound by `PackageAssemblies` before anything loads and defaulting
+to `false` for a package that declares an assembly (§167; §165's separate `<id> code` bool asked the
+same question twice, and play found both packages enabled and inert because of it). `CustomEnemyRegistry`
+asks `EnabledEntryFor` before binding its own, so an `enemy.json` code package has one entry rather
+than two defaults over one key. The mod manager draws the warning and the restart note under any
+package whose description contains "ships its own code" — convention, because `PncModManager`
+references neither of the other assemblies, and the same text it already parses titles out of — and
+every launch logs by name whether a package shipped code and whether it ran.
+`release.py --package` refuses to build an archive whose
 manifest names a DLL the package does not have, and puts the disclosure at the top of that
 archive's README.
 

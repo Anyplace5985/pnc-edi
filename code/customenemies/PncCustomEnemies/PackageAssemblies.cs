@@ -27,13 +27,12 @@ internal sealed class PackageAssembly
 	internal string ManifestPath;
 	internal string ManifestJson;
 	internal PackageAssemblyDeclaration Declaration;
-	internal ConfigEntry<bool> ConsentEntry;
 	internal ConfigEntry<bool> EnabledEntry;
 	internal PackageContext Context;
 	internal IPackageModule Module;
 	internal string Refusal;
 
-	internal bool Consented => ConsentEntry != null && ConsentEntry.Value;
+	internal bool Consented => EnabledEntry != null && EnabledEntry.Value;
 	internal bool Loaded => Module != null;
 }
 
@@ -43,14 +42,23 @@ internal sealed class PackageAssembly
 /// **There is no sandbox and there cannot be one.** BepInEx runs on Mono with the game's full
 /// privileges, and an assembly loaded out of `BepInEx/custom-enemies/&lt;name&gt;/` has the
 /// filesystem and the network like any other plugin. Nothing this loader does changes that, so what
-/// it owes the player is disclosure and consent rather than containment (§164): every package that
-/// ships a DLL gets its own switch in `com.edi.pnc.customenemies.cfg`, **default off**, and a log
-/// line naming the assembly whether it loads or is refused. A player who never turns one on never
-/// runs third-party code, and one who does was asked first.
+/// it owes the player is disclosure and consent rather than containment (§164): a package that
+/// ships a DLL is **off by default** in `com.edi.pnc.customenemies.cfg`, its switch says in so many
+/// words that turning it on runs third-party code, and a log line names the assembly whether it
+/// loads or is refused. A player who never turns one on never runs third-party code, and one who
+/// does was asked first.
 ///
 /// The switch is per package rather than global on purpose: "I trust this download" is the question
 /// a player can actually answer, and a single master switch turns the next package's code on by a
 /// decision made about a different package.
+///
+/// **It is the package's one switch, not a second one beside it (§167).** §165 bound a separate
+/// `&lt;id&gt; code` bool, which meant two questions where a player has one - the answer to "do I
+/// want this package" *is* the answer to "may it run", because a code package that is on and
+/// blocked is an installed package that does nothing. Play found the seam exactly there: both
+/// packages "worked" only after enabling them and then finding the second switch. So the consent
+/// lives on the enable switch, whose default is `false` for a package that ships code and whatever
+/// the manifest says for one that does not, and the warning is drawn where it is turned on.
 /// </summary>
 internal static class PackageAssemblies
 {
@@ -124,7 +132,6 @@ internal static class PackageAssemblies
 				return;
 			}
 			string directory = Path.GetDirectoryName(manifestPath);
-			bool isEnemyPackage = string.Equals(Path.GetFileName(manifestPath), "enemy.json", StringComparison.OrdinalIgnoreCase);
 			PackageAssembly package = new PackageAssembly
 			{
 				Id = ReadId(json) ?? Path.GetFileName(directory),
@@ -133,29 +140,19 @@ internal static class PackageAssemblies
 				ManifestJson = json,
 				Declaration = declaration
 			};
-			// The consent switch is bound whether or not the assembly will load, so a player who
-			// installed a package and saw nothing happen finds the reason in the same config
-			// section as the package's other settings rather than only in a log.
-			// A package kind the framework does not know - a wall trap, anything a package invents -
-			// still needs its on/off switch, and it has to exist **before** its code is allowed to
-			// run: a package that binds its own switch has none until it loads, so a blocked package
-			// would show a "code" toggle and nothing to enable. That was the shape of the first
-			// version of this and it read as nonsense in the settings window (§166). An `enemy.json`
-			// package keeps CustomEnemyRegistry's switch, which is bound from the manifest it already
-			// parses; everything else gets one here.
-			if (!isEnemyPackage)
-			{
-				package.EnabledEntry = CustomEnemyPlugin.Instance.Config.Bind(
-					"Custom Enemies",
-					package.Id,
-					true,
-					"Enable " + ReadDisplayName(json, package.Id) + ". Disabled packages stop appearing in the level and leave the custom gallery until re-enabled.");
-			}
-			package.ConsentEntry = CustomEnemyPlugin.Instance.Config.Bind(
+			// **A code package's on/off switch is bound here, by every kind of manifest, and it is
+			// the consent** (§167). It has to be bound before anything loads, and it has to be the
+			// same entry `CustomEnemyRegistry` uses for an `enemy.json` package - which binds later
+			// and therefore asks for it through `EnabledEntryFor` rather than binding a second one
+			// with a different default. A package kind the framework does not know - a wall trap,
+			// anything a package invents - has no other binder at all, so without this it would have
+			// no switch until its own code ran, which is the switch that decides whether its code
+			// runs (§166).
+			package.EnabledEntry = CustomEnemyPlugin.Instance.Config.Bind(
 				"Custom Enemies",
-				package.Id + " code",
+				package.Id,
 				false,
-				"Allow " + package.Id + " to run the code it ships (" + declaration.file + "). This is third-party code with the game's full privileges - the same as any BepInEx plugin - and it cannot be sandboxed, so it stays off until you turn it on. The package's art, sounds and funscripts work either way; its behaviour does not.");
+				CodeSwitchDescription(ReadDisplayName(json, package.Id), declaration.file));
 			Packages.Add(package);
 		}
 		catch (Exception ex)
@@ -186,8 +183,8 @@ internal static class PackageAssemblies
 		}
 		if (!package.Consented)
 		{
-			CustomEnemyPlugin.Log?.LogWarning("[CustomEnemies] '" + package.Id + "' ships code (" + package.Declaration.file + ") and is NOT allowed to run it. " +
-				"Set 'Custom Enemies / " + package.Id + " code' in com.edi.pnc.customenemies.cfg, or turn it on in the mod manager (F11), and restart. " +
+			CustomEnemyPlugin.Log?.LogWarning("[CustomEnemies] '" + package.Id + "' ships code (" + package.Declaration.file + ") and is switched off, so none of it runs. " +
+				"Set 'Custom Enemies / " + package.Id + "' in com.edi.pnc.customenemies.cfg, or turn it on in the mod manager (F11), and restart. " +
 				"Until then this package's art and funscripts load and its behaviour does not.");
 			return;
 		}
@@ -262,6 +259,19 @@ internal static class PackageAssemblies
 		}
 	}
 
+	/// <summary>
+	/// The one switch a code package has, worded so that the config file alone tells a player what
+	/// turning it on means. **`PncModManager` matches on "ships its own code"** to know which
+	/// packages get the warning in the settings window: it references neither of the other
+	/// assemblies, so the marker is this sentence, the same way the title it prints is read out of
+	/// the `Enable &lt;name&gt;.` this starts with. Change the wording here and change it there.
+	/// </summary>
+	internal static string CodeSwitchDescription(string displayName, string file)
+	{
+		return "Enable " + displayName + ". This package ships its own code (" + file + "), which runs like any other mod, so only turn it on if you trust where you got it. "
+			+ "Restart the game after changing this. Switched off, the package does nothing.";
+	}
+
 	/// <summary>A package's own display name, for a switch a player reads. Falls back to the id.</summary>
 	private static string ReadDisplayName(string json, string fallback)
 	{
@@ -288,7 +298,12 @@ internal static class PackageAssemblies
 		return string.IsNullOrEmpty(value) ? null : value;
 	}
 
-	/// <summary>A package's on/off switch, for a module that wants to watch it change rather than poll.</summary>
+	/// <summary>
+	/// A package's on/off switch - for a module that wants to watch it change rather than poll, and
+	/// for `CustomEnemyRegistry`, which asks before binding its own so that an `enemy.json` package
+	/// shipping a DLL has one entry rather than two defaults over one key (§167). Null for a package
+	/// that declares no assembly, which is every package this file never saw.
+	/// </summary>
 	internal static ConfigEntry<bool> EnabledEntryFor(string id)
 	{
 		foreach (PackageAssembly package in Packages)

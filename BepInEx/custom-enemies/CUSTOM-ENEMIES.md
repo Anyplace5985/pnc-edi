@@ -247,16 +247,17 @@ rather than failing halfway through a run. Compile against `PncCustomEnemies.dll
 assemblies; the whole surface is `PncCustomEnemies.Api`, and `code/packages/charm-witch/` in the
 mod's repo is a working example of every part of it.
 
-**A package's code is not run until you allow it.** BepInEx has no sandbox: an assembly in a package
-runs with the game's full privileges, exactly like any other plugin, and nothing the loader does can
-change that. So each package that ships one gets its own switch, **off by default**:
+**A package that ships code is off until you switch it on.** Its code runs like any other mod — the
+game cannot sandbox it — so only turn one on if you trust where you got it. There is one switch, and
+it is the package's ordinary on/off:
 
-    Custom Enemies / <package id> code = true
+    Custom Enemies / <package id> = true
 
-in `com.edi.pnc.customenemies.cfg`, or - easier - open the mod manager (**F11**), find the package
-under **PNC Custom Enemies** and press **Allow code** on it. Restart afterwards either way:
-assemblies load at startup. Until it is on, the package's art, sounds, funscripts and
-gallery rows all work and its behaviour does not, and the log says so by name at every launch.
+in `com.edi.pnc.customenemies.cfg`, or - easier - enable the package in the mod manager (**F11**),
+where it says that it ships code. **Restart the game afterwards.** Until it is on the package does
+nothing — no enemy, no traps, no gallery rows — and the log says so by name at every launch. A
+package that ships no code has the same single switch, starts as its manifest says, takes effect
+without a restart, and gets no warning.
 
 ## The portal-witch behaviour - `charm-witch`
 

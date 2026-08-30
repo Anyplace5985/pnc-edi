@@ -49,10 +49,9 @@ public static class PackageGallery
 /// How the gallery should present one entry a package contributed: the stages it steps through,
 /// what each stage looks like, and what each plays.
 ///
-/// **The framework keeps the UI and the package keeps the content**, deliberately. A package's
-/// gallery has to work with that package's code switched off - the media is data, and the consent
-/// switch is about behaviour - so the viewer, the stage stepping and the audio are the framework's,
-/// driven by this description rather than by a package's own MonoBehaviour (§165).
+/// **The framework keeps the UI and the package keeps the content**, deliberately: the viewer, the
+/// stage stepping and the audio are the framework's, driven by this description rather than by a
+/// package's own MonoBehaviour (§165), so a package describes its gallery and does not draw it.
 /// </summary>
 public sealed class PackageGalleryPresentation
 {

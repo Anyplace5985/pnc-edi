@@ -214,11 +214,15 @@ internal static class CustomEnemyRegistry
 				ManifestJson = json,
 				Directory = Path.GetDirectoryName(path)
 			};
-			definition.EnabledEntry = CustomEnemyPlugin.Instance.Config.Bind(
-				"Custom Enemies",
-				manifest.id,
-				manifest.enabled,
-				"Enable " + manifest.displayName + ". Disabled enemies are removed from future random spawns and the custom gallery; enemies already alive remain until the scene changes.");
+			// A package that ships code already has this switch, bound by PackageAssemblies before
+			// anything loaded, because the switch *is* the consent (§167) and the loader needed to
+			// read it. Binding a second one here would be a different default over the same key.
+			definition.EnabledEntry = PackageAssemblies.EnabledEntryFor(manifest.id)
+				?? CustomEnemyPlugin.Instance.Config.Bind(
+					"Custom Enemies",
+					manifest.id,
+					manifest.enabled,
+					"Enable " + manifest.displayName + ". Disabled enemies are removed from future random spawns and the custom gallery; enemies already alive remain until the scene changes.");
 			definition.EnabledEntry.SettingChanged += (_, __) => ApplyEnabledState(definition);
 			definition.SpawnWeightEntry = CustomEnemyPlugin.Instance.Config.Bind(
 				"Custom Enemies",

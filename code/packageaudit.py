@@ -6,7 +6,7 @@
 **A package's code fails silently by design, which is why it needs a check.** §165 let a package
 ship a .NET assembly and publish behaviours from it by name. Everything about that path degrades
 quietly on purpose: a manifest naming a DLL that is not there loads as a plain reskin, a behaviour
-name nothing published leaves the enemy without it, and a package whose consent switch is off runs
+name nothing published leaves the enemy without it, and a package that is switched off runs
 no code at all. Each of those is the right runtime behaviour - a player should never get a crash
 because a package is half-installed - and each is indistinguishable, from the outside, from "the
 behaviour is broken".

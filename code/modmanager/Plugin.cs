@@ -765,31 +765,30 @@ public sealed class Plugin : BaseUnityPlugin
 
 	private void DrawCustomEnemiesPanel(PluginView plugin)
 	{
-		// A package's consent switch is a second bool named "<package> code", and listing it as its
-		// own row made three toggles out of two packages and read as gibberish - "femboy witch",
-		// "femboy witch code", "joker wall code" (§166). It belongs *to* a package, so it is drawn
-		// under the package it belongs to. This window still references nothing: the pairing is a
-		// key convention the framework owns, the same way the titles here are read out of the
-		// descriptions rather than from a type this assembly would have to know.
-		List<ConfigEntryBase> toggles = plugin.Config.Values
+		// One switch per package, and for a package that ships code that switch is also the consent
+		// (§167). §165's separate `<package> code` bool made two questions out of one, and play
+		// found it the hard way: both packages looked enabled and did nothing until the second
+		// switch was found. What is left here is the warning, drawn under a package whose
+		// description says it ships code - this window references neither of the other assemblies,
+		// so it reads that off the text the framework writes, the same way the titles are.
+		List<ConfigEntryBase> packages = plugin.Config.Values
 			.Where(IsCustomEnemyToggle)
 			.OrderBy(entry => entry.Definition.Key, StringComparer.OrdinalIgnoreCase)
 			.ToList();
-		List<ConfigEntryBase> packages = toggles.Where(entry => !IsCodeConsentToggle(entry)).ToList();
 		if (packages.Count == 0)
 		{
 			return;
 		}
 
 		int enabledCount = packages.Count(entry => (bool)entry.BoxedValue);
-		int blocked = toggles.Count(entry => IsCodeConsentToggle(entry) && !(bool)entry.BoxedValue);
+		int codeOff = packages.Count(entry => ShipsCode(entry) && !(bool)entry.BoxedValue);
 		string summary = enabledCount + " of " + packages.Count + " enabled"
-			+ (blocked > 0 ? ", " + blocked + " with code blocked" : string.Empty);
+			+ (codeOff > 0 ? ", " + codeOff + " shipping code and switched off" : string.Empty);
 		GUILayout.Space(8f);
 		GUILayout.BeginVertical(_profilePanelStyle);
 		if (DrawPanelHeader("CUSTOM ENEMIES", plugin.Info.Metadata.GUID + "|Panel|CustomEnemies", summary))
 		{
-			GUILayout.Label("Installed custom enemy packages. Each switch applies immediately to future spawns and the custom gallery.", _descriptionStyle);
+			GUILayout.Label("Installed custom enemy packages. A switch takes effect at once, except for a package that ships its own code - that one needs a restart.", _descriptionStyle);
 			foreach (ConfigEntryBase entry in packages)
 			{
 				string id = plugin.Info.Metadata.GUID + "|" + entry.Definition.Section + "|" + entry.Definition.Key;
@@ -800,30 +799,27 @@ public sealed class Plugin : BaseUnityPlugin
 				GUILayout.Label(CustomEnemyTitle(entry), _titleStyle);
 				GUILayout.Label(entry.Definition.Key, _descriptionStyle);
 				GUILayout.EndVertical();
+				bool shipsCode = ShipsCode(entry);
 				GUIStyle toggleStyle = enabled ? _activeProfileButtonStyle : GUI.skin.button;
 				if (GUILayout.Button(enabled ? "Enabled" : "Disabled", toggleStyle, GUILayout.Width(120f), GUILayout.MinHeight(44f)))
 				{
 					ApplyValue(entry, !enabled, id);
+					if (shipsCode)
+					{
+						_status = (enabled ? "Disabled " : "Enabled ") + CustomEnemyTitle(entry)
+							+ " - restart the game for it to take effect";
+					}
 				}
 				GUILayout.EndHorizontal();
 
-				ConfigEntryBase consent = toggles.FirstOrDefault(candidate =>
-					IsCodeConsentToggle(candidate)
-					&& candidate.Definition.Key.StartsWith(entry.Definition.Key + " ", StringComparison.OrdinalIgnoreCase));
-				if (consent != null)
+				if (shipsCode)
 				{
-					bool allowed = (bool)consent.BoxedValue;
-					GUILayout.BeginHorizontal();
-					GUILayout.Label(allowed
-						? "Runs its own code. Third-party code with the game's full privileges."
-						: "Ships its own code, which is blocked. Its art and funscripts still work.", _descriptionStyle);
-					if (GUILayout.Button(allowed ? "Code allowed" : "Allow code", GUILayout.Width(120f), GUILayout.MinHeight(30f)))
-					{
-						string consentId = plugin.Info.Metadata.GUID + "|" + consent.Definition.Section + "|" + consent.Definition.Key;
-						ApplyValue(consent, !allowed, consentId);
-						_status = (allowed ? "Blocked " : "Allowed ") + CustomEnemyTitle(entry) + "'s code - restart the game for it to take effect";
-					}
-					GUILayout.EndHorizontal();
+					// Said before it is turned on, not after: this is the disclosure §164 owes, and
+					// a warning a player reads once the code is already running is not one.
+					GUILayout.Label(enabled
+						? "Runs its own code. Restart the game after switching this."
+						: "Ships its own code, which runs like any other mod - only enable it if you trust where you got it. Restart the game afterwards.",
+						_descriptionStyle);
 				}
 				GUILayout.EndVertical();
 			}
@@ -832,15 +828,17 @@ public sealed class Plugin : BaseUnityPlugin
 	}
 
 	/// <summary>
-	/// A package's "may it run the code it ships" switch, told apart from its on/off switch by the
-	/// key the framework binds it under: `&lt;package id&gt; code`. Convention rather than a type,
-	/// because this assembly deliberately references neither of the others.
+	/// Does this package ship a .NET assembly, so that enabling it runs third-party code? Read off
+	/// the sentence `PackageAssemblies.CodeSwitchDescription` writes into the switch's description,
+	/// because this assembly deliberately references neither of the others - convention, like the
+	/// title parsed out of the same text. A package that ships no code has no such sentence and
+	/// gets no warning.
 	/// </summary>
-	private static bool IsCodeConsentToggle(ConfigEntryBase entry)
+	private static bool ShipsCode(ConfigEntryBase entry)
 	{
-		return entry.SettingType == typeof(bool)
-			&& entry.Definition.Section.Equals("Custom Enemies", StringComparison.OrdinalIgnoreCase)
-			&& entry.Definition.Key.EndsWith(" code", StringComparison.OrdinalIgnoreCase);
+		string description = entry.Description?.Description;
+		return description != null
+			&& description.IndexOf("ships its own code", StringComparison.OrdinalIgnoreCase) >= 0;
 	}
 
 	private static string CustomEnemyTitle(ConfigEntryBase entry)

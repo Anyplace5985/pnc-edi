@@ -10,15 +10,14 @@ transparent PNG sprite sheets, and a manifest.
 a behaviour another package published - the trap *is* a behaviour, with its own manifest kind, its
 own placement rules and its own gallery entries, so it lives in an assembly beside its manifest
 (`WallPictureTrap.dll`, §165). That has one consequence worth knowing before anything below makes
-sense: **the mod will not run it until you allow it**, per package:
+sense: **the package starts switched off**, and its one switch is what allows the code:
 
-    Custom Enemies / joker_wall code = true
+    Custom Enemies / joker_wall = true
 
-in `com.edi.pnc.customenemies.cfg`, or press **Allow code** under the package in the mod manager
-(**F11**), then restart.
-BepInEx has no sandbox, so a package's assembly runs with the game's full privileges and the only
-honest thing the loader can do is ask first. Until it is on, the package's art and funscripts are
-installed and no trap appears.
+in `com.edi.pnc.customenemies.cfg`, or enable the package in the mod manager (**F11**), where it
+carries the warning that it ships code — then restart, because assemblies load once at startup.
+That code runs like any other mod and the game cannot sandbox it, so the switch is the place you are
+asked. Until it is on, the package does nothing: no trap, no gallery rows.
 
 Everything here is read at startup. Diagnostics go to `BepInEx/LogOutput.log` under
 `[WallPictureTrap]`, and that log is the first thing to read when a trap does not behave.
@@ -179,7 +178,8 @@ silently retargeting the existing row. Rename the stage's `gallery` if you hit i
 
 Every trap package gets a switch in the mod manager (**F11**) under **PNC Custom Enemies →
 Custom Enemies**, saved in `BepInEx/config/com.edi.pnc.customenemies.cfg`, which overrides the
-manifest's `enabled`. **The mod binds that switch itself**, before the package's code is allowed to
-load, so a package whose code is blocked still has something to enable (§166); the "Allow code"
-button sits under it. Disabling removes placed traps of that package at once and stops future
-placement; re-enabling places new ones as you explore.
+manifest's `enabled`. **The mod binds that switch itself**, before any package code loads, because
+for a package that ships code the switch *is* the permission to run it (§167) — off by default, with
+the warning drawn beside it. Disabling removes placed traps of that package at once and stops future
+placement; re-enabling places new ones as you explore — but a package that was off at startup ran no
+code, so switching it on there needs a restart before any trap exists to place.
