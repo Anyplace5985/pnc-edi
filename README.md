@@ -96,7 +96,7 @@ python3 code/deploy.py --check         # is either install stale?  (exit 1 if so
 
 ```sh
 python3 code/check.py                  # the fast gates (~10 s) - after any change
-python3 code/check.py --full           # + the asset sweeps (~70 s) - before a release
+python3 code/check.py --full           # + the asset sweeps (~25 s) - before a release
 ```
 
 One runner over every check the project has: the unit tests, the audits that keep the three

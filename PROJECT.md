@@ -321,7 +321,7 @@ The order that keeps a session out of trouble: **look at the scene, then measure
 
 ```
 python3 code/check.py            the fast gates (~10 s) - after any change
-python3 code/check.py --full     + the asset sweeps (~70 s) - before a release
+python3 code/check.py --full     + the asset sweeps (~25 s) - before a release
 python3 code/check.py --deploy   deploy first, then check      (--list, -k NAME, -v)
 ```
 
@@ -345,7 +345,7 @@ working on the thing it checks — and because it is what `check.py` is made of 
 | `python3 code/intensitybench.py` | — | does Edi's `Intensity` endpoint move the device's stroke range without restarting playback? (also an instrument; needs Edi up and the device connected) |
 | `.venv/bin/python code/grabflags.py` | — | which prefabs set `hideInsteadOfDestroyOnGrab` / `preserveHealthDuringGrab` - who owns an enemy across its own grab (§126). An instrument, not a check |
 | `python3 code/ladders.py --check` | fast | are the filler rows still one ladder, and the serpent row still what the generator makes? |
-| `.venv/bin/python code/refvideo.py --verify` | full | is every reference video still the frames of its clip, in order? |
+| `.venv/bin/python code/refvideo.py --verify` | — | is every reference video still the frames of its clip, in order? A one-off for other scripters (§88), so it is not in `check.py` |
 | `.venv/bin/python code/dioramaaudit.py` | full | does every ambient `Patterns` entry still match a clip or a looping source in the build? |
 | `python3 code/webmify.py --check` | fast | does every custom-enemy video have a WebM? Unity cannot decode H.264 on Linux, so an MP4-only package is a blank overlay there (§127) |
 | `python3 code/packageaudit.py` | fast | does every package that declares an assembly ship a current one, at this API version; does a manifest's named behaviour exist; and does an assembly that drives `GrabScreen.StartGrab` implement `IPackageSceneOwner` (§172)? Every failure here is silent at runtime by design (§165) |

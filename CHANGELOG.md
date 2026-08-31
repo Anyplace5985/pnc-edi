@@ -11587,6 +11587,29 @@ deliberately moved out of it, which is the trade `deploy.py` already makes on th
 Every document that said "off means off, no gallery rows either" is corrected, including the log
 line and the disclosure in each package's own README.
 
+## 174. The video verify was never a check, and it cost more than the rest combined
+
+`refvideo.py --verify` was a `check.py` step from §121, on the reasoning that it exits non-zero and
+so wraps cleanly. That is true and it is not the question. The question is what a step in this
+runner is *for*: `check.py` is the thing you run after any change, and every other step in it
+answers "did this tree just stop being correct". `refvideo --verify` answers "are the reference
+videos still the frames of their clips" — and those videos are a §88 one-off, rendered once for
+other scripters to measure against, read by nothing in the mod and by no other tool. They cannot
+drift unless someone deletes or re-renders them, which is not something a code change does.
+
+It also dominated the runtime. `--full` was ~70 s, of which the video verify was ~37 s — more than
+every other check put together — so the tier that exists to be run before a release was mostly
+spent decoding video to confirm nothing had happened to a directory Edi never opens. `--full` is
+now ~25 s, which is short enough that there is no longer a reason to skip it.
+
+The tool is untouched and still works; it is run by hand, like `handystate.py`, `grabflags.py` and
+`intensitybench.py` — the four instruments this project has, none of which are checks. `check.py`
+says so in its own docstring, because "why is this not in the runner" is the question the next
+person will have. `ffmpeg` came out of the prerequisite list with it: no remaining step needs it,
+so a machine without it no longer sees a skip.
+
+Fourteen checks now, ten fast and four under `--full`. `check.py --full` is 14/14.
+
 ## Tried and reverted — do not redo
 
 - **Trimming loop seams.** 14 galleries end on a different position than they start.

@@ -4,7 +4,7 @@ Process rules this project arrived at the hard way - about copies, defaults, dec
 
 **Read this when:** before adding a second copy of anything, changing a default, or trusting a note that says 'do not redo'
 
-**Keywords:** build last then publish the checksum, a document that ships cannot describe its own archive, mirrored copy, generate, config default, decisions expire, deploy, release, permission bit, dedup key, decompile diff, rename pass, player-facing README, documenting another program's UI, WINEDLLOVERRIDES, Proton, DefaultVariant, a backwards-compatibility default, a hardcoded count in a document
+**Keywords:** build last then publish the checksum, a document that ships cannot describe its own archive, mirrored copy, generate, config default, decisions expire, deploy, release, permission bit, dedup key, decompile diff, rename pass, player-facing README, documenting another program's UI, WINEDLLOVERRIDES, Proton, DefaultVariant, a backwards-compatibility default, a hardcoded count in a document, check vs instrument, check.py step, refvideo --verify, a slow step in a tier nobody runs
 
 ---
 
@@ -171,6 +171,17 @@ before a pass starts, because each hit needs an account: parameter names (metada
 renamed. §123's 33 lines were three parameter renames and one redundant `string a = b;` copy.
 Compiler-generated locals - the `array2 = array` cache a `foreach` creates - are re-created on the
 next build and cost nothing, so deleting those stays invisible too.
+
+**A check answers "did this tree just stop being correct"; anything else is an instrument, and an
+instrument in the runner is a tax (§174).** `refvideo.py --verify` was a `check.py` step for
+wrapping cleanly — it exits non-zero, so it fits. Fitting is not the test. It verified reference
+videos that no code reads and that only a person re-rendering them can change, and it cost ~37 s of
+a ~70 s `--full` tier, more than every real check combined. The cost is not the seconds: it is that
+a tier expensive enough to skip is a tier that gets skipped, so a slow irrelevant step degrades
+every check beside it. **Ask what would have to go wrong for this step to fire, and whether an
+ordinary change can cause it.** If nothing in a normal session can move the thing it watches, it is
+a tool you run by hand — like `handystate.py`, `grabflags.py` and `intensitybench.py` — and the
+runner should say in its own docstring why it is absent, or the next person re-adds it.
 
 **Compiling is not reading, and a note saying you did not read it is not reading it either.**
 §127 ported ~5,000 lines of someone else's mod on compile-correctness alone and wrote in the handoff

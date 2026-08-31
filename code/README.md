@@ -116,17 +116,17 @@ before you could build. If it is missing the build stops with the command to run
 ## Checking your work — `code/check.py` (§121)
 
     python3 code/check.py            the fast gates (~10 s) - run after any change
-    python3 code/check.py --full     + the asset sweeps (~70 s) - run before a release
+    python3 code/check.py --full     + the asset sweeps (~25 s) - run before a release
     python3 code/check.py --deploy   deploy (build + patch both installs) first, then check
     python3 code/check.py --list     the steps, their tier, and how each one reports failure
     python3 code/check.py -k alias   only the steps whose name contains `alias`
     python3 code/check.py -v         print every step's output, not only the failures
 
-One runner over the fifteen checks PROJECT.md lists — ten fast, five more under `--full`. It adds no check of its own; what it adds is
+One runner over the fourteen checks PROJECT.md lists — ten fast, four more under `--full`. It adds no check of its own; what it adds is
 knowing **how each tool says no**, which is the part that made a hand-run sweep unreliable:
 
   * `gate` — the exit code is the verdict: `dotnet test`, `patchaudit`, `cfgaudit`,
-    `ladders --check`, `dioramaaudit`, `deploy --check`, `release --check`, `refvideo --verify`.
+    `ladders --check`, `dioramaaudit`, `deploy --check`, `release --check`.
   * `grep` — the exit code is **always 0** and the verdict is a word in the output. `slugharness`
     prints `UNMAPPED` per unmapped pair; `animsweep` prints `OFF` in its time column. Wrapping
     either one by exit code alone would report green forever, which is worse than not wrapping it.
@@ -140,13 +140,14 @@ steps `POST /Edi/Intensity/{max}`, and after each step reads the device's own `v
 `v3/hsp/state` — it is what established that intensity moves the range without restarting playback
 (§125), and it needs Edi running and the device connected.
 
-A step whose prerequisites are missing — no `.venv`, no game install, no `dotnet` or `ffmpeg` on
+A step whose prerequisites are missing — no `.venv`, no game install, no `dotnet` on
 `PATH` — prints `skip` **with the reason and the command that fixes it**, and is counted separately
 in the summary. A check that quietly does not run is the failure this file exists to remove, so a
 skip is never silent and never counts as a pass.
 
 Steps run cheapest-and-most-fundamental first, so a broken config is reported in the first second
-rather than after the 37-second `refvideo --verify`. `--deploy` deploys **before** the checks, not
+rather than after the asset sweeps. `refvideo.py` is **not** one of the steps: rendering the
+reference videos was a one-off for other scripters (§88), so it stays a tool you run by hand. `--deploy` deploys **before** the checks, not
 after: `deploy --check` is one of the steps, and checking a tree you are about to deploy answers a
 question nobody asked.
 

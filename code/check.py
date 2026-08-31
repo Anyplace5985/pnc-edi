@@ -2,7 +2,7 @@
 """Every check this project has, in one run.
 
     python3 code/check.py               the fast gates (~7 s) - run this after any change
-    python3 code/check.py --full        + the asset sweeps (~60 s) - before a release
+    python3 code/check.py --full        + the asset sweeps (~25 s) - before a release
     python3 code/check.py --deploy      deploy first (build + patch both installs), then check
     python3 code/check.py --list        what would run, and why each step is in its tier
     python3 code/check.py -k alias      only steps whose name contains `alias`
@@ -17,7 +17,7 @@ happened - runs the two it remembers. This runs them, in dependency order, and g
 **The three ways a tool here reports failure**, all of which this has to understand:
 
   `gate`   exit code is the verdict:  patchaudit, cfgaudit, ladders --check, deploy --check,
-           release --check, dotnet test, refvideo --verify.
+           release --check, dotnet test.
   `grep`   exit code is always 0 and the verdict is a word in the output: slugharness prints
            `UNMAPPED` per unmapped pair, animsweep prints `OFF` in its time column. A tool like
            this cannot be wrapped by exit code alone, and wrapping it wrong is worse than not
@@ -30,7 +30,10 @@ Only `handystate.py` is left out entirely: it polls your Handy over the network 
 let it, which is not a check, it is an instrument.
 
 Steps are ordered cheapest-and-most-fundamental first, so a broken build or a bad config is
-reported in the first two seconds rather than after the 37-second video verify.
+reported in the first two seconds rather than after the asset sweeps.
+
+`code/refvideo.py` is deliberately not here. Rendering and verifying the per-scene reference
+videos was a one-off for other scripters (§88); it is still a working tool, run by hand.
 """
 import argparse
 import os
@@ -101,9 +104,6 @@ STEPS = [
     Step("speedcheck", [PY, "code/speedcheck.py"],
          "is each script playable on the target device?",
          tier="full", kind="report", tail=4),
-    Step("refvideo", [VENV, "code/refvideo.py", "--verify"],
-         "is every reference video still the frames of its clip, in order?",
-         tier="full", needs=("venv", "game", "ffmpeg")),
 ]
 
 
@@ -115,7 +115,7 @@ def missing(step):
             return "no .venv (python3 -m venv .venv && .venv/bin/pip install -r code/requirements.txt)"
         if need == "game" and not os.path.isdir(P.game_dir()):
             return f"no game install at {os.path.relpath(P.game_dir(), ROOT)}"
-        if need in ("dotnet", "ffmpeg") and not shutil.which(need):
+        if need == "dotnet" and not shutil.which(need):
             return f"{need} not on PATH"
     return None
 
@@ -142,7 +142,7 @@ def run(step, verbose):
 def main():
     ap = argparse.ArgumentParser(add_help=False)
     ap.add_argument("--full", action="store_true",
-                    help="also run the asset sweeps (needs .venv, the game, ffmpeg)")
+                    help="also run the asset sweeps (needs .venv and the game)")
     ap.add_argument("--deploy", action="store_true",
                     help="build and patch both game installs before checking")
     ap.add_argument("--list", action="store_true", help="print the steps and exit")
