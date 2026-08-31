@@ -65,7 +65,10 @@ directory is read, so leaving two of the six behind registers two packages.
 its manifest, its `SOURCE.txt` and its `funscripts/` — but its media is not, because that is
 third-party artwork and git history is permanent. So a clone gives you a package directory with a
 manifest that names sprite sheets and video which are not there, and it will not load until you
-restore the media from that package's own archive.
+restore the media from that package's own archive. **Deploying from that clone will not take the
+media out of an install that has it**: `deploy.py` normally deletes what an install carries and the
+tree does not, and it skips a package whose media is missing wholesale rather than reading a clone
+as nineteen deletions (§184). It says so in a warning when it does.
 
 There are two ways to build an enemy:
 

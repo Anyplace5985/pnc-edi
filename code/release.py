@@ -47,6 +47,9 @@ ROOT = Path(__file__).resolve().parent.parent
 DIST = ROOT / "dist"
 CACHE = ROOT / "code" / "dist" / "cache"
 
+# Named so a server that blocks the default `Python-urllib/3.x` can still see who is calling.
+UA = "pnc-edi-release/1.0 (+https://github.com/Anyplace5985/pnc-edi)"
+
 MOD_NAME = "PncEdi"
 GAME_SLUG = "PNC"
 GAME_VERSION = "0.3.2"
@@ -197,6 +200,16 @@ def fail(msg: str) -> None:
     sys.exit(1)
 
 
+# Every download here goes through this, and the User-Agent is the whole reason it exists.
+# `urllib.request.urlopen(url)` sends `Python-urllib/3.x`, and builds.bepinex.dev answers that
+# with a bare 403 while serving the same URL to curl - so a machine with a warm
+# `code/dist/cache/` never notices and a fresh clone cannot get past setup step 2 (§184).
+def fetch_url(url: str, timeout: int) -> bytes:
+    request = urllib.request.Request(url, headers={"User-Agent": UA})
+    with urllib.request.urlopen(request, timeout=timeout) as response:
+        return response.read()
+
+
 # --------------------------------------------------------------------------------------------
 # version
 
@@ -340,8 +353,7 @@ def fetch_pack(name: str) -> Path:
         return path
     print(f"  fetching BepInEx {name} pack ({BEPINEX_VERSION})")
     try:
-        with urllib.request.urlopen(url, timeout=120) as r:
-            data = r.read()
+        data = fetch_url(url, timeout=120)
     except Exception as e:                                            # noqa: BLE001
         fail(f"could not download {url}\n  {e}\n"
              f"  Offline? Put the file at {path} by hand and re-run.")
@@ -426,8 +438,7 @@ def fetch_edi() -> bytes:
         return path.read_bytes()
     print(f"  fetching Edi {EDI_TAG} ({EDI_SIZE / 1e6:.0f} MB)")
     try:
-        with urllib.request.urlopen(EDI_URL, timeout=600) as r:
-            data = r.read()
+        data = fetch_url(EDI_URL, timeout=600)
     except Exception as e:                                            # noqa: BLE001
         fail(f"could not download {EDI_URL}\n  {e}\n"
              f"  Offline? Put the file at {path} by hand.")
@@ -445,8 +456,7 @@ def update_edi() -> None:
     wants at least one run against the game before it goes out under our name."""
     api = f"https://api.github.com/repos/{EDI_REPO}/releases/latest"
     try:
-        with urllib.request.urlopen(api, timeout=60) as r:
-            rel = __import__("json").loads(r.read())
+        rel = __import__("json").loads(fetch_url(api, timeout=60))
     except Exception as e:                                            # noqa: BLE001
         fail(f"could not reach {api}: {e}")
     assets = [a for a in rel.get("assets", []) if a["name"].lower().endswith(".exe")]
@@ -459,8 +469,7 @@ def update_edi() -> None:
         print("  already pinned, nothing to do")
         return
     print("  downloading to hash it")
-    with urllib.request.urlopen(a["browser_download_url"], timeout=600) as r:
-        data = r.read()
+    data = fetch_url(a["browser_download_url"], timeout=600)
     CACHE.mkdir(parents=True, exist_ok=True)
     (CACHE / f"Edi-{rel['tag_name']}.exe").write_bytes(data)
     print("\nPaste into release.py, then build and run it once before shipping:\n")

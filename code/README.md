@@ -45,6 +45,13 @@ ProjectReference in this direction would be a cycle; a `BuildCustomEnemies` targ
 that was just built rather than whatever was there before. One command still produces everything,
 and the three DLLs in `BepInEx/plugins/` can never be from different eras.
 
+**A project reached through an `<MSBuild>` task is outside the restore.** `dotnet build` restores
+the graph it can see — this project and its ProjectReferences — and nothing it is only *told* to
+build later, so `BuildCustomEnemies` and `BuildPackageAssemblies` each run `Targets="Restore"`
+before they run the build. A tree that has built before carries the `obj/project.assets.json` that
+makes this look unnecessary; a fresh clone stops dead at `NETSDK1004` without it (§184), after
+PncEdi.dll has already built and deployed.
+
 It deploys all three DLLs to `BepInEx/plugins/` **and** into both game installs — the
 `PatchGameInstalls` target runs `deploy.py --dll-only` after the build, so a stale install cannot
 be why a fix looks broken. Suppress it with `-p:DeployToGames=false` (which is what `release.py`
@@ -68,6 +75,13 @@ payload also has, while leaving a package directory the payload does not have en
 an install may legitimately carry a package you dropped in to try. Without it, files the tree
 deleted stay in both installs while `--check` calls them up to date, which is the one thing that
 check exists to say truthfully: **adding is visible, the absence of a delete is not.**
+
+**A package with no media in the tree is skipped entirely** (§184), warning and all. A package's
+media is untracked, so a fresh clone's payload holds its manifest, its `SOURCE.txt`, its funscripts
+and — after a build — its behaviour assembly, and nothing else; without this, that clone's first
+deploy reads nineteen absent files as nineteen deletions and strips a working install's artwork
+back out, artwork only the package's own archive can restore. The test is all-or-nothing on
+purpose: one media file missing of five is an edit and still prunes, which is what §171 needs.
 
 The payload is `release.py`'s — `deploy.py` imports `bepinex_payload()`, `gallery_files()` and
 `fetch_edi()` rather than growing a second definition of what an install needs. Three things
@@ -144,6 +158,32 @@ A step whose prerequisites are missing — no `.venv`, no game install, no `dotn
 `PATH` — prints `skip` **with the reason and the command that fixes it**, and is counted separately
 in the summary. A check that quietly does not run is the failure this file exists to remove, so a
 skip is never silent and never counts as a pass.
+
+### What runs on CI, and why it is a list rather than `check.py` (§185)
+
+`.github/workflows/checks.yml` gates every pull request into `main` with **seven** of these:
+`secretaudit`, `cfgaudit`, `versionaudit`, `bridgeaudit`, `ladders --check`, `exampleaudit` and
+`slugharness`. That is the half of the fast tier a public runner can honestly run.
+
+The other six cannot run there, each for a reason that is not going to change: `tests`,
+`patchaudit` and (under `--full`) `animsweep` read the game's own assemblies, and the game is not
+ours to put on a runner; `deploy` needs the two symlinked installs; `packageaudit` needs a built
+package assembly; `release` needs the pinned Edi build. **`webmify` is left out for the opposite
+reason** — it would pass, and pass meaninglessly, because a clone has no package media for it to
+look at, and a check that cannot fail is worse than an absent one.
+
+`slugharness` is the one CI step that is not a gate, so the workflow greps its output for
+`UNMAPPED` under `set -o pipefail` — the same distinction this file draws above, made once more in
+YAML because the runner has no `check.py` to make it. Running the tools by name is the deliberate
+cost of that: **add a game-free check to `STEPS` and it does not reach CI until the workflow names
+it too.** The alternative was a `--ci` tier in `check.py`, which was considered and left alone —
+a tier is a second definition of the same list, and this one at least fails visibly by being
+absent rather than quietly by being stale.
+
+**CI is not a substitute for `python3 code/check.py` before you open the pull request.** Seven of
+the thirteen fast checks run on the runner; the six that do not are the ones that read the game,
+the installs and the release, which is where most of this project's failures have actually been.
+That half only ever runs on your machine.
 
 Steps run cheapest-and-most-fundamental first, so a broken config is reported in the first second
 rather than after the asset sweeps. `refvideo.py` is **not** one of the steps: rendering the
@@ -287,6 +327,10 @@ what makes a release reproducible from a fresh clone, and since §62 it is where
 installs and the build's own references come from as well — there is no copy of BepInEx anywhere
 in this repo that was not extracted from those two zips. Offline, drop them into the cache
 directory by hand.
+
+**Every download here sends a named User-Agent** (`fetch_url`, §184). `builds.bepinex.dev` answers
+`urllib`'s default `Python-urllib/3.x` with a 403 while serving the same URL to curl, so setup step
+2 fails on any machine whose cache is empty — which is every clone, and never this tree.
 
 The zip is byte-reproducible from a given commit: every entry is stamped with HEAD's commit time
 and the README's build date comes from the same place.
@@ -604,7 +648,8 @@ deliberate and the two halves have different reasons:
 `.gitignore`'s rule under `BepInEx/custom-enemies/` is deny-by-default and names the three kinds of
 text back in, so a media format nobody has thought of yet is ignored without anyone remembering to
 ignore it. **A fresh clone therefore has a package's text with no media beside it, and the package
-will not load until the media is restored from its archive.**
+will not load until the media is restored from its archive** — and `deploy.py` skips pruning such a
+package rather than deleting the media out of an install that has it (§184, above).
 
 `deploy.py` still copies whatever the working tree holds into both installs. The main release still
 ships the framework, the templates and the documentation only — a package is a separate download:
@@ -1045,6 +1090,12 @@ unpinned upgrade could move a measured number without anyone touching a funscrip
 (`/*` then `!` for each opted-in path), so a new top-level directory is invisible to git until
 someone opts it in. The tools that need the venv are the ones written `.venv/bin/python` above;
 everything else runs on the distro `python3`.
+
+That inversion cuts the other way too, and §185 walked into it: `.github/` was ignored the moment
+it was created, and an ignored workflow file does not fail — the repository simply never runs its
+checks, quietly, with the file sitting right there in the working tree. `!/.github/` is in
+`.gitignore` for that reason. **Anything new at the top level needs a rule and a `git check-ignore
+-v` to prove it.**
 
 ### `dioramaaudit.py` — the ambient patterns, against the build (§119)
 

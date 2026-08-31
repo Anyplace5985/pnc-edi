@@ -33,6 +33,10 @@ credential rather than rewriting history (§182). And the archives players actua
 come from the thread, not from here — a clone is a source tree that cannot build without a game
 install beside it.
 
+**`main` is protected and takes no direct pushes** (§185): every change is a pull request, the
+ruleset has no admin bypass, and `.github/workflows/checks.yml` runs the seven fast checks that do
+not need the game. `code/README.md` has the split; `README.md` has the branch-and-PR commands.
+
 **Edi is open source even though the game is not — read it rather than reverse-engineering it.**
 
 | | |
@@ -228,6 +232,10 @@ python3 code/deploy.py --refs-only     extract BepInEx for the build to compile 
 `com.edi.pnc.cfg` changes nothing a running game can see until it is deployed. `--check` exiting
 non-zero is the answer to "is what I am about to launch actually the working tree".
 
+**It deletes as well as writes**, so which tree you run it from matters: a file an install has and
+the tree does not is removed. §184 is what that costs when the tree is a fresh clone, and what
+guards it now.
+
 ```
 python3 code/release.py                -> dist/PNC0.3.2-PncEdi-3.0.0.zip
 python3 code/release.py --check        validate everything, write nothing
@@ -290,7 +298,8 @@ manifest templates, one per route through it, with `_example/README.md` saying w
 `funscripts/` are in git — the funscripts are ours, and the manifest is where a package's tuning
 lives. The art, video and audio are third-party and stay out, because git history is permanent. So
 a fresh clone has a package's text with no media beside it and will not load it until the media is
-restored.
+restored — and `deploy.py` skips pruning such a package rather than deleting that media out of an
+install that has it (§184).
 
 `deploy.py` takes whatever the working tree holds. The release takes only the framework and the
 templates: a package is **its own download**, built by `python3 code/release.py --package <name>`

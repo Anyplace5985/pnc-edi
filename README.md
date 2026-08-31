@@ -98,6 +98,15 @@ python3 code/deploy.py --check         # is either install stale?  (exit 1 if so
 
 `--check` is the answer to "is what I am about to launch actually the working tree".
 
+**One warning if you are deploying from a clone.** `deploy.py` deletes as well as writes: a file an
+install has and the working tree does not is removed, which is how a deleted funscript or a moved
+document stops living on in an install nobody has reinstalled. A custom-enemy package's *media* is
+not in this repo (see the last section), so a clone holds that package's text with no art or video
+beside it — and a deploy would read that as "these files were deleted". It does not: a package with
+no media in the tree at all is skipped whole and named in a warning, because an empty tree has
+nothing to say about it (§184). Restore the package's media from its own archive before deploying
+over an install that has it.
+
 ## Check
 
 ```sh
@@ -116,6 +125,13 @@ python3 code/release.py                # -> dist/PNC0.3.2-PncEdi-3.0.0.zip
 python3 code/release.py --check        # validate everything, write nothing
 ```
 
+**A clone cannot run this until it has the Edi build the release pins.** The pin is currently a
+build from an upstream pull request rather than a tagged release, and it is not redistributable
+from here — `release.py` prints the three commands that produce it, and offers the alternative of
+setting `EDI_PATCH_PR = None` to ship stock Edi instead. This is also why `check.py` reports its
+`release` step as failing on a fresh clone; its `deploy` step fails there for the reason under
+Deploy above. Neither is a regression.
+
 One archive serves Windows and Linux, with BepInEx and Edi both pinned and checksummed. It refuses
 to ship a game binary, a signing certificate, an `EdiConfig.json` carrying your device keys, or a
 config with an undeclared local tweak in it. Custom-enemy packages are their own downloads
@@ -127,6 +143,24 @@ the game needs a restart after it changes. Switched off it runs nothing — no e
 gallery entry — though its funscripts and its gallery rows still reach Edi, so turning it on later
 does not also mean restarting Edi. A package that ships no code has the same switch without any of
 that.
+
+## Branch policy
+
+**`main` takes no direct pushes. Every change arrives as a pull request**, including the owner's
+(§185) — the ruleset has no admin bypass, so this is enforced rather than agreed. A pull request
+needs no approving review, because a solo repo cannot produce one; what it needs is to be a pull
+request, so there is a diff to read and a place for CI to report.
+
+```sh
+git switch -c short-branch-name
+# work, then: python3 code/check.py
+git push -u origin short-branch-name        # then open the PR
+```
+
+`.github/workflows/checks.yml` runs the checks a public runner can run — seven of the thirteen in
+the fast tier; the rest need the game, the installs or the pinned Edi and stay local, so
+**`python3 code/check.py` before opening the PR is still the real gate.** `code/README.md` has the
+split and why it is drawn there.
 
 ## Where to read next
 

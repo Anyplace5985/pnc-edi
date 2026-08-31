@@ -167,7 +167,14 @@
        without making a cycle. Building it from this target instead keeps `dotnet build
        PncEdi.csproj` the one command that produces every DLL, and running after DeployPlugin
        means the PncEdi.dll it compiles against is the one just built.                          -->
+  <!-- Restore first, and separately: `dotnet build PncEdi.csproj` restores this project's own
+       graph only, which reaches PncModManager through its ProjectReference and never reaches a
+       project called from an <MSBuild> task. A tree that has built before has the obj/ to hide
+       that; a fresh clone stops at NETSDK1004 "Assets file .../project.assets.json not found"
+       (§184). -->
   <Target Name="BuildCustomEnemies" AfterTargets="DeployPlugin">
+    <MSBuild Projects="..\customenemies\PncCustomEnemies.csproj" Targets="Restore"
+             RemoveProperties="OutputPath;PluginDeployDir;TargetFramework" />
     <MSBuild Projects="..\customenemies\PncCustomEnemies.csproj"
              Properties="Configuration=$(Configuration)"
              RemoveProperties="OutputPath;PluginDeployDir;TargetFramework" />
@@ -183,6 +190,8 @@
     <ItemGroup>
       <PackageProject Include="..\packages\*\*.csproj" />
     </ItemGroup>
+    <MSBuild Projects="@(PackageProject)" Targets="Restore"
+             RemoveProperties="OutputPath;PluginDeployDir;TargetFramework" />
     <MSBuild Projects="@(PackageProject)"
              Properties="Configuration=$(Configuration)"
              RemoveProperties="OutputPath;PluginDeployDir;TargetFramework" />

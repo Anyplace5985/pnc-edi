@@ -1661,6 +1661,103 @@ release thread, which is where all of it was posted and where this mod's release
 closed with it: a credential that reaches a commit from here is public whether or not a later commit
 removes it, and the answer becomes revoking it at the device rather than rewriting history.
 
+## 184. What a stranger's clone actually does, run rather than reasoned about
+
+The repo went public in §183 and nobody had ever built it from a clone. This session cloned
+`Anyplace5985/pnc-edi` into a scratch directory, pointed the two symlinks at the game installs, and
+followed `README.md` from the top with nothing but what the tree says. Three of its steps do not
+work as written, and one of them destroys player data.
+
+**Setup step 2 cannot download BepInEx.** `python3 code/deploy.py --refs-only` stops with
+`HTTP Error 403: Forbidden` from `builds.bepinex.dev`. The URL is fine — `curl` gets a 200 from it
+— and so is the pinned checksum: the server rejects `Python-urllib/3.x`, the User-Agent
+`urllib.request.urlopen(url)` sends when given a bare string. Every download in `release.py` now
+goes through `fetch_url`, which sends a named User-Agent instead. **This tree could never have
+found it**, because `code/dist/cache/` has held both packs since 18 August and a cache hit returns
+before the request; only a clone with an empty cache reaches the network at all.
+
+**The build fails on a fresh clone with `NETSDK1004`.** `dotnet build code/edimod/PncEdi.csproj`
+restores that project's own graph, which reaches `PncModManager` through its `ProjectReference` and
+never reaches `PncCustomEnemies` or the package assemblies, because those are invoked from an
+`<MSBuild>` task (§131, §165) rather than referenced. A tree that has built before has the
+`obj/project.assets.json` to hide it. `BuildCustomEnemies` and `BuildPackageAssemblies` now call
+`Targets="Restore"` first. Note what the failure looked like: PncEdi.dll built and deployed, *then*
+the build failed — so the first thing a stranger's clone produces is one plugin of three.
+
+**A clone's first `deploy.py` would have deleted 19 media files out of a working install.** This is
+the one that matters. A package's media is untracked (§135) and its text is not, so a clone holds
+`femboy-witch/` and `joker-wall/` as a manifest, a `SOURCE.txt` and funscripts with no art, video
+or audio beside them — which `prune_custom_enemies` (§168, §171) reads exactly as "the tree no
+longer has these files" and removes from both game installs. Everything about that is working as
+designed and the result is still wrong: the deleted files are third-party artwork that only the
+package's own archive can restore, and the two facts that compose into it were each documented on
+their own, in `code/README.md` and in `CUSTOM-ENEMIES.md`, in neither case beside the other.
+
+The guard is narrow on purpose. A package whose payload carries **no** media — nothing beyond the
+tracked text and the behaviour assembly a build drops in — is skipped whole, with a warning naming
+it. Deleting one media file of five still prunes, because the payload still has the other four.
+The all-or-nothing case is a clone; the partial case is a decision, and §171 exists because the
+partial case has to keep working.
+
+**`check.py` reports 11/13 on a fresh clone**, and both failures are structural rather than
+regressions: `deploy` fails because the installs hold media the clone does not (and, once the DLLs
+are rebuilt, because a rebuilt assembly is byte-different on its MVID alone — the five remaining
+changes after the guard), and `release` fails because `EDI_PATCH_PR` pins an Edi built by hand from
+a pull-request branch, which no clone has. Both error messages say what to do; the README now says
+it before the command is run.
+
+What the exercise is worth: every one of these is invisible from inside a tree that has built
+before, and the two that block setup outright had been true since the day the repo went public.
+
+## 185. `main` stops taking pushes, and CI gets the half of the checks it can run
+
+A branch-and-pull-request policy on a repo with one contributor, which needs saying plainly: it
+buys **a diff that exists before the merge, and a place to hang CI**, not review. Nothing here is
+about disagreement between people. It is about the fact that a direct push to `main` is
+unreviewable by construction, and this repo went public in §183 — a mistaken push is now
+published, and §182's secret was found by a tool that had to be run against something.
+
+**Zero required approvals.** GitHub does not let an author approve their own pull request, so
+requiring one on a solo repo means either a second account or a bypass every time; a rule enforced
+by exception is not a rule. **No admin bypass**, which is the half that makes the rest real — the
+owner is exactly the person who would otherwise push to `main` at midnight. Turning the ruleset off
+is still available and leaves a trace, which is the right shape for an emergency.
+
+**`.github/workflows/checks.yml` runs seven of the thirteen fast checks** — `secretaudit`,
+`cfgaudit`, `versionaudit`, `bridgeaudit`, `ladders`, `exampleaudit`, `slugharness` — against every
+pull request into `main`. The other six cannot run on a public runner and never will: `tests`,
+`patchaudit` and `animsweep` read the game's assemblies, which are not ours to upload; `deploy`
+needs the symlinked installs; `packageaudit` needs a built package assembly; `release` needs the
+pinned Edi. `webmify` is excluded for the opposite reason — with no package media in a clone it
+would pass by having nothing to look at, and §121's rule is that a check which cannot fail is worse
+than an absent one. That `slugharness` runs at all was worth checking rather than assuming: it
+compiles the naming sources only and never touches the game, so it works on a bare runner, and its
+verdict is a printed `UNMAPPED` rather than an exit code — the workflow greps for it under
+`set -o pipefail`, which is the same §121 distinction restated in YAML.
+
+**Naming the tools in the workflow, rather than adding a `--ci` tier to `check.py`,** is a
+deliberate trade and the cost is stated in `code/README.md`: a new game-free check does not reach
+CI until someone adds it to the workflow too. A tier would be a second copy of the same list, and
+this project's own rule is that two implementations of one rule need different callers and a way to
+catch drift. The failure mode chosen is the visible one — a check absent from CI — over the quiet
+one, a tier that has silently stopped matching `STEPS`.
+
+**What CI is not.** Seven of thirteen, and the six it cannot run are the ones that read the game,
+the installs and the release — which is where nearly every failure in this changelog actually came
+from. `check.py` before opening the pull request is still the gate; the workflow is what stops a
+pull request that never had one run against it from looking identical to one that did.
+
+**The workflow was ignored the moment it was written**, and that is worth a line of its own.
+`.gitignore` here is an allowlist, so `.github/` was excluded by the `/*` at the top — and an
+ignored workflow does not announce itself, it just never runs, from a file sitting in plain sight
+in the working tree. `!/.github/` opts it back in. The only reason it was caught is that
+`git status` did not list the file; the rule that replaces the luck is in
+`learnings/working-practice.md` — `git check-ignore -v` on anything new at the top level.
+
+**Not verified: no runner has executed this workflow.** Each of the seven steps was run by hand in
+a game-free clone and passes there, which is not the same thing. The first pull request is what
+tests it, and `slugharness` — the only step that builds anything — is where to look first.
+
 ## Tried and reverted — do not redo
 
 

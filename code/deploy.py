@@ -508,6 +508,27 @@ def prune_gallery(target: Path, files: dict[str, bytes], check: bool) -> int:
     return pruned
 
 
+# What a fresh clone has of a package on its own: the tracked text (manifest, `SOURCE.txt`,
+# funscripts) plus the behaviour assembly, which is build output and so appears the moment the
+# clone builds. Everything else is third-party media - untracked (§135), and only ever restored
+# from the package's own archive.
+PACKAGE_TEXT = ("SOURCE.txt",)
+
+
+def package_has_media(package: str, files: dict[str, bytes]) -> bool:
+    """Does the payload carry anything for `package` beyond what a clone has without its archive?"""
+    prefix = f"BepInEx/custom-enemies/{package}/"
+    for name in files:
+        if not name.startswith(prefix):
+            continue
+        rest = name[len(prefix):]
+        if rest.endswith((".funscript", ".dll", ".md")) or rest in PACKAGE_TEXT or (
+                rest.endswith(".json") and "/" not in rest):
+            continue
+        return True
+    return False
+
+
 def prune_custom_enemies(target: Path, files: dict[str, bytes], check: bool) -> int:
     """Delete files under `BepInEx/custom-enemies/` an install still has and the tree does not.
 
@@ -522,7 +543,15 @@ def prune_custom_enemies(target: Path, files: dict[str, bytes], check: bool) -> 
     `README.md` that no longer exists and a `WALL-PICTURE-TRAPS.md` at a path it moved out of.
     Without the second, §171's five dropped H.264 masters stayed in both installs the same way -
     and in both cases `--check` reported the installs up to date, which is the one thing that check
-    exists to say truthfully. **Adding is visible; the absence of a delete is not.**"""
+    exists to say truthfully. **Adding is visible; the absence of a delete is not.**
+
+    **A package whose payload is text only is skipped entirely** (§184). A package's media is
+    untracked, so a fresh clone holds its manifest and funscripts with no art or video beside
+    them - and that clone's first deploy would otherwise read "the tree does not have these 19
+    files" and strip a working install's third-party media back out, media that only the package's
+    own archive can restore. Deleting one media file of five still prunes, because the payload
+    still has the other four; it is the all-or-nothing case that is a clone rather than a
+    decision."""
     pruned = 0
     folder = target / "BepInEx/custom-enemies"
     if not folder.is_dir():
@@ -532,6 +561,11 @@ def prune_custom_enemies(target: Path, files: dict[str, bytes], check: bool) -> 
     for entry in sorted(folder.iterdir()):
         if entry.is_file():
             stale = [entry] if f"BepInEx/custom-enemies/{entry.name}" not in files else []
+        elif entry.name in known and not package_has_media(entry.name, files):
+            note(f"WARNING {target.name}: BepInEx/custom-enemies/{entry.name}/ has no media in "
+                 f"this tree, so nothing under it is pruned - restore the package's media from "
+                 f"its own archive before trusting a deploy of it")
+            continue
         elif entry.name in known:
             stale = [f for f in sorted(entry.rglob("*")) if f.is_file()
                      and f"BepInEx/custom-enemies/{f.relative_to(folder).as_posix()}" not in files]
