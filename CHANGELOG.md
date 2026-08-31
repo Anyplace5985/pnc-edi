@@ -1754,9 +1754,20 @@ in the working tree. `!/.github/` opts it back in. The only reason it was caught
 `git status` did not list the file; the rule that replaces the luck is in
 `learnings/working-practice.md` — `git check-ignore -v` on anything new at the top level.
 
-**Not verified: no runner has executed this workflow.** Each of the seven steps was run by hand in
-a game-free clone and passes there, which is not the same thing. The first pull request is what
-tests it, and `slugharness` — the only step that builds anything — is where to look first.
+**Verified on the first two pull requests.** The ruleset is active with zero required approvals, no
+bypass actors, `game-free` required, and force-push and deletion blocked. Both PRs ran the workflow
+green — seven steps in 18-22 s — and #2 could not have merged without it. The step worth being
+suspicious of was `slugharness`, since a harness that failed to build would print no `UNMAPPED` and
+pass by saying nothing; it took 11 s against 0-1 s for the six Python gates, and `set -o pipefail`
+would have failed the step on a dead `dotnet run` regardless. It ran.
+
+Two annotations came out of the first run, both benign. The three actions targeted Node 20 and the
+runner was forcing them onto Node 24, so they are pinned to `checkout@v7`, `setup-python@v7` and
+`setup-dotnet@v6` (#2). And the compiler reported `NameRemap.CustomEnemyResolver` as never
+assigned, which is correct from where it stands and is the bridge seam working as designed: the
+delegate is declared in `PncEdi` and assigned only by `PncCustomEnemies` at startup (§131), so no
+single compilation unit ever sees both ends. That is precisely why `bridgeaudit.py` carries it in
+`EXTRA` — a warning no compiler can resolve is what an audit is for.
 
 ## Tried and reverted — do not redo
 
