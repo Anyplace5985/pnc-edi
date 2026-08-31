@@ -63,6 +63,11 @@ public sealed class CustomEnemyPlugin : BaseUnityPlugin
 
 		// Before the packages load: a package registering rows can be asked about immediately.
 		CustomEnemyBridgeInstaller.Install();
+		// Before anything reads a switch, and deliberately so: every installed package's funscripts
+		// and Definitions.csv rows, whatever kind of manifest declares them and whether or not the
+		// player has allowed its code to run (§175). Edi reads that file once at its own startup, so
+		// a row that waits for a switch costs an Edi restart nobody was told about (§173).
+		PackageGalleryImport.Run();
 		// Package assemblies come first, and the order is load-bearing: a module publishes its
 		// behaviours in Initialize, and the registry attaches behaviours by name while preparing
 		// templates. A package loaded after the registry would publish into an empty room (§165).

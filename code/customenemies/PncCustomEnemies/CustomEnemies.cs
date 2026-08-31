@@ -249,8 +249,9 @@ internal static class CustomEnemyRegistry
 			if (codeSwitch != null && !codeSwitch.Value)
 			{
 				// PackageAssemblies has already named this package and said why it is inert; a
-				// second line here would only repeat it.
-				SyncFunscripts(definition);
+				// second line here would only repeat it. Its funscripts and rows are already
+				// installed - PackageGalleryImport ran before any of this, for every package of
+				// every kind, on or off (§175).
 				return;
 			}
 			definition.EnabledEntry.SettingChanged += (_, __) => ApplyEnabledState(definition);
@@ -276,7 +277,6 @@ internal static class CustomEnemyRegistry
 			CreateGalleryAssets(definition);
 			CreateGalleryEntry(definition);
 			RegisterScenes(definition);
-			SyncFunscripts(definition);
 		}
 		catch (Exception ex)
 		{
@@ -360,6 +360,24 @@ internal static class CustomEnemyRegistry
 			result.Add(item);
 		}
 		return result.ToArray();
+	}
+
+	/// <summary>
+	/// The three manifest reads <see cref="PackageGalleryImport"/> needs, which is the only caller
+	/// outside this class. They are exposed rather than duplicated because the importer builds the
+	/// same rows this registry used to build alone, and two parsers of one manifest is exactly the
+	/// drift §128 found between the two row builders.
+	/// </summary>
+	internal static CustomEnemyScene[] ParseScenesFor(string json) => ParseScenes(json);
+
+	internal static PackageManifestStage[] ParseStagesFor(string json) => ParseObjectArray<PackageManifestStage>(json, "animations");
+
+	/// <summary>A manifest's `id`, without deserialising a manifest kind this assembly may not have a type for.</summary>
+	internal static string ReadManifestId(string json)
+	{
+		CustomEnemyManifest manifest = JsonUtility.FromJson<CustomEnemyManifest>(json);
+		string id = (manifest?.id ?? "").Trim().ToLowerInvariant();
+		return string.IsNullOrEmpty(id) ? null : id;
 	}
 
 	private static CustomEnemyScene[] ParseScenes(string json)
@@ -1055,61 +1073,9 @@ internal static class CustomEnemyRegistry
 		}
 	}
 
-	private static void SyncFunscripts(CustomEnemyDefinition definition)
-	{
-		string sourceRoot = Path.Combine(definition.Directory, "funscripts");
-		if (!Directory.Exists(sourceRoot))
-		{
-			return;
-		}
-		string galleryRoot = Path.Combine(Paths.GameRootPath, "Edi", "Gallery");
-		if (!Directory.Exists(galleryRoot))
-		{
-			Plugin.Log?.LogWarning("[CustomEnemies] Edi/Gallery not found; funscripts for '" + definition.Id + "' were not installed");
-			return;
-		}
-		foreach (string variantDir in Directory.GetDirectories(sourceRoot))
-		{
-			string targetDir = Path.Combine(galleryRoot, Path.GetFileName(variantDir));
-			Directory.CreateDirectory(targetDir);
-			foreach (string source in Directory.GetFiles(variantDir, "*.funscript", SearchOption.TopDirectoryOnly))
-			{
-				// Never overwrite a script that is already there with different content. The
-				// gallery is this project's own, hand-authored and measured against specific game
-				// assets; a package that happens to name a file `imp_grab_loop.funscript` must not
-				// be able to replace the real one. Identical content is copied silently because
-				// that is the normal case - deploy.py puts the package's scripts here already.
-				string target = Path.Combine(targetDir, Path.GetFileName(source));
-				if (File.Exists(target) && !SameFileContent(source, target))
-				{
-					Plugin.Log?.LogWarning("[CustomEnemies] '" + definition.Id + "' ships "
-						+ Path.GetFileName(source) + ", but a different script of that name is already in "
-						+ Path.GetFileName(targetDir) + " - kept the existing one; rename the package's script");
-					continue;
-				}
-				File.Copy(source, target, true);
-			}
-		}
-		UpsertDefinitions(definition, galleryRoot);
-	}
-
-	private static void UpsertDefinitions(CustomEnemyDefinition definition, string galleryRoot)
-	{
-		List<string> rows = new List<string>();
-		foreach (CustomEnemyScene scene in definition.Manifest.scenes ?? Array.Empty<CustomEnemyScene>())
-		{
-			if (scene == null || string.IsNullOrWhiteSpace(scene.animation)) continue;
-			string gallery = string.IsNullOrWhiteSpace(scene.gallery) ? definition.Id + "_" + NameRemap.Slug(scene.animation) : scene.gallery.Trim();
-			string file = string.IsNullOrWhiteSpace(scene.file) ? gallery : Path.GetFileNameWithoutExtension(scene.file.Trim());
-			int end = scene.endTime > 0 ? scene.endTime : FindFunscriptEnd(Path.Combine(definition.Directory, "funscripts"), file);
-			if (end <= scene.startTime) end = scene.startTime + 1000;
-			rows.Add(string.Join(",", gallery, file, scene.startTime.ToString(CultureInfo.InvariantCulture), end.ToString(CultureInfo.InvariantCulture), "gallery", scene.oneShot ? "false" : "true"));
-		}
-		MergeDefinitions("CustomEnemies", definition.Id, definition.Directory, galleryRoot, rows);
-	}
-
 	/// <summary>
-	/// Merge one package's gallery rows into Definitions.csv. Both package kinds go through here.
+	/// Merge one package's gallery rows into Definitions.csv. Every package kind goes through here,
+	/// and since §175 every caller is <see cref="PackageGalleryImport"/> or a package's own code.
 	///
 	/// The wall-trap registry used to carry its own copy of this, and the copy had drifted: it
 	/// overwrote any row whose name matched, and it wrote the file with a bare
@@ -1286,7 +1252,7 @@ internal static class CustomEnemyRegistry
 		return columns.Length >= 2 && shipped.Contains(columns[1].Trim());
 	}
 
-	private static int FindFunscriptEnd(string root, string file)
+	internal static int FindFunscriptEnd(string root, string file)
 	{
 		if (!Directory.Exists(root)) return 0;
 		foreach (string path in Directory.GetFiles(root, file + ".funscript", SearchOption.AllDirectories))

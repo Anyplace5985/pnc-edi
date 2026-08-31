@@ -11610,6 +11610,54 @@ so a machine without it no longer sees a skip.
 
 Fourteen checks now, ten fast and four under `--full`. `check.py --full` is 14/14.
 
+## 175. One gallery importer, reading manifests instead of kinds
+
+§173 left an asymmetry it named and did not close: a switched-off witch hands Edi her funscripts and
+her sixteen rows, and a switched-off Joker hands it nothing, so turning the Joker on costs an Edi
+restart that turning the witch on does not. The reason was structural rather than deliberate. The
+enemy registry globs `enemy.json`, so it was the only importer the framework had; a wall trap's rows
+were built inside `WallPictureTrap.dll`, which does not load while the package is off. Two kinds,
+two importers, two answers to one question.
+
+**The question was never about kinds.** "Which funscripts and rows does this package hand Edi" is
+answerable from the manifest text alone — no prefab, no assembly, no behaviour, nothing the switch
+is protecting. So `PackageGalleryImport` now runs before `PackageAssemblies`, over **any `*.json` at
+the top of any package directory**, and builds rows from `scenes[]` and `animations[]` alike. The
+registry's `SyncFunscripts` / `UpsertDefinitions` and the trap's own copy of both are gone; the
+merge is still the one writer with ownership read off the file (§128).
+
+**This is a reduction in the number of places that know both vocabularies, not an increase**, which
+is the objection the handoff raised against it. Before: `release.custom_enemy_gallery` (both),
+`UpsertDefinitions` (`scenes`), `WallPictureTrapRegistry.SyncFunscripts` (`animations`) — three
+readers. After: two, each covering both. §164's obligation is unchanged and now has one runtime
+half instead of two: **a change to how a row is built is a change in `release.py` and here.**
+
+**Nothing about consent moved.** A switched-off code package still gets no sprite sheets, no prefab,
+no gallery entry, no spawn share, no behaviour and no assembly (§167, §170). A funscript is data in
+a file Edi parses.
+
+Verified in `../fresh-test/PNC 0.3.2 Linux`, the install the §168-§173 test built, by deleting the
+Joker's two rows from its `Definitions.csv` and switching the package off:
+
+    [CustomEnemies] updated Edi definitions for 'joker_wall' (restart Edi if it was already running)
+    [CustomEnemies] 'joker_wall' ships code (WallPictureTrap.dll) and is switched off, so none of it runs.
+
+Both rows came back, byte-identical to what the both-on install had, with the package's code refused
+in the same run. A second launch with both packages on loaded both assemblies and changed nothing.
+
+**What this does *not* do is collapse the two manifest kinds**, which is what the handoff asked to
+check first. The answer to "does `wall-trap.json` need to be its own kind" is: not for discovery
+(`PackageAssemblies` already globs `*.json`), not for its switch (bound by that same pass since
+§166), not for its gallery rows (this entry), and not for its gallery entry (`CreateGalleryEntry`
+tolerates every prefab field being null). It needs one thing only — **a behaviour is attached to an
+enemy template**, in `PrepareTemplate`, which exists only for a manifest with a `baseEnemy` that
+resolves to a live prefab. A trap has no enemy. Collapsing the kinds therefore means teaching the
+registry a package with no prefab at all: no template, no `EnemyData`, no spawn share, and its
+behaviour attached to a framework-owned host object instead. That is a change to `PackageApi` —
+`TemplatePrepared` documents "never raised for a package that has no template" — and it is a
+design decision, not a cleanup. Left open, with the finding written down so the next session starts
+from it rather than from the glob.
+
 ## Tried and reverted — do not redo
 
 - **Trimming loop seams.** 14 galleries end on a different position than they start.

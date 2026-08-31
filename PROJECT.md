@@ -261,7 +261,10 @@ both the on/off and the permission (§167): BepInEx has no sandbox, so consent i
 owes, and a second toggle beside the first only made both packages look enabled while doing nothing.
 Switched off it runs nothing at all — no enemy, no traps, no gallery entry, no behaviour (§170) —
 but **its funscripts and rows are still handed to Edi** (§173), because Edi reads `Definitions.csv`
-once at its own startup and the switch must not quietly cost an Edi restart too.
+once at its own startup and the switch must not quietly cost an Edi restart too. That import is one
+pass over every manifest of every kind, before any package code runs (§175): it reads `scenes[]` and
+a wall trap's `animations[]` alike, so which manifest a package uses no longer decides whether its
+rows survive its switch.
 `BepInEx/custom-enemies/CUSTOM-ENEMIES.md` is the format and those rules, and `code/packageaudit.py`
 is what notices a stale or mismatched assembly, or one that drives vanilla's grab screen without
 implementing `IPackageSceneOwner` (§172).

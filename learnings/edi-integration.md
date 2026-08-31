@@ -296,3 +296,15 @@ running and the device is silent, with nothing saying why. The switch is meant t
 restart; it must not quietly cost an Edi restart too. **A funscript is inert data in a file Edi
 parses, not something a package runs**, so importing one costs nothing the switch is protecting.
 
+**A rule like that holds only where one piece of code applies it, so the import reads manifests
+rather than package kinds (§175).** §173 was written into the enemy registry, which globs
+`enemy.json`; a wall trap's rows were built inside the trap's own assembly, which does not load
+while the package is off. So the same switch cost an Edi restart for one package kind and not the
+other, and nothing in either file said so. `PackageGalleryImport` now runs before any package code,
+over any `*.json` in any package directory, building rows from `scenes[]` and `animations[]` alike.
+**Ask which code an invariant runs in before believing it is an invariant** — this one had been true
+of the framework and false of a package for two sessions. It also cut the number of row builders
+from three to two (`release.custom_enemy_gallery` is the other), which is the reverse of what
+"teach the framework a second vocabulary" sounds like it does: the vocabulary was already in two
+places, one of them unreachable when it mattered.
+

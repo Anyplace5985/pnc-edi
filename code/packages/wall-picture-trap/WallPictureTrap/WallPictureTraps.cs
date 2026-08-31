@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Text;
-using System.Text.RegularExpressions;
 using BepInEx;
 using BepInEx.Configuration;
 using HarmonyLib;
@@ -96,7 +95,6 @@ internal static class WallPictureTrapRegistry
 	}
 
 	private static readonly List<WallPictureTrapPackage> Packages = new List<WallPictureTrapPackage>();
-	private static readonly Regex FunscriptAt = new Regex("\\\"at\\\"\\s*:\\s*(\\d+)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 	private static bool _initialized;
 
 	/// <summary>
@@ -222,7 +220,6 @@ internal static class WallPictureTrapRegistry
 				package.CaptureSound = PackageMedia.LoadWav(Path.Combine(directory, manifest.captureSound), manifest.id + "_capture");
 			CreateGalleryAssets(package);
 			RegisterScenes(package);
-			SyncFunscripts(package);
 			Packages.Add(package);
 		}
 		catch (Exception ex)
@@ -319,64 +316,12 @@ internal static class WallPictureTrapRegistry
 		for (int i = 0; i < package.Manifest.animations.Length; i++) PackageGallery.RegisterRow(GetGalleryName(package, i));
 	}
 
-	private static void SyncFunscripts(WallPictureTrapPackage package)
-	{
-		string sourceRoot = Path.Combine(package.Directory, "funscripts");
-		if (!Directory.Exists(sourceRoot)) return;
-		string galleryRoot = Path.Combine(Paths.GameRootPath, "Edi", "Gallery");
-		if (!Directory.Exists(galleryRoot))
-		{
-			ModServices.LogWarning("[WallPictureTrap] Edi/Gallery not found; funscripts for '" + package.Manifest.id + "' were not installed");
-			return;
-		}
-		foreach (string variantDir in Directory.GetDirectories(sourceRoot))
-		{
-			string targetDir = Path.Combine(galleryRoot, Path.GetFileName(variantDir));
-			Directory.CreateDirectory(targetDir);
-			foreach (string source in Directory.GetFiles(variantDir, "*.funscript", SearchOption.TopDirectoryOnly))
-			{
-				// Same rule as the enemy packages: never replace a script already installed under
-				// that name with different content. The gallery is this project's own, measured
-				// against specific game assets, and a package that happens to name a file the way
-				// a real row names it must not be able to overwrite it. Identical content copies
-				// silently, which is the normal case - deploy.py has put these here already.
-				string target = Path.Combine(targetDir, Path.GetFileName(source));
-				if (File.Exists(target) && !PackageGallery.SameFileContent(source, target))
-				{
-					ModServices.LogWarning("[WallPictureTrap] '" + package.Manifest.id + "' ships "
-						+ Path.GetFileName(source) + ", but a different script of that name is already in "
-						+ Path.GetFileName(targetDir) + " - kept the existing one; rename the package's script");
-					continue;
-				}
-				File.Copy(source, target, true);
-			}
-		}
-
-		// The rows themselves are merged by CustomEnemyRegistry.MergeDefinitions - the one writer
-		// both package kinds share. Building them is all that is specific to a trap, and it has to
-		// stay in step with release.custom_enemy_gallery, which produces the same rows from the
-		// repo side so a deployed install is already correct and this finds nothing to do.
-		List<string> rows = new List<string>();
-		for (int i = 0; i < package.Manifest.animations.Length; i++)
-		{
-			WallPictureTrapAnimation stage = package.Manifest.animations[i];
-			string gallery = GetGalleryName(package, i);
-			string file = string.IsNullOrWhiteSpace(stage.funscript) ? gallery : Path.GetFileNameWithoutExtension(stage.funscript.Trim());
-			int end = FindFunscriptEnd(sourceRoot, file);
-			if (end <= 0) continue;
-			rows.Add(string.Join(",", gallery, file, "0", end.ToString(CultureInfo.InvariantCulture), "gallery", "true"));
-		}
-		PackageGallery.MergeRows("WallPictureTrap", package.Manifest.id, package.Directory, galleryRoot, rows);
-	}
-
-	private static int FindFunscriptEnd(string root, string file)
-	{
-		int end = 0;
-		foreach (string path in Directory.GetFiles(root, file + ".funscript", SearchOption.AllDirectories))
-			foreach (Match match in FunscriptAt.Matches(File.ReadAllText(path)))
-				if (int.TryParse(match.Groups[1].Value, NumberStyles.None, CultureInfo.InvariantCulture, out int at)) end = Math.Max(end, at);
-		return end;
-	}
+	// The funscripts and the gallery rows are not built here any more (§175). They were, and that
+	// is why a switched-off Joker imported nothing while a switched-off witch imported her rows:
+	// this code does not run until the package is allowed to run, and Edi reads Definitions.csv
+	// once at its own startup. The framework now imports both for every manifest of every kind,
+	// before any package code, reading `animations[]` for exactly the three fields a row is built
+	// from. Nothing about the trap's own vocabulary moved with it.
 
 	private static T[] ParseObjectArray<T>(string json, string field) where T : class
 	{

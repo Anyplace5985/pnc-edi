@@ -383,7 +383,8 @@ the shipped default and imposes no slot limit.
 | `GameplayProfileRules.cs` | the profile truth table, Unity-free so `code/tests` can check it (§127) |
 | `GameplayProfiles.cs` | the live half: which rules are in force, and handing the player between them (§127) |
 | `ModManagerBridge.cs` | late-bound "is the settings window open", so hotkeys stand down (§127) |
-| `CustomEnemies.cs` | the package loader: manifests, bundles, spawn injection, funscript sync (§127) |
+| `CustomEnemies.cs` | the package loader: manifests, bundles, spawn injection (§127) |
+| `PackageGalleryImport.cs` | every package's funscripts and `Definitions.csv` rows, of every manifest kind, before any package code and whatever its switch says (§175) |
 | `CustomGallerySection.cs` | the Custom Enemies gallery tab (§127) |
 | `WallPictureTraps.cs` | the wall-picture trap behaviour, driven by `wall-trap.json` (§127) |
 | `CharmWitchController.cs` + `WitchAuraCircle.cs` | the charm-circle boss, driven by a manifest's `witch` block (§127) |
@@ -514,7 +515,12 @@ package's teardown runs after it.
 
 A package is `BepInEx/custom-enemies/<name>/` with an `enemy.json` (or `wall-trap.json`), its art,
 and its funscripts. It needs no code change: the manifest declares the enemy's scenes, gallery rows
-and aliases, and `CustomEnemyRegistry` registers them at startup.
+and aliases, and `CustomEnemyRegistry` registers them at startup. The gallery half of that is
+`PackageGalleryImport`, which runs first and reads *manifests rather than kinds* — any `*.json` at
+the top of a package directory, `scenes[]` and a wall trap's `animations[]` alike — so a package's
+rows reach Edi whether or not its code is allowed to run (§175). Its rows have to stay identical to
+`release.custom_enemy_gallery`'s, which is §164's two-writer obligation and what `deploy.py --check`
+reports when they drift (§129).
 `BepInEx/custom-enemies/_example/` and `CUSTOM-ENEMIES.md` beside it are the format. The second
 format reference, `WALL-PICTURE-TRAPS.md`, moved into `joker-wall/` in §168: since §165 the
 framework does not implement that manifest kind, so its documentation and its `.example` template

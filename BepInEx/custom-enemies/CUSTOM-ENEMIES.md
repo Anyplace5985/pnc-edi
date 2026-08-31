@@ -30,6 +30,11 @@ package: `WallPictureTrap.dll` reads it, and both that assembly and its document
 (`WALL-PICTURE-TRAPS.md`) ship inside the Joker wall trap package. Without a package that provides
 that kind, a `wall-trap.json` is read by nothing at all — no switch, no log line, no error.
 
+**One thing the framework does read out of every manifest, whatever kind it is: the gallery.** The
+funscripts under `funscripts/` and the rows built from `scenes[]` or `animations[]` are installed
+before any package code runs, for every package, on or off (§175). Everything else about a manifest
+kind it does not implement stays none of its business.
+
 ## Getting a package
 
 **The mod ships the framework, not the content.** With no package installed, `PncCustomEnemies.dll`
