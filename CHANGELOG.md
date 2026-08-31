@@ -11369,6 +11369,35 @@ Nothing that ships references them any more, and `Hotkeys`' "unrelated modifiers
 rule keeps its comment but loses its example — the config now ships no modified binding at all.
 The rule stays, because a player can add one.
 
+### The config a fresh install actually gets, read once before anything wrote to it
+
+Reading the shipped `com.edi.pnc.cfg` as the file a player receives — byte-identical to the
+archive's, since the game had not yet rewritten it — found it clean on everything that usually goes
+wrong. No device key, no home path, no package name, no `[Custom Enemies]` section (that belongs to
+the other plugin's file, which does not exist until first launch), `Debug` and `DiagnosticMode`
+off, `RowIntensityScale` empty, and `Profile = PressureAndRelease` sitting consistently beside
+`GodMode = false` and `EnableHeatLocks = true`. `HeatLockAutoHealRate = 120` looks alarming and is
+right: the setting is hundredths of HP/s and `SHIPPED` carries the whole derivation, including §32
+misreading it by 100× and switching the mechanic off for every release since.
+
+**What it found instead was three player-visible behaviours switched on with nothing documenting
+them**: `Tools / EnableDebugEnemySpawn` (the digit row spawns an enemy each, `M` a mimic, `.` a
+random one), `Tools / EnableFreecam` (`F1` noclip, and the keypad heat keys), and `Gallery /
+UnlockAll`. None had ever been decided *for a player* — they are on because a dev install wants
+them on, and the working tree is the dev install's config.
+
+**Decided: the two Tools switches ship off; `UnlockAll` stays on.** A digit pressed in ordinary
+play should do nothing, and someone who wants to fill the gallery finds the switch in F11 — where
+both descriptions now say what they turn on and that it takes effect immediately. The open gallery
+stays open because reaching scenes is what the mod is for. `deploy.py` forces both true into the two
+dev installs, exactly as it already forces `Debug`, so this costs a session nothing and the two ends
+stay independent — the working tree carries the player's value and the install carries the one a
+session needs. The README lists both switches under the settings worth knowing about.
+
+**The shape is worth keeping.** A default that exists because the developer's own install wants it
+is not a default; it is a local tweak that never got noticed, and it takes reading the shipped
+artefact as its audience to see one — the same reading that found §168's missing disclosure.
+
 ## Tried and reverted — do not redo
 
 - **Trimming loop seams.** 14 galleries end on a different position than they start.

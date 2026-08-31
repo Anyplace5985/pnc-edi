@@ -145,8 +145,16 @@ def live_config() -> bytes:
 # so the look-to-release never arms. It costs a periodic block in `LogOutput.log` and nothing
 # else; the greps that start a session (`ALIAS-GAP`, `EDI-SKIP`, `failed:`) do not care how much
 # is around them.
+#
+# `Tools/EnableDebugEnemySpawn` and `Tools/EnableFreecam` are forced for a third reason, added in
+# §169: they ship **off**, because a fresh player pressing a digit should not get a zombie, and
+# every session here reaches a scene by spawning it. Forcing them keeps the two ends independent
+# the same way `Debug` is - the working tree carries the player's value and a dev install carries
+# the one a session needs.
 MOD_FORCED = [("EDI", "Debug", "true"),
-              ("Ambient", "DiagnosticMode", "true")]
+              ("Ambient", "DiagnosticMode", "true"),
+              ("Tools", "EnableDebugEnemySpawn", "true"),
+              ("Tools", "EnableFreecam", "true")]
 
 
 def force_debug_settings(raw: bytes) -> bytes:

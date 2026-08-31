@@ -379,6 +379,11 @@ Ten enemies on the ten digits, ordered by what the enemy *is* rather than by wha
     F1 freecam                             Keypad x / - add / remove heat
     F11 the settings window
 
+**These keys ship off and are on here because `deploy.py` forces them on** (§169): a player's
+install has `Tools / EnableDebugEnemySpawn` and `Tools / EnableFreecam` false, so a digit pressed
+in ordinary play does nothing, while every dev install gets both forced true the same way `Debug`
+is. Nothing to switch on before a session; nothing a player trips over.
+
 The mimic is off the digits because it waits for you rather than walking up; the digit row is
 exactly the ten walking enemies in encounter order. Gravy's shopkeeper is deliberately unspawnable
 by key. The spawn hotkeys for custom-enemy packages (F9, F10) live in

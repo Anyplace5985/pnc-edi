@@ -301,3 +301,11 @@ first time in §169. **A debug affordance either earns a place in a run someone 
 is deleted**; keeping it costs config surface, a shipped binding, and a comment in `Hotkeys` that
 justified a rule by pointing at it.
 
+**A default that is right for your own install is not a default.** The shipped config had
+`EnableDebugEnemySpawn`, `EnableFreecam` and `Gallery/UnlockAll` all on, not by decision but
+because the working tree *is* the dev install's config and nobody had read it as the file a player
+receives. Two of the three were wrong for that reader — a digit pressed in ordinary play spawned an
+enemy — and the fix is the one §95 already used for `WriteUnityLog` and `Debug`: **ship the
+player's value and have `deploy.py` force the session's**, so the two ends move independently
+instead of one silently standing in for the other (§169).
+

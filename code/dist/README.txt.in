@@ -154,6 +154,11 @@ A few worth knowing about:
                                    death, set Profile to GodMode instead.
   [Gameplay] EndGrabDelaySeconds   How long a scene runs before you can leave it (Q).
   [EDI]      Url                   Where Edi is listening. Default http://127.0.0.1:5000.
+  [Tools]    EnableDebugEnemySpawn Off. Turn it on and the number keys spawn an enemy each, M a
+                                   mimic and . a random one, in front of you - for filling the
+                                   gallery or reaching one scene on purpose. Takes effect at once.
+  [Tools]    EnableFreecam         Off. F1 then flies the camera through walls, and the keypad
+                                   keys add and remove horniness.
 
 
 ------------------------------------------------------------------------------------------------
