@@ -214,7 +214,8 @@ A package may also ship its own code, as a .dll beside its manifest, and one tha
 SWITCHED OFF. That code runs like any other mod - nothing here can sandbox it - so the package's
 single switch is both its on/off and your permission for it to run, it says so beside itself in
 F11, and the game needs restarting after you change it. Until then that package does nothing at
-all: no enemy, no traps, and no gallery rows either. A package that ships no code has the same
+all: no enemy, no traps, no gallery entry. Its funscripts are handed to Edi either way, so
+switching it on later does not also mean restarting Edi. A package that ships no code has the same
 switch without any of that, and takes effect immediately. Each package's own README says which
 kind it is.
 

@@ -11551,6 +11551,42 @@ guard reading it runs inside `GrabScreen.StartGrab`, which `BeginCapture` calls 
 `_capturing`, so a state-gated answer would be false at the exact moment it is asked. A wall trap is
 its own visual whether or not it is mid-capture, which is what the type test used to say.
 
+## 173. A switched-off package still hands Edi its funscripts
+
+**§170 was right about the code and one step too far about the gallery.** It made a code package
+that is switched off load nothing at all, including its funscripts and its rows in
+`Definitions.csv`. That is clean as a sentence and expensive in practice, because of when Edi reads
+that file: **once, at its own startup.**
+
+A player runs Edi, leaves it running, and plays. Under §170, the day they switch a package on they
+have to restart the game *and* restart Edi — or re-save Edi's settings to force a reload — and
+until they do, the package is enabled, its scenes are dispatching rows, and the device is silent.
+Nothing says why. The switch is meant to cost a game restart; it was quietly costing an Edi restart
+as well, and that one is not written on the switch.
+
+**So the funscripts and their rows are imported for every custom-enemy package, on or off, and
+nothing else is.** No sprite sheets, no base-enemy strip, no prefab, no gallery entry, no
+spawn-table share, no behaviour, no assembly. The consent argument is untouched by this: §167 put
+the permission on that switch because BepInEx cannot sandbox a plugin, and **a funscript is data in
+a file Edi parses, not something the package gets to run**. What the switch refuses is the code,
+and the code stays refused.
+
+The seam this leaves is a real one and worth stating: a switched-off package's rows sit in
+`Definitions.csv` and nothing ever dispatches them, so an install can carry rows for content it
+will not play. They are inert, they are the package's own names, and `MergeDefinitions` still
+refuses to repoint a row the project itself defines — the same ownership rule that has guarded that
+file since §128.
+
+**Only the framework's own manifest kind is covered**, because only it is read by the framework: a
+wall trap's rows are merged by `WallPictureTraps`, inside the package's own assembly, which does not
+load while the package is off. So the Joker still needs one Edi restart after being switched on, and
+the witch no longer does. Closing that would mean teaching the framework a manifest kind §165
+deliberately moved out of it, which is the trade `deploy.py` already makes on the repo side and
+`working-practice.md` already warns about — not worth it for two rows.
+
+Every document that said "off means off, no gallery rows either" is corrected, including the log
+line and the disclosure in each package's own README.
+
 ## Tried and reverted — do not redo
 
 - **Trimming loop seams.** 14 galleries end on a different position than they start.

@@ -879,7 +879,7 @@ def build_package(directory: Path, out_dir: Path, check: bool) -> None:
             f"\nTHIS PACKAGE SHIPS CODE: {assembly_file}\n\n"
             f"Its behaviour is a program, not just art and funscripts, and it runs like any other\n"
             f"mod - so only turn it on if you trust where you got it.\n\n"
-            f"It arrives switched OFF, and does nothing at all until you turn it on. To do that,\n"
+            f"It arrives switched OFF and runs nothing until you turn it on. To do that,\n"
             f"either use the mod manager (F11) in game, or set this line yourself in\n"
             f"BepInEx/config/com.edi.pnc.customenemies.cfg:\n\n"
             f"    Custom Enemies / {package_id} = true\n\n"

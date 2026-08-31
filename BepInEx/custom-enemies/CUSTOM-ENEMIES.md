@@ -12,9 +12,16 @@ Custom Enemies**.
 
 **A package may ship its own code**, and one that does **arrives switched off**. BepInEx cannot
 sandbox a plugin, so that package's single switch is both its on/off and the permission to run its
-code, it says so beside itself, and the game needs a restart after it changes (§167). Off means off:
-no enemy, no traps, and no gallery rows either. A package that ships no code has the same switch
-with none of that. [Shipping a behaviour of your own](#shipping-a-behaviour-of-your-own) is the
+code, it says so beside itself, and the game needs a restart after it changes (§167). Off, it runs
+nothing at all: no enemy, no traps, no gallery entry, no behaviour. A package that ships no code has
+the same switch with none of that.
+
+**Its funscripts are copied into `Edi/Gallery/` either way** (§173), and only those. Edi reads that
+folder and `Definitions.csv` once, when *it* starts, so rows that arrive only on the day a package
+is switched on would mean restarting Edi as well as the game — and until you did, the package would
+be running with a silent device. A funscript is data in a file Edi parses, not something the package
+runs, so a switched-off package's scripts sitting in the gallery cost nothing that switch is
+protecting. [Shipping a behaviour of your own](#shipping-a-behaviour-of-your-own) is the
 format; the short version is that only turn one on if you trust where you got it.
 
 There is a second manifest kind, `wall-trap.json` — a picture that hangs itself on a wall and pulls
@@ -268,7 +275,9 @@ it is the package's ordinary on/off:
 
 in `com.edi.pnc.customenemies.cfg`, or - easier - enable the package in the mod manager (**F11**),
 where it says that it ships code. **Restart the game afterwards.** Until it is on the package does
-nothing — no enemy, no traps, no gallery rows — and the log says so by name at every launch. A
+nothing — no enemy, no traps, no gallery entry, no behaviour — and the log says so by name at every
+launch. Its funscripts are still copied to `Edi/Gallery/`, so switching it on later does not also
+mean restarting Edi (§173). A
 package that ships no code has the same single switch, starts as its manifest says, takes effect
 without a restart, and gets no warning.
 

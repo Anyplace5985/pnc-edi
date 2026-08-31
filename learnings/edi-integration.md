@@ -286,3 +286,13 @@ time when `Loop=true`:
 So a naive "copy the actions in range" split changes playback wherever a slice edge borrowed a
 neighbour. **Edi is open source** (`github.com/NoGRo/Edi`) even though the game is not - read it
 rather than reverse-engineering its behaviour.
+
+**Edi reads `Definitions.csv` and the variant folders once, at its own startup, so anything the mod
+writes there later is invisible until Edi restarts.** That is why a package's funscripts are copied
+and its rows merged for every custom-enemy package whether or not it is switched on (§173). §170 had
+made a switched-off code package import nothing, which reads well as a rule and means that the day
+someone enables a package they must restart the game *and* Edi — and until they do, the package is
+running and the device is silent, with nothing saying why. The switch is meant to cost a game
+restart; it must not quietly cost an Edi restart too. **A funscript is inert data in a file Edi
+parses, not something a package runs**, so importing one costs nothing the switch is protecting.
+

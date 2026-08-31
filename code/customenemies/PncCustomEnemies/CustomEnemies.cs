@@ -204,29 +204,6 @@ internal static class CustomEnemyRegistry
 			{
 				throw new InvalidDataException("duplicate id '" + manifest.id + "'");
 			}
-			// **A code package that is switched off loads nothing at all** (§170), and this is the
-			// only place that can be true. Everything below - the sprite sheets, the base-enemy
-			// strip, the prefab, the gallery assets, the funscripts copied into Edi/Gallery and the
-			// rows merged into Definitions.csv - used to run for a disabled package too, because
-			// `definition.Enabled` was consulted only later, at spawn-table injection and gallery
-			// listing. The player therefore saw nothing and their Edi gallery quietly gained
-			// sixteen rows from a package whose code they had refused.
-			//
-			// §167 put the consent on this switch precisely because BepInEx cannot sandbox a
-			// plugin. Installing that package's *content* anyway is the same trust decision made
-			// for them one layer down, and it made every document that says "off means off" false.
-			//
-			// Only code packages, and only because they already require a restart. A data-only
-			// package keeps loading whatever its switch says: its switch takes effect live -
-			// `ApplyEnabledState` filters spawns and the gallery on the spot - which is a promise
-			// its own description makes and which an early return here would break.
-			ConfigEntry<bool> codeSwitch = PackageAssemblies.EnabledEntryFor(manifest.id);
-			if (codeSwitch != null && !codeSwitch.Value)
-			{
-				// PackageAssemblies has already said, by name and with the reason, that this
-				// package is off. A second line per package would only repeat it.
-				return;
-			}
 			if (string.IsNullOrWhiteSpace(manifest.displayName))
 			{
 				manifest.displayName = manifest.id;
@@ -246,6 +223,36 @@ internal static class CustomEnemyRegistry
 					manifest.id,
 					manifest.enabled,
 					"Enable " + manifest.displayName + ". Disabled enemies are removed from future random spawns and the custom gallery; enemies already alive remain until the scene changes.");
+			// **A code package that is switched off runs none of itself, and still hands Edi its
+			// funscripts** (§170, narrowed in §173).
+			//
+			// Nothing below this point happens for it: no sprite sheets, no base-enemy strip, no
+			// prefab, no gallery entry, no spawn-table share, no behaviour. §167 put the consent on
+			// this switch because BepInEx cannot sandbox a plugin, and loading a refused package's
+			// code or content is that decision taken for the player. Until §170 all of it ran and
+			// the player just could not see it.
+			//
+			// The gallery is the exception, and it is not a compromise on consent - it is what the
+			// switch costs if the exception is not made. **Edi reads `Definitions.csv` and the
+			// variant folders once, at its own startup.** A player leaves Edi running and plays; if
+			// a package's rows arrive only when it is switched on, then turning one on means
+			// restarting the game *and* restarting Edi, or re-saving its settings to force a
+			// reload - and until they do, the package is on, its scenes play, and the device is
+			// silent. A funscript is inert data in a file Edi parses, not something the package
+			// gets to run, so importing it costs the player nothing they refused. What they refused
+			// was the code, and the code stays refused.
+			//
+			// Only code packages take this path at all. A data-only package loads normally whatever
+			// its switch says, because its switch takes effect live - `ApplyEnabledState` filters
+			// spawns and the gallery on the spot - which its own description promises.
+			ConfigEntry<bool> codeSwitch = PackageAssemblies.EnabledEntryFor(manifest.id);
+			if (codeSwitch != null && !codeSwitch.Value)
+			{
+				// PackageAssemblies has already named this package and said why it is inert; a
+				// second line here would only repeat it.
+				SyncFunscripts(definition);
+				return;
+			}
 			definition.EnabledEntry.SettingChanged += (_, __) => ApplyEnabledState(definition);
 			definition.SpawnWeightEntry = CustomEnemyPlugin.Instance.Config.Bind(
 				"Custom Enemies",
