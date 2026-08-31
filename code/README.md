@@ -235,6 +235,23 @@ credential — not some field called `key`. Two locks:
 The second is what catches a secret sitting in a field nobody thought to redact, which is the
 failure the first cannot see. If you regenerate the template, keep both.
 
+**Both locks guard the archive, and neither guards the repo** (§182). A key pasted into a document
+as an example never goes near `release.py`, because a document is not a config: `code/README.md`
+carried a real one in a `"Variant": "handy1"` snippet for eleven commits, and every gate here
+passed the whole time. `code/secretaudit.py` is the third lock, and it is aimed the other way — at
+every tracked file rather than at the one file known to be dangerous:
+
+```
+python3 code/secretaudit.py             # tracked + untracked-but-not-ignored; check.py's fast tier
+python3 code/secretaudit.py --history   # every blob in every commit - run this before a push
+```
+
+Its strongest check needs no pattern: it reads the keys **this machine actually holds**, from the
+same per-user configs `handystate.py` probes, and searches for them verbatim. On a machine with no
+Edi config that check cannot run and says so rather than passing quietly. Nothing it prints is the
+key itself — findings are masked the way `handystate.py` masks them, because a gate that echoes the
+secret into CI output has moved the leak rather than closed it.
+
 ### The same archive serves Windows and Linux
 
 That is possible because BepInEx's `core/` is managed code and **byte-identical** across its

@@ -356,6 +356,7 @@ working on the thing it checks — and because it is what `check.py` is made of 
 | `python3 code/webmify.py --check` | fast | does every custom-enemy video have a WebM? Unity cannot decode H.264 on Linux, so an MP4-only package is a blank overlay there (§127) |
 | `python3 code/packageaudit.py` | fast | does every package that declares an assembly ship a current one, at this API version; does a manifest's named behaviour exist; and does an assembly that drives `GrabScreen.StartGrab` implement `IPackageSceneOwner` (§172)? Every failure here is silent at runtime by design (§165) |
 | `python3 code/exampleaudit.py` | fast | do `_example/`'s templates still show the whole format — every field the framework reads, every funscript variant, an `assembly` block where one is load-bearing — and is the directory still inert? Nothing else looks at it, because every other gate skips it on purpose (§180) |
+| `python3 code/secretaudit.py` | fast | is a Handy connection key anywhere a push could publish it — tracked files *and* untracked-but-not-ignored ones (§180's blind spot), with this machine's own keys searched for verbatim, the `The Handy […]` shape wherever it appears, and a populated `Handy.Key` in a tracked template (§182)? `--history` asks the same of every blob in every commit, which is the form that matters before a push |
 | `python3 code/deploy.py --check` | fast | are the game installs current? |
 | `python3 code/release.py --check` | fast | would a release build succeed? |
 

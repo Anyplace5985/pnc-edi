@@ -1569,6 +1569,59 @@ Also removed: `CustomGallerySection.IsCustomGalleryActive`, declared and never c
 only genuinely dead code the sweep found — after §175 deleted `SyncFunscripts` and
 `UpsertDefinitions`, the redundancy the question was aimed at is already gone.
 
+## 182. A real device key was in the repo, and the guard was pointed at the archive
+
+Found while sweeping before the first push. `code/README.md` carried
+
+    "The Handy [<a real 8-character key>]": { "Variant": "handy1", ... }
+
+as a config example — this machine's own Handy connection key, in eleven commits back to the
+squash. Edi names a device `The Handy [<connection key>]` and that name *is* the credential
+(`.gitignore` says so, which is why `EdiConfig.json` is untracked), so the repo was one push from
+publishing control of somebody's hardware.
+
+**Why every existing gate passed.** `release.py` has checked for exactly this since the archive
+work: it reads the live `Edi/EdiConfig.json`, extracts the real device names and keys, and refuses
+to build if any of them appears in the file about to ship. That guard is aimed at
+`code/dist/EdiConfig.json` — the one file known to be dangerous — and a key pasted into a
+*document* never goes near it. The general shape of the failure: a credential's home is guarded
+while a copy of it is quoted somewhere as an illustration, and every check in the project reads
+files for correctness rather than for content.
+
+**`code/secretaudit.py`** is the answer, aimed at every tracked file instead. Three questions, of
+which the first needs no pattern to be right:
+
+  - the keys **this machine actually holds** — from the same per-user configs `handystate.py`
+    probes — searched for verbatim. On a machine with no Edi config it announces the skip rather
+    than passing;
+  - the `The Handy […]` shape wherever it appears, with a run of `x` and a `<named>` slot as the
+    only permitted values, because a plausible-looking key in a document teaches the next reader
+    to paste a real one;
+  - a populated `Handy.Key` / `Handy.ApiKey` in tracked JSON, for the day someone regenerates the
+    shipped template by copying a working config.
+
+It scans **tracked files and untracked-but-not-ignored ones**, which is §180's blind spot applied
+here: an allowlist `.gitignore` leaves files sitting in the tree that git alone knows are not added,
+one `git add -A` from being committed. Scanning `ls-files` only would have cleared a key the moment
+before it became public rather than after.
+
+Findings are masked: a gate that echoes the secret into its own output has moved the leak. It is
+`check.py`'s fast tier as `secretaudit`, and `--history` — the same questions asked of every blob
+in every commit — is in `--full` as `secrethistory`, because a clean working tree says nothing
+about what three commits back still carries.
+
+**The history was rewritten**, `git filter-branch` over all 31 commits, and this is the last moment
+that was free: nothing is pushed, so no clone holds the old hashes. `refs/original`, the stash the
+rewrite was staged through, and the reflog are all gone, and `--history` is clean. §145's dead DLL
+blobs, which TODO was content to let expire on their own, went with them — the pack is 1.7 MB.
+
+Also from the same sweep, and nothing else found: no personal paths in tracked files (only
+`/path/to/...` placeholders), `code/dist/EdiConfig.json` clean with `"Key": null`, commit
+authorship pseudonymous. `README.md` gained an 18+ notice above the fold, which is both honest and
+the thing GitHub's own policy asks for — it permits content in context and offers a disclaimer
+route, and the notice can point at the fact that decides it: no imagery and no game assets are in
+this repo, only code, funscripts and text.
+
 ## Tried and reverted — do not redo
 
 

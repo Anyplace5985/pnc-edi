@@ -8,16 +8,17 @@
     python3 code/check.py -k alias      only steps whose name contains `alias`
     python3 code/check.py -v            print every step's output, not only the failures
 
-**Why this exists.** PROJECT.md's "Checking your work" table is sixteen checks (and four
+**Why this exists.** PROJECT.md's "Checking your work" table is seventeen checks (and four
 instruments) with four different invocations (`python3`, `.venv/bin/python`, `dotnet test`,
 `dotnet run --project`), three different ideas of what failure looks like, and one entry that needs
-the hardware plugged in. A session that has just changed one file either runs all sixteen by hand
+the hardware plugged in. A session that has just changed one file either runs all seventeen by hand
 or - what actually happened - runs the two it remembers. This runs them, in dependency order, and gives one exit code.
 
 **The three ways a tool here reports failure**, all of which this has to understand:
 
   `gate`   exit code is the verdict:  patchaudit, cfgaudit, versionaudit, packageaudit,
-           exampleaudit, ladders --check, deploy --check, release --check, dotnet test.
+           exampleaudit, secretaudit, ladders --check, deploy --check, release --check,
+           dotnet test.
   `grep`   exit code is always 0 and the verdict is a word in the output: slugharness prints
            `UNMAPPED` per unmapped pair, animsweep prints `OFF` in its time column. A tool like
            this cannot be wrapped by exit code alone, and wrapping it wrong is worse than not
@@ -90,6 +91,8 @@ STEPS = [
          "does every package that declares an assembly ship a current one?"),
     Step("exampleaudit", [PY, "code/exampleaudit.py"],
          "do the format's own templates still show the whole format?"),
+    Step("secretaudit", [PY, "code/secretaudit.py"],
+         "is a Handy connection key tracked anywhere it should not be?"),
     Step("deploy", [PY, "code/deploy.py", "--check"],
          "are the game installs current?",
          needs=("game",)),
@@ -108,6 +111,12 @@ STEPS = [
     Step("speedcheck", [PY, "code/speedcheck.py"],
          "is each script playable on the target device?",
          tier="full", kind="report", tail=4),
+    # The working tree can be clean while a blob three commits back is not, and a push publishes
+    # both. This is the form of the question that matters before one - it reads the whole object
+    # database, so it is not in the tier a session runs after every change.
+    Step("secrethistory", [PY, "code/secretaudit.py", "--history"],
+         "is a key in any blob in any commit, not only the current one?",
+         tier="full"),
 ]
 
 

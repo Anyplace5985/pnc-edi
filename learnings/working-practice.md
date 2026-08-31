@@ -4,7 +4,7 @@ Process rules this project arrived at the hard way - about copies, defaults, dec
 
 **Read this when:** before adding a second copy of anything, changing a default, or trusting a note that says 'do not redo'
 
-**Keywords:** build last then publish the checksum, a document that ships cannot describe its own archive, mirrored copy, generate, config default, decisions expire, deploy, release, permission bit, dedup key, decompile diff, rename pass, player-facing README, documenting another program's UI, WINEDLLOVERRIDES, Proton, DefaultVariant, a backwards-compatibility default, a hardcoded count in a document, check vs instrument, check.py step, refvideo --verify, a slow step in a tier nobody runs
+**Keywords:** a secret quoted as an example, redaction guard aimed at the wrong file, connection key, device name is the credential, secretaudit, rewrite history before the first push, build last then publish the checksum, a document that ships cannot describe its own archive, mirrored copy, generate, config default, decisions expire, deploy, release, permission bit, dedup key, decompile diff, rename pass, player-facing README, documenting another program's UI, WINEDLLOVERRIDES, Proton, DefaultVariant, a backwards-compatibility default, a hardcoded count in a document, check vs instrument, check.py step, refvideo --verify, a slow step in a tier nobody runs
 
 ---
 
@@ -368,3 +368,24 @@ because every one reads the working tree. **A file that ships and is not tracked
 every tool whose input is the tree.** The habits that catch it are cheap: read `git status` after
 adding a file under an allowlist ignore, and have whatever gate owns that directory ask
 `git check-ignore` about what it ships (§180).
+
+**A guard aimed at the file that holds a secret does not cover the file that quotes it.**
+`release.py` has always refused to ship a `code/dist/EdiConfig.json` containing a real device name
+or key, reading the live config to find out what "real" means — an exact, well-reasoned guard over
+the one file everybody agrees is dangerous. Meanwhile `code/README.md` carried a live Handy
+connection key inside a `"The Handy [...]"` config example for eleven commits, past sixteen green
+checks, because a document is not a config and nothing ever read a tracked file for *content*.
+Configs get scrubbed; examples get pasted from whatever was on screen. **So point the check at the
+class of file, not at the known offender**, and prefer the form that needs no pattern to be right:
+`secretaudit.py`'s strongest question is "does any tracked file contain a string this machine holds
+as a credential", which cannot be defeated by a secret in an unexpected format. Two corollaries it
+also has to obey — announce it loudly when the machine has no credentials to compare against
+(a check that silently degrades to nothing is worse than an absent one), and **mask the finding**,
+since a gate that prints the key it found has relocated the leak rather than closed it (§182).
+
+**Sweep for secrets before the first push, not after** — that is the last moment a history rewrite
+is free. Twice now the history has been rewritten for nothing, because no clone existed to hold the
+old hashes; the third time would have been a rewrite of a history other people already have, plus a
+key that has to be treated as burned regardless. The push is the one-way door, and the sweep belongs
+immediately before it: working tree *and* every blob in every commit, since a clean tree says
+nothing about what three commits back still carries (§182).

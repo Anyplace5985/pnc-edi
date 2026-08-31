@@ -10,6 +10,12 @@ funscript gallery itself.
 - Whose work this is built on: **[CREDITS.md](CREDITS.md)**. Read it before publishing anything
   derived from this.
 
+> **Adult content — 18+.** *Post Nut Calamity* is an adult game, and this repo is a device-integration
+> mod for it: it drives a sex toy in time with the game's animations. The source, the funscripts and
+> the documentation all describe sexual content in plain terms. No imagery or game assets are in this
+> repo — a package's art and video reach players as separate archives from the release thread — but do
+> not clone this at work, and do not open it if you are under 18.
+
 The mod's whole contract with Edi is a row name sent over HTTP. Everything hard is on this side of
 that line: knowing *which* scene is playing, and having a curve for it that matches what is on
 screen.
