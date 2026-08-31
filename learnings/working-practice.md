@@ -309,3 +309,12 @@ enemy — and the fix is the one §95 already used for `WriteUnityLog` and `Debu
 player's value and have `deploy.py` force the session's**, so the two ends move independently
 instead of one silently standing in for the other (§169).
 
+**Validate a resource exactly the way you will use it, or you have written two resolvers and only
+tested one.** The witch's behaviour checked its dream videos with a literal-name lookup and played
+them with `PackageVideo.ResolvePath`, which prefers a `.webm` sibling. Both files exist in the
+working tree, so the two agreed in every dev run for four sessions; the *archive* ships only the
+WebM, because `release.py` drops an H.264 master nothing opens — so the package was valid to play
+and invalid to load, and the load threw, and the enemy came up as a reskin with no behaviour
+(§171). **A check that is not the code path it guards is a second implementation**, and the
+environment where the two differ is the one you do not run.
+\n

@@ -147,7 +147,21 @@ internal sealed class CharmWitchController : MonoBehaviour, IPackageSceneOwner, 
 		}
 		foreach (string video in videos)
 		{
-			ResolvePackageFile(packageDirectory, video, "witch dream video");
+			// **Resolve exactly the way playback resolves, or a package is valid to play and
+			// invalid to load** (§171). `PackageMedia.ResolveVideoUrl` prefers a `.webm` sibling of
+			// whatever the manifest names, on every platform, and the package *archive* ships only
+			// those siblings - `release.py` drops an H.264 master once a WebM exists, because
+			// nothing ever opens it. Validating the literal name with `ResolvePackageFile` therefore
+			// passed in the working tree, where both files sit side by side, and threw in every
+			// real install - and a throw here means the behaviour never attaches at all, so the
+			// witch came up as a plain reskin with no charm circle. It also enforces the same
+			// containment rule, so nothing is lost by asking it instead.
+			if (string.IsNullOrEmpty(PackageMedia.ResolveVideoUrl(packageDirectory, video)))
+			{
+				throw new FileNotFoundException(
+					"witch dream video was not found inside its package (neither '" + video +
+					"' nor a .webm beside it)", video);
+			}
 		}
 	}
 

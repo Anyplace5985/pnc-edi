@@ -51,13 +51,24 @@ internal static class PackageVideo
 			return null;
 		}
 		string declared;
+		string root;
 		try
 		{
+			root = Path.GetFullPath(packageDirectory).TrimEnd(Path.DirectorySeparatorChar)
+				+ Path.DirectorySeparatorChar;
 			declared = Path.GetFullPath(Path.Combine(packageDirectory, file));
 		}
 		catch (Exception ex)
 		{
 			Plugin.DBG("VIDEO", "bad package video path '" + file + "': " + ex.Message);
+			return null;
+		}
+		// A package may not name a file outside its own directory. The sprite-sheet loader has
+		// always checked this and this one did not, which made it the one way in - and it is the
+		// loader a package's own code reaches through `PackageMedia.ResolveVideoUrl`.
+		if (!declared.StartsWith(root, StringComparison.OrdinalIgnoreCase))
+		{
+			WarnOnce(declared, "package video '" + file + "' is outside its package directory");
 			return null;
 		}
 

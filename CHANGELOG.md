@@ -11440,6 +11440,64 @@ One thing this does not reach: `deploy.py`'s `custom_enemy_gallery` merges a pac
 repo-side gallery whatever its switch says. Both dev installs have both packages on, so nothing is
 wrong today, and it is the standing two-writer obligation §164 recorded rather than a new defect.
 
+## 171. The witch that could be played but not loaded
+
+**Step 4 — both packages switched on — spawned a witch that fought like a zombie.** No charm
+circle, no capture, vanilla attacks. The log had it exactly:
+
+    [CustomEnemies] behaviour 'charm-witch' (from 'femboy_witch') threw attaching to
+    'femboy_witch': System.IO.FileNotFoundException: witch dream video was not found inside
+    its package
+      at CharmWitch.CharmWitchController.ResolvePackageFile
+      at CharmWitch.CharmWitchController.ValidateVideos
+
+**Two resolvers, disagreeing.** Playback goes through `PackageMedia.ResolveVideoUrl` →
+`PackageVideo.ResolvePath`, which prefers a `.webm` sibling of whatever the manifest names, on
+every platform — that is what makes one asset set work on Linux (§127), and what lets
+`release.py --package` drop the H.264 masters, 36 MB of a 51 MB download that nothing would ever
+open. Validation went through the witch's own `ResolvePackageFile`, which resolves the literal
+name. The manifest says `dream-1.mp4`; the *archive* contains `dream-1.webm` and nothing else.
+
+So the package was valid to play and invalid to load, and the throw is fatal in a way that hides
+itself: `PackageBehaviours.Attach` catches it, logs it, and the enemy stays registered — as a
+reskin with no behaviour. A witch that spawns and does nothing looks like a broken behaviour, not
+a missing file.
+
+**Only an archive install can produce it.** The working tree keeps both files side by side, so
+every session, every deploy and every `check.py --full` since §134 has been running against the
+one arrangement where the two resolvers agree. This is the defect the install test was built for,
+and it is the second one it has found that no gate could have (§170 was the first).
+
+`ValidateVideos` now asks `PackageMedia.ResolveVideoUrl` — the same call playback makes — and
+throws only when that returns nothing, naming both candidates. Nothing is lost: that path enforces
+containment too, now that `PackageVideo.ResolvePath` has the check the sprite-sheet loader always
+had. **It did not, and it is the loader a package's own code reaches**, so a manifest naming
+`../../something.webm` was resolved and played; that is closed with it.
+
+`release.py --package` gained the rule as a build-time guard: every media file a manifest names has
+to survive into the archive under the mod's own resolution — the file, or a `.webm` beside it. It
+would not have caught this one, because the file set was always fine and the consumer was wrong.
+It is there because that resolution rule is the thing the H.264 drop depends on, and until now it
+was written down only in the code that does the dropping.
+
+**And then the arrangement itself went away, which is the better answer.** Decided 2026-08-31:
+**ship only the WebMs.** `femboy-witch/enemy.json` names `dream-1.webm`, the five H.264 masters are
+deleted from the package directory, and the archive and the working tree now hold the same five
+files. The sibling rule stays in `PackageVideo` and still saves a package that names an MP4 — but
+nothing of ours depends on it any more, so the two resolvers cannot disagree about our own content
+whatever else changes. `CUSTOM-ENEMIES.md` now says to name the WebM, and explains the sibling rule
+as the thing not to rely on rather than as the recommended shape. The masters were gitignored and
+are re-derivable from the links in `SOURCE.txt`, which is updated to say what ships.
+
+**Deleting them exposed §168's defect one directory deeper.** Both installs kept all five MP4s
+while `deploy.py --check` called them up to date, because §168's prune covered only the
+`custom-enemies/` root. It now also prunes **inside a package directory the payload has**, while
+leaving a package directory the payload does not have entirely alone — an install is allowed to
+hold a package this tree does not. It immediately found a sixth stale file nobody had noticed:
+`_example/wall-trap.json.example`, moved in §168 and still sitting in both installs because the
+root-only prune could not see into a subdirectory. **The same rule, at three scopes, found three
+different stale things in two sessions.**
+
 ## Tried and reverted — do not redo
 
 - **Trimming loop seams.** 14 galleries end on a different position than they start.

@@ -11,8 +11,9 @@ https://rule34.xxx/index.php?page=post&s=view&id=16936784
 https://rule34.xxx/index.php?page=post&s=view&id=12364382
 
 The GIF was converted to a transparent 10x8 PNG atlas (76 frames at 360x428).
-The five MP4s were resized to at most 640 pixels on the longest side, normalized
-to 24 fps, encoded as H.264/yuv420p, and retain stereo 48kHz AAC audio for synchronized
+The five clips were resized to at most 640 pixels on the longest side, normalized
+to 24 fps and converted to VP8/WebM (the package ships only these, since §171),
+and retain stereo 48kHz audio for synchronized
 in-game audio playback during dream and capture overlays.
 
 Charm-circle lock sound: Pixabay, "Magical Whoosh" by u_hyed0v3ux9.

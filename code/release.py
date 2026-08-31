@@ -917,6 +917,23 @@ def build_package(directory: Path, out_dir: Path, check: bool) -> None:
         print(f"  {len(dropped)} H.264 master(s) not shipped, {saved / 1e6:.0f} MB - the WebM "
               f"beside each is what the mod actually opens")
 
+    # Every media file the manifest names has to survive into the archive, resolved the way the
+    # mod resolves it: the file itself, or a `.webm` sibling (`PackageVideo.ResolvePath` prefers
+    # one on every platform, which is what lets the H.264 masters be dropped above). §171 is why
+    # this is here - not because a file went missing, but because the *rule* is what a package's
+    # own code has to agree with, and stating it at build time is the only place it is written
+    # down beside the drop that depends on it.
+    shipped_names = {Path(a).name for a, _ in files}
+    named_media = sorted(n for n in re.findall(r'"([^"]+\.[A-Za-z0-9]{2,4})"',
+                                               manifest_path.read_text(encoding="utf-8-sig"))
+                         if Path(n).suffix.lower() in MEDIA_SUFFIXES)
+    unresolvable = [n for n in named_media
+                    if Path(n).name not in shipped_names
+                    and Path(n).with_suffix(".webm").name not in shipped_names]
+    if unresolvable:
+        fail(f"{name}: the manifest names {', '.join(unresolvable)} and the archive would carry "
+             f"neither that file nor a .webm beside it - the package would load and then fail")
+
     entries = {a: s.read_bytes() for a, s in files}
     # A format reference that belongs to a package ships with it (§168), so say it is in there:
     # the file is the only documentation of that manifest kind anywhere in a player's install.

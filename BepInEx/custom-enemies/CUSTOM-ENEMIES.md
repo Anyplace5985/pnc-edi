@@ -365,7 +365,7 @@ behaviour block may still name its own `dreamVideos`, and that wins where it doe
 
 ```json
 "galleryVideos": {
-  "files":  ["dream-1.mp4", "dream-2.mp4", "capture.mp4"],
+  "files":  ["dream-1.webm", "dream-2.webm", "capture.webm"],
   "labels": ["Dream 1", "Dream 2", "Capture"],
   "volume": 1.0,
   "gallery": "my_boss_aura",
@@ -376,14 +376,19 @@ behaviour block may still name its own `dreamVideos`, and that wins where it doe
 `labels` are what the gallery's step list shows, and what a row is looked up by; `gallery` is the
 row every video sends, except the last one when `lastGallery` names another.
 
-`files` are package-relative video files. **Unity has no H.264 decoder outside Windows and
-macOS**, so an MP4 that plays fine on Windows is a blank rectangle on the native Linux build. What
-Unity carries on every platform is libvpx, so the mod prefers a `.webm` sibling of whatever the
-manifest names, on every platform - ship both and one package works everywhere.
+`files` are package-relative video files, and **they should be WebM**. Unity has no H.264 decoder
+outside Windows and macOS, so an MP4 that plays fine on Windows is a blank rectangle on the native
+Linux build; what Unity carries on every platform is libvpx. Name the `.webm` and ship only that -
+the shipped packages do, since §171.
 
-From this repo, `python3 code/webmify.py` writes those siblings for every installed package
-(`--check` reports what is missing without converting). If a video is going to be blank, `[VIDEO]`
-in the log says so by name before it happens.
+An MP4 still works if that is what you have: the mod prefers a `.webm` *sibling* of whatever the
+manifest names, on every platform, so a package can name `dream-1.mp4` and be saved by a
+`dream-1.webm` beside it. Do not rely on it. That arrangement is how a package ends up valid on one
+machine and broken on another - the release drops an H.264 master once a WebM exists, so a manifest
+naming the MP4 describes a file its own archive does not contain.
+
+From this repo, `python3 code/webmify.py` converts, and `--check` reports what is missing. If a
+video is going to be blank, `[VIDEO]` in the log says so by name before it happens.
 
 `volume` (0-1) scales the dream-cloud and capture overlays; video audio is muted while the game is
 paused.
