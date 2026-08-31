@@ -1622,6 +1622,41 @@ the thing GitHub's own policy asks for — it permits content in context and off
 route, and the notice can point at the fact that decides it: no imagery and no game assets are in
 this repo, only code, funscripts and text.
 
+## 183. GitHub, and no licence — because one cannot be granted
+
+Where this goes public, and under what terms. Both are decisions with no artifact, which is why
+they are here rather than in a file somebody could read off the tree.
+
+**GitHub, at `Anyplace5985/pnc-edi`.** Codeberg was the alternative and its terms rule it out three
+separate ways: it prohibits sexually obscene content, it is open only to projects under a free and
+open-source licence (see below), and since 2026 it forbids projects that mostly consist of code
+written by generative-AI tools, which this tree's own `CLAUDE.md` announces. GitHub's acceptable-use
+policy also prohibits graphic depictions, including drawn and computer-generated ones — but permits
+content in an artistic or educational context and offers a disclaimer route, and the fact that
+decides it here is that **no imagery and no game assets are in this repo**, only code, funscripts
+and text. §182's `README.md` notice states that where a reader lands. Enforcement everywhere of this
+kind is complaint-driven rather than scanned, and the exposure is account-level, not repo-level.
+
+**No LICENSE file, and this is not an oversight.** A licence is a grant of rights held, and most of
+this tree is a derivative of work whose rights nobody here holds:
+
+- `code/edimod/` was recovered by decompiling the shipped binary of a composite of five people's
+  releases (§7), none published under any licence — everydayhandyuser, edale, overkeks, Dupli9d;
+- the custom-enemy framework and mod manager came from Dupli9d's portable patch (§127), whose
+  manifest parser is still substantially their code, along with two of the documents;
+- some gallery rows descend from other scripters' funscripts by retiming, and one of those
+  scripters is unnamed on the thread and so cannot be asked.
+
+Putting MIT on that would state a permission that cannot be given, and GPL fails identically —
+copyleft is also a grant and needs the same ownership. So the tree carries no licence, which is what
+every upstream release did too: permission in this lineage has always run on the thread's norms
+rather than on a licence file. What it costs is real and accepted — nobody may legally fork or
+redistribute, which sits oddly beside a `CREDITS.md` that exists because this builds on other
+people's work. A scoped grant (this project's tooling, tests, documentation and own funscripts under
+MIT; the inherited layers explicitly ungranted) was considered and is the thing to revisit if the
+question comes back. The only route to a clean whole-tree licence is asking the authors on the
+release thread, which is where all of it was posted and where this mod's releases go.
+
 ## Tried and reverted — do not redo
 
 
