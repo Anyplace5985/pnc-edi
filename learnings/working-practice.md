@@ -405,3 +405,32 @@ stop being worth running — its remedy changes.** Redaction plus a rewrite is a
 before anyone else holds the hashes; afterwards a leaked credential is public regardless of what the
 next commit says, and the response is to revoke it at the device rather than to rewrite git (§183).
 Which is why the gate belongs in the tier that runs after every change, not in a pre-push ritual.
+
+**A working tree cannot test its own setup instructions; only a clone can.** §184 followed
+`README.md` from a fresh clone of the public repo and three steps failed, each for a reason no
+session in this tree could have hit. The BepInEx download 403s on `Python-urllib`'s default
+User-Agent — invisible here because `code/dist/cache/` has held the pack since August and a cache
+hit never reaches the network. The build stops at `NETSDK1004` because `dotnet build` restores only
+the project graph it can see, and the two plugins invoked from an `<MSBuild>` task are outside it —
+invisible here because a tree that has built once has the `obj/` that would have been restored.
+Both are the same shape: **a fresh state is a state your own tree left behind and cannot return
+to.** Clone into a scratch directory, symlink, and run the documented commands verbatim; anything
+you reach for outside the documentation is a finding.
+
+**A deploy that prunes is a deploy that can be run from the wrong tree.** `prune_custom_enemies`
+compares an install against the working tree and deletes what the tree does not have, which is
+correct for the tree it was written for and destructive for a clone: a package's media is untracked,
+so a clone's payload is missing all of it and the prune reads that as nineteen deliberate deletions
+(§184). The rule is not "do not prune" — §168 and §171 exist because the absence of a delete is
+invisible — it is that **a prune needs to be able to tell an empty tree from an edited one.** Here
+that is the all-or-nothing test: no media at all for a package means the tree cannot speak about
+that package, so the whole directory is skipped with a warning; one file missing of five is an
+edit, and still prunes.
+
+**An ignored CI workflow is not a broken build; it is silence.** §185 wrote
+`.github/workflows/checks.yml` into a tree whose `.gitignore` is an allowlist, so the file was
+ignored on creation — and the failure that produces is a repository that never runs its checks and
+never says so, with the workflow visible in the working tree the whole time. It was caught by
+`git status` not listing it, which is luck rather than method. **After adding anything at a new
+top-level path, run `git check-ignore -v <path>` and read the answer.** The allowlist entry for
+`.github/` exists now; the next dot-directory will not.

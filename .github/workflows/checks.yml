@@ -1,0 +1,69 @@
+# The game-free half of `python3 code/check.py`, run on every pull request into main.
+#
+# Why a list of tools rather than `check.py` itself: seven of its thirteen fast checks need
+# something a public runner cannot have. `tests`, `patchaudit`, `deploy` and `animsweep` read the
+# game's own assemblies, and the game is not ours to redistribute (README, "What is not in this
+# repo"); `packageaudit` needs a built package assembly, and `release` needs the pinned Edi build.
+# So CI runs what can honestly run here, and the rest stays a local `check.py` before you open the
+# pull request. **A check that cannot fail is worse than an absent one**, which is why `webmify` is
+# not here: a clone has no package media, so it would pass by having nothing to look at.
+#
+# Every step below is a gate — it reports failure by exit code — except `slugharness`, which
+# reports by printing UNMAPPED (§121). That difference is the reason it gets its own step with its
+# own grep rather than being lumped in with the others.
+
+name: checks
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  game-free:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: is a Handy connection key tracked anywhere it should not be?
+        run: python3 code/secretaudit.py
+
+      - name: is every config entry in the section its Bind() names?
+        run: python3 code/cfgaudit.py
+
+      - name: does every place that states the mod version agree?
+        run: python3 code/versionaudit.py
+
+      - name: is the custom-enemy seam still wired at both ends?
+        run: python3 code/bridgeaudit.py
+
+      - name: do the filler and hypnosis rows still share their grid and anchor?
+        run: python3 code/ladders.py --check
+
+      - name: do the format's own templates still show the whole format?
+        run: python3 code/exampleaudit.py
+
+      # Reports by printing, not by exiting non-zero: a run that resolves every animator state
+      # still exits 0 with UNMAPPED rows in it. The pipeline below is what turns that into a
+      # failure, and `set -o pipefail` is what stops a crashed harness reading as a clean run.
+      - name: does every animator state resolve to a script?
+        shell: bash
+        run: |
+          set -o pipefail
+          dotnet run --project code/slugharness -- BepInEx/config/com.edi.pnc.cfg \
+            | tee /tmp/slugharness.txt
+          if grep -q '\bUNMAPPED\b' /tmp/slugharness.txt; then
+            echo "::error::slugharness printed UNMAPPED - an animator state resolves to no script"
+            exit 1
+          fi

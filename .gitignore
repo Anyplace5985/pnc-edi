@@ -34,6 +34,10 @@
 # their §n numbers in CHANGELOG.md, which is tracked, because `learnings/` and a dozen source
 # comments cite them; what is here is the session behind each one.
 /HISTORY.md
+# The CI workflows (§185). A dot-directory is exactly the kind of new top-level path the allowlist
+# above hides, and this one is invisible in a way that matters: an ignored workflow file is not a
+# broken build, it is a repository that simply never runs its checks and says nothing about it.
+!/.github/
 !/learnings/
 !/code/
 !/BepInEx/

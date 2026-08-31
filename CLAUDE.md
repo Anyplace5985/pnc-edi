@@ -73,6 +73,21 @@ Then, depending on what you are doing:
   release). It wraps the tests above and the audits and sweeps PROJECT.md lists, and knows
   which of them report failure by exit code and which by a word in their output (§121).
 
+## `main` is protected — branch, then open a pull request
+
+**Nothing is committed straight to `main` any more, by anyone, including you (§185).** The GitHub
+ruleset refuses a direct push and has no admin bypass, so a session that commits on `main` has not
+broken a rule so much as built up work that cannot leave the machine. Branch first:
+
+    git switch -c short-branch-name
+    python3 code/check.py
+    git push -u origin short-branch-name        # the push and the PR are the user's to run
+
+A pull request needs no approving review — a solo repo cannot produce one — so the gate is CI plus
+whatever the diff shows. CI runs only the checks that work without the game
+(`.github/workflows/checks.yml`, seven of the thirteen fast ones), which is exactly why
+**`python3 code/check.py` locally is still the real gate and still your job.**
+
 ## Three things that catch people out
 
 (A fourth, if you are editing `PncEdi`: it is one of **three plugins**, and a call to
