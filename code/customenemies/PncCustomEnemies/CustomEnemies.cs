@@ -204,6 +204,29 @@ internal static class CustomEnemyRegistry
 			{
 				throw new InvalidDataException("duplicate id '" + manifest.id + "'");
 			}
+			// **A code package that is switched off loads nothing at all** (§170), and this is the
+			// only place that can be true. Everything below - the sprite sheets, the base-enemy
+			// strip, the prefab, the gallery assets, the funscripts copied into Edi/Gallery and the
+			// rows merged into Definitions.csv - used to run for a disabled package too, because
+			// `definition.Enabled` was consulted only later, at spawn-table injection and gallery
+			// listing. The player therefore saw nothing and their Edi gallery quietly gained
+			// sixteen rows from a package whose code they had refused.
+			//
+			// §167 put the consent on this switch precisely because BepInEx cannot sandbox a
+			// plugin. Installing that package's *content* anyway is the same trust decision made
+			// for them one layer down, and it made every document that says "off means off" false.
+			//
+			// Only code packages, and only because they already require a restart. A data-only
+			// package keeps loading whatever its switch says: its switch takes effect live -
+			// `ApplyEnabledState` filters spawns and the gallery on the spot - which is a promise
+			// its own description makes and which an early return here would break.
+			ConfigEntry<bool> codeSwitch = PackageAssemblies.EnabledEntryFor(manifest.id);
+			if (codeSwitch != null && !codeSwitch.Value)
+			{
+				// PackageAssemblies has already said, by name and with the reason, that this
+				// package is off. A second line per package would only repeat it.
+				return;
+			}
 			if (string.IsNullOrWhiteSpace(manifest.displayName))
 			{
 				manifest.displayName = manifest.id;

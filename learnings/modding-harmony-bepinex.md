@@ -192,3 +192,15 @@ sits in a package directory and is loaded by filename at startup. `code/packagea
 its mtime against the sources of the project that builds into that package, checks the declared API
 version against `PackageApi.Version`, and checks that a manifest naming a behaviour names one some
 package publishes (§165).
+
+**When a switch changes meaning, every reader of it has to be revisited — including the ones that
+were right before.** `Enabled` on a custom-enemy package meant "may it spawn", a filter consulted
+at spawn-table injection and gallery listing, and that was correct. §167 made the same switch the
+*consent* for a package that ships code, and nobody went back to the loader: a switched-off code
+package still had its sprites loaded, its base enemy stripped, its prefab registered, its funscripts
+copied into `Edi/Gallery/` and sixteen rows merged into `Definitions.csv`. The player saw nothing,
+because the two old readers still filtered correctly, which is exactly why it survived — **a
+meaning change does not break the readers it invalidates, it leaves them quietly answering the old
+question** (§170). Fixed by an early return in `LoadManifest` for a code package that is off, and
+found only because an install existed where the claim could be checked rather than read.
+

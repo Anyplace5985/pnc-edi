@@ -11398,6 +11398,48 @@ session needs. The README lists both switches under the settings worth knowing a
 is not a default; it is a local tweak that never got noticed, and it takes reading the shipped
 artefact as its audience to see one — the same reading that found §168's missing disclosure.
 
+## 170. Off did not mean off, and the install test is what noticed
+
+**Step 3 of the fresh-install test — both packages installed, neither switched on — found the
+defect the whole §165-§167 arc exists to prevent.** The switched-off Femboy Witch had:
+
+    [CustomEnemies] loaded 1 runtime sprite animation(s) for 'femboy_witch'
+    [CustomEnemies] stripped base enemy from 'femboy_witch': ... 2 audio source(s), 5 asset ref(s)
+    [CustomEnemies] ready 'femboy_witch' using prefab 'CustomEnemy_femboy_witch'
+    [CustomEnemies] updated Edi definitions for 'femboy_witch'
+    [CustomEnemies] kept the pre-package gallery as Definitions.csv.pre-custom-enemies
+
+`Definitions.csv` went from 104 rows to 120, and sixteen of the witch's funscripts were copied into
+every variant folder, from a package whose code the install had refused. The player saw none of it:
+`definition.Enabled` **was** consulted at spawn-table injection and at gallery listing, so no witch
+spawned and the Custom Enemies tab was empty. Everything behind the UI happened anyway.
+
+`CustomEnemies.LoadManifest` did the whole load — `CreateGalleryAssets`, `CreateGalleryEntry`,
+`RegisterScenes`, `SyncFunscripts` — without ever asking whether the package was on. That was
+correct for years, because "disabled" used to mean "do not spawn it", a *filter*. §167 changed what
+the switch means for a package that ships code: it became the consent, on the argument that BepInEx
+cannot sandbox a plugin. Nobody went back to the loader, so the framework kept installing the
+content of a package whose code it had just refused — the same trust decision made for the player
+one layer down.
+
+**The tell was in the warning it printed about itself**: *"Until then this package's art and
+funscripts load and its behaviour does not."* Written by someone who knew exactly what happened,
+sitting under a paragraph in four other documents saying off means off, no gallery rows either.
+Nobody read the two together until an install existed where one could be checked against the other.
+
+**Fixed at the only place it can be fixed**, an early return in `LoadManifest` for a package that
+declares an assembly and is switched off. Not for data-only packages: their switch takes effect
+live — `ApplyEnabledState` filters spawns and the gallery on the spot — and that is a promise their
+own description makes. A code package already requires a restart, so it loses nothing.
+
+**The wall trap was inert throughout, for an unrelated reason**: nothing in the framework reads
+`wall-trap.json` at all, so `joker_wall` never had a load path to skip. Two packages, two different
+mechanisms, one of them working by accident of ownership rather than by the rule.
+
+One thing this does not reach: `deploy.py`'s `custom_enemy_gallery` merges a package's rows into the
+repo-side gallery whatever its switch says. Both dev installs have both packages on, so nothing is
+wrong today, and it is the standing two-writer obligation §164 recorded rather than a new defect.
+
 ## Tried and reverted — do not redo
 
 - **Trimming loop seams.** 14 galleries end on a different position than they start.

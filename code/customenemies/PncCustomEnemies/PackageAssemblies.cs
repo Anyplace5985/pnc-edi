@@ -185,7 +185,7 @@ internal static class PackageAssemblies
 		{
 			CustomEnemyPlugin.Log?.LogWarning("[CustomEnemies] '" + package.Id + "' ships code (" + package.Declaration.file + ") and is switched off, so none of it runs. " +
 				"Set 'Custom Enemies / " + package.Id + "' in com.edi.pnc.customenemies.cfg, or turn it on in the mod manager (F11), and restart. " +
-				"Until then this package's art and funscripts load and its behaviour does not.");
+				"Until then nothing from it loads at all: no enemy, no traps, no gallery rows.");
 			return;
 		}
 		try
