@@ -227,7 +227,7 @@ def emit(variant, spec, rows, write, trees=None):
 
 # Custom-enemy packages carry their own gallery, so they need the same variant folders the main
 # gallery has - a device pointed at `handy2` that finds no `handy2/` under a package plays nothing
-# for that enemy, the same parity failure §5567 found for per-axis files. They have no
+# for that enemy, the same parity failure §89 found for per-axis files. They have no
 # Definitions.csv (the manifest declares their rows), so this walks the files instead.
 #
 # `handy1` is NOT regenerated here. Those package variants were authored by hand against the Handy

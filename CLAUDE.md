@@ -45,12 +45,22 @@ Then, depending on what you are doing:
   already failed twice: §70 cut this file from 1017 lines to 126 and wrote the boundary into four
   documents, and it was back to 1207 by §136 (§137 cut it to 195). It fails because closing an item
   and recording the outcome feel like the same action, and the file you are editing is the obvious
-  place for both. It is not: the outcome goes to `CHANGELOG.md`, the rule it produced goes to
-  `learnings/`, and what is left here is what is still open.
-- **`CHANGELOG.md`** — the narrative record, numbered `§1` upward. Go here for the reasoning behind
-  a rule, or to check whether something was already tried and rejected. **It is narrative, not
-  rules** — a generalised rule written into a `§n` entry is invisible to the grep above, because
-  nobody greps a 9,000-line history for a rule. State it in `learnings/` and have the entry point at it.
+  place for both. It is not: the decision goes to `CHANGELOG.md`, the session behind it to
+  `HISTORY.md`, the rule it produced to `learnings/`, anything a player will notice to
+  `RELEASES.md`, and what is left here is what is still open.
+- **`CHANGELOG.md`** — the decision record, numbered `§1` upward: what each change was and why,
+  plus what was tried and rejected. Go here for the reason behind a rule, or to check whether
+  something was already tried. **It is a record, not rules** — a generalised rule written into a
+  `§n` entry is invisible to the grep above, because nobody greps a numbered history for a rule.
+  State it in `learnings/` and have the entry point at it. **The numbers are load-bearing**:
+  `learnings/` and a dozen source comments cite `§n` into this file, so an entry keeps its number
+  forever, however short it is.
+- **`HISTORY.md`, if the working tree has one** — untracked like `TODO.md`, split out of the
+  changelog in §176. The session behind each entry: the measurements, the theories that were wrong,
+  what a log said on which evening. Go here only when the decision record is not enough; a clone
+  does not carry it.
+- **`RELEASES.md`** — player-facing release notes, and what ships in the archive. When a change
+  becomes visible to somebody who only plays the game, it goes here too.
 - **`code/README.md`** — build, release and tool reference for the `code/` tree.
 - **`CREDITS.md`** — whose work this is built on: the game, Edi, the PncEdi mod this one
   continues, the fork the custom-enemy framework came from, and the funscripts the gallery started

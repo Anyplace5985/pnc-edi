@@ -13,7 +13,7 @@
          repo-relative root, which also makes the output reproducible across machines.        -->
     <PathMap>$([System.IO.Path]::GetFullPath('$(RepoDir)'))=./</PathMap>
     <!-- The game is outside this repo and reached through the symlink. Override to build against
-         a different install:  dotnet build ... -p:GameDir="../Archive/PNC 0.2.1 Win/"           -->
+         a different install:  dotnet build ... -p:GameDir="/path/to/your/PNC 0.2.1 install/"           -->
     <GameDir Condition="'$(GameDir)' == ''">$(RepoDir)game-windows\</GameDir>
     <ManagedDir>$(GameDir)Post Nut Calamity_Data\Managed\</ManagedDir>
     <!-- BepInEx to compile against comes from the pinned pack, not from a game directory, so a

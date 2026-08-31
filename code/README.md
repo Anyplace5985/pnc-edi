@@ -8,7 +8,7 @@ Edi's own source is at <https://github.com/NoGRo/Edi>; its documentation thread 
 and the integration guide is
 <https://discuss.eroscripts.com/t/easy-device-integration-edi-how-to-integrate-your-game-now/118446>.
 
-`edimod/` is the buildable source for `BepInEx/plugins/PncEdi.dll` (v2.6.0, for game 0.3.2).
+`edimod/` is the buildable source for `BepInEx/plugins/PncEdi.dll` (v3.0.0, for game 0.3.2).
 
 Recovered 2026-08-15 by decompiling the shipped DLL with ILSpy 11 — the previous
 tree was a v1.0.0 snapshot that predated the shipped build by a week and was
@@ -20,17 +20,17 @@ AssemblyInfo).
 This repo holds the mod and nothing else. The game is outside it, behind two symlinks that
 `deploy.py` patches:
 
-    game-windows -> ../PNC 0.3.2 WIN
-    game-linux   -> ../PNC 0.3.2 Linux
+    game-windows -> <your 0.3.2 Windows install>
+    game-linux   -> <your 0.3.2 Linux install>
 
-`../Archive/PNC 0.2.1 Win` is the install this repo used to *be*. Everything the project has
-verified was measured against its assets, so it is the right target whenever you need a 0.2.1
-number back:
+**Keep a 0.2.1 install too.** Everything the project has verified was measured against its assets,
+so it is the right target whenever you need a 0.2.1 number back — `PNC_GAME_DIR` points any asset
+tool at it, wherever you keep it:
 
-    PNC_GAME_DIR="../Archive/PNC 0.2.1 Win" .venv/bin/python code/animsweep.py     # 63/63 ok
+    PNC_GAME_DIR="/path/to/your/PNC 0.2.1 install" .venv/bin/python code/animsweep.py   # 63/63 ok
                                                                     # + 30 rows "no clip/script":
                                                                     # the 0.3.1-only scenes
-    dotnet build code/edimod/PncEdi.csproj -c Release -p:GameDir="../Archive/PNC 0.2.1 Win/"
+    dotnet build code/edimod/PncEdi.csproj -c Release -p:GameDir="/path/to/your/PNC 0.2.1 install/"
 
 ## Build and deploy
 
@@ -122,11 +122,11 @@ before you could build. If it is missing the build stops with the command to run
     python3 code/check.py -k alias   only the steps whose name contains `alias`
     python3 code/check.py -v         print every step's output, not only the failures
 
-One runner over the fourteen checks PROJECT.md lists — ten fast, four more under `--full`. It adds no check of its own; what it adds is
+One runner over the fifteen checks PROJECT.md lists — eleven fast, four more under `--full`. It adds no check of its own; what it adds is
 knowing **how each tool says no**, which is the part that made a hand-run sweep unreliable:
 
   * `gate` — the exit code is the verdict: `dotnet test`, `patchaudit`, `cfgaudit`,
-    `ladders --check`, `dioramaaudit`, `deploy --check`, `release --check`.
+    `versionaudit`, `ladders --check`, `dioramaaudit`, `deploy --check`, `release --check`.
   * `grep` — the exit code is **always 0** and the verdict is a word in the output. `slugharness`
     prints `UNMAPPED` per unmapped pair; `animsweep` prints `OFF` in its time column. Wrapping
     either one by exit code alone would report green forever, which is worse than not wrapping it.
@@ -156,7 +156,7 @@ tier, its kind, and what it needs on the machine.
 
 ## Releasing
 
-    python3 code/release.py                # -> dist/PNC0.3.2-PncEdi-2.6.0.zip   (~89 MB)
+    python3 code/release.py                # -> dist/PNC0.3.2-PncEdi-3.0.0.zip   (~89 MB)
     python3 code/release.py --check        # validate everything, write nothing
     python3 code/release.py --update-edi   # look up the newest Edi and print the pin to paste
 
@@ -196,14 +196,14 @@ game first and the mod second, because `PncEdi-2.1.0.zip` read like a version of
 now exist side by side, which is the case the naming was for:
 
     PNC0.2.1-PncEdi-2.1.0.zip     the last build for game 0.2.1
-    PNC0.3.2-PncEdi-2.6.0.zip      what a build produces today (2.5.2 is the posted archive)
+    PNC0.3.2-PncEdi-3.0.0.zip      what a build produces today (2.5.2 is the posted archive)
     ^^^^^^^^ the game it is for   ^^^^^ the mod, plain semver
 
 The game identity can only live in the **name**, not in the version number: `BepInPlugin` parses
 its version through `SemanticVersioning.Version` and the assembly attributes through
 `System.Version`, so both are numeric by construction. `release.py` enforces plain
 `MAJOR.MINOR.PATCH` on the mod version for that reason. The rest of the disambiguation is the
-display name — the log reads `Loading [Post Nut Calamity EDI Integration 2.6.0]`.
+display name — the log reads `Loading [Post Nut Calamity EDI Integration 3.0.0]`.
 
 Everything Edi needs sits together so a fresh install configures nothing:
 
@@ -318,6 +318,33 @@ safest-looking direction, because the default usually matches what the file alre
 `DebugHotkeysIgnoreHeldKeys` sat inert under `[Gameplay]` instead of `[Tools]` from §47 to §49.
 `release.py` runs this audit itself and refuses to build if it fails.
 
+## The version, and the one place that declares it
+
+    python3 code/versionaudit.py
+
+`PluginVersion` in `code/edimod/PncEdi/Plugin.cs` **is** the mod's version. Everything else has to
+match it and nothing else may state it independently:
+
+  * every `[BepInPlugin]` passes `PluginGuid, PluginName, PluginVersion` — never a literal
+  * `code/edimod/Properties/AssemblyInfo.cs`'s three attributes (the two four-part ones take a
+    trailing `.0`)
+  * every document that names the mod version
+
+Bumping a version therefore means editing `Plugin.cs`, then `AssemblyInfo.cs`, then whatever the
+audit still complains about. It names the file and line for each, so the list is the work.
+
+**Why it exists.** The attribute used to carry the version as a string literal while `PluginVersion`
+sat three lines below saying something else entirely — 2.6.0 against 2.0.8, six minor releases
+apart. `release.py`'s `plugin_version()` was written to prevent exactly that and cross-checks four
+declarations, but it parsed the attribute's literal, so the one declaration that drifted was the one
+it never read (§177). A duplicate a gate checks is safe; a duplicate the gate reads *through* is
+not.
+
+One deliberate subtlety: the archive-name check matches only the **current** `GAME_VERSION`, read
+out of `release.py`. `code/README.md` names `PNC0.2.1-PncEdi-2.1.0.zip` on purpose, to explain why
+archives are named game-first, and a check that cannot tell a record from a claim gets deleted
+within a month.
+
 ## Adding gallery content — no rebuild needed
 
 `GalleryRegistry.Known` is only a *seed* list. `LoadDefinitions()` reads
@@ -427,7 +454,7 @@ cannot unload an assembly, so what it bought was a way to leave a mod half-destr
 section, the runtime WAV and video loaders, and the public API a package's own behaviour assembly
 compiles against. It was part of PncEdi until §131, and until §165 it also contained two
 behaviours; both now live in the packages that use them - the charm witch in Femboy Witch, the
-wall-picture trap in Joker - and this assembly carries no enemy at all.
+wall-picture trap in Joker Wall Trap - and this assembly carries no enemy at all.
 
 **This one depends on PncEdi, and only in that direction.** A package's scenes are Edi content — it
 registers gallery rows and aliases, plays rows, takes heat locks — so pretending otherwise would
@@ -620,7 +647,8 @@ inside the framework, and `PackageGallery.MergeRows` is how a package reaches it
 can know. The wall-trap registry used to carry its own copy of the writer, and the copy had lost the
 ownership rule, the safe write and the funscript content guard — three ways for a package to
 overwrite something measured. It then kept its own row *builder* for two sessions after that, which
-is what made a switched-off Joker import nothing while a switched-off witch imported her rows
+is what made a switched-off Joker Wall Trap import nothing while a switched-off Femboy Witch
+imported her rows
 (§173, §175). A new package kind needs neither: its rows are built from its manifest like every
 other package's.
 
@@ -842,7 +870,7 @@ The generated variants are rebuilt from *all* of them, so run `variants.py --wri
 
 The same command also emits `handy2/` for every custom-enemy package, from that package's own
 `funscripts/handy2pro/` masters. A device pointed at a variant a package does not carry plays
-nothing for that enemy, which is the parity failure §5567 found for per-axis files. Package
+nothing for that enemy, which is the parity failure §89 found for per-axis files. Package
 `handy1/` folders are **not** regenerated: those were authored by hand against the Handy 1 rather
 than slew-limited, and overwriting them would throw that work away.
 
@@ -957,7 +985,7 @@ tree now; `release.py` copies it into the zip, so nothing has to be mirrored by 
 Before building a mechanic, check whether the game already has one. No decompiler needed for
 a quick look:
 
-    G="game-windows/Post Nut Calamity_Data/Managed"      # or ../Archive/PNC 0.2.1 Win/... for 0.2.1
+    G="game-windows/Post Nut Calamity_Data/Managed"      # or a 0.2.1 install's Managed/ for 0.2.1
     monodis --typedef "$G/Assembly-CSharp.dll" | grep -i gallery
     ikdasm  "$G/Assembly-CSharp.dll" \
       | awk '/\.class .* GalleryUnlockTrigger/,/end of class GalleryUnlockTrigger/'
@@ -1201,7 +1229,7 @@ release, run the first `awk` above regardless of what the audit says.
 
 ### Finding what changed, without launching the game
 
-**Start here: `python3 code/patchaudit.py --compare "../Archive/PNC 0.2.1 Win" --ai`.** One command
+**Start here: `python3 code/patchaudit.py --compare "<the previous game install>" --ai`.** One command
 answers most of "is anything we wrote down still true": every Harmony patch target and reflected
 member checked against the new assembly, a member-level diff of every type the mod names, and the
 §46 AI audit. "Reflected member" means all three routes the mod uses - `AccessTools.*`,

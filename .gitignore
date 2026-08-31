@@ -28,6 +28,12 @@
 # to-do list published to strangers. The documents that reference it now check whether one
 # exists rather than assuming it does.
 /TODO.md
+# HISTORY.md is the changelog's narrative half, split out in §176: the measurements, the theories
+# that turned out wrong, what a log said on which evening. It is a record of how the work went
+# rather than what the work decided, and nobody but its author can use it. The decisions keep
+# their §n numbers in CHANGELOG.md, which is tracked, because `learnings/` and a dozen source
+# comments cite them; what is here is the session behind each one.
+/HISTORY.md
 !/learnings/
 !/code/
 !/BepInEx/

@@ -2,7 +2,7 @@
 """Every vanilla spawner in the build, and the enemy table it rolls on.
 
     .venv/bin/python code/spawntables.py
-    PNC_GAME_DIR="../Archive/PNC 0.2.1 Win/PNC_Data" .venv/bin/python code/spawntables.py
+    PNC_GAME_DIR="/path/to/your/PNC 0.2.1 install/PNC_Data" .venv/bin/python code/spawntables.py
 
 **There is no biome enemy list.** `EnemySpawner.GetEnemyPrefab` and `ArenaEnemySpawner`'s twin
 pick uniformly from *that spawner's own* serialized `enemyData[]`, then uniformly from the chosen

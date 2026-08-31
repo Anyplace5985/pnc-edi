@@ -45,10 +45,10 @@ def game_dir():
     The repo is the mod and only the mod (PROJECT.md), so the game is always outside it. The
     default is whatever `game-windows` points at; `PNC_GAME_DIR` is how a figure is reproduced
     against another build - every verified number in this project was measured against
-    `../Archive/PNC 0.2.1 Win`.
+    a 0.2.1 install kept outside the repo.
 
-    A relative `PNC_GAME_DIR` is resolved against the repo root, not the working directory, so
-    the documented `PNC_GAME_DIR="../Archive/PNC 0.2.1 Win"` means the same thing from anywhere.
+    A relative `PNC_GAME_DIR` is resolved against the repo root, not the working directory, so it
+    means the same thing whichever directory a tool is run from.
     """
     override = os.environ.get("PNC_GAME_DIR")
     if not override:

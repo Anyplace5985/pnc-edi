@@ -27,7 +27,7 @@ format; the short version is that only turn one on if you trust where you got it
 There is a second manifest kind, `wall-trap.json` — a picture that hangs itself on a wall and pulls
 the player into a scene. **This framework does not implement it.** Since §165 it belongs to a
 package: `WallPictureTrap.dll` reads it, and both that assembly and its documentation
-(`WALL-PICTURE-TRAPS.md`) ship inside the Joker wall trap package. Without a package that provides
+(`WALL-PICTURE-TRAPS.md`) ship inside the Joker Wall Trap package. Without a package that provides
 that kind, a `wall-trap.json` is read by nothing at all — no switch, no log line, no error.
 
 **The gallery is the one thing the framework reads out of every manifest, whatever kind it is.** The
@@ -44,7 +44,7 @@ wants it in their install.
 
 Two packages are published as their own downloads beside the mod on its [Eroscripts release
 thread](https://discuss.eroscripts.com/t/game-integration-post-nut-calamity-0-1-0-edi/315695):
-the **Femboy Witch**, a portal-walking boss with a charm circle, and the **Joker wall trap**, a
+the **Femboy Witch**, a portal-walking boss with a charm circle, and the **Joker Wall Trap**, a
 picture that hangs on a wall and pulls the player into it. Each is one archive that extracts over
 the game directory and adds a single directory under `BepInEx/custom-enemies/`. There is nothing to
 configure — the manifest declares the enemy's scenes, gallery rows and aliases, and the mod
@@ -254,9 +254,9 @@ Behaviours that exist today, both published by the packages that ship them:
 | `charm-witch` | the Femboy Witch package | the portal-walking boss described below |
 
 A package can also be a *kind* of its own rather than a behaviour another manifest attaches: the
-Joker package's wall traps have their own manifest (`wall-trap.json`), their own placement and their
-own gallery entries, all inside that package's assembly. See
-`WALL-PICTURE-TRAPS.md`, in the Joker wall trap package.
+Joker Wall Trap package's traps have their own manifest (`wall-trap.json`), their own placement and
+their own gallery entries, all inside that package's assembly. See `WALL-PICTURE-TRAPS.md`, in the
+Joker Wall Trap package.
 
 ### Shipping a behaviour of your own
 
@@ -430,7 +430,7 @@ At startup these are copied into the matching `Edi/Gallery/<variant>` folders an
 to `Edi/Gallery/Definitions.csv`.
 
 **Author `handy2pro/` and generate the rest.** The variant folders are named after the device they
-are for (`handy2pro` was called `detailed` before 2.6.0), and a player whose device points at a
+are for (`handy2pro` was called `detailed` before 3.0.0), and a player whose device points at a
 variant your package does not carry gets **nothing** for your enemy — Edi looks up the row in the
 folder the device names and finds no file. `.venv/bin/python code/variants.py --write` emits a
 package's `handy2/` from its `handy2pro/` masters, held to 600 units/s sustained and 700 peak. A

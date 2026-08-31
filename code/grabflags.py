@@ -2,7 +2,7 @@
 """Which prefabs set the two grab flags that decide who owns an enemy across its own scene.
 
     .venv/bin/python code/grabflags.py
-    PNC_GAME_DIR="../Archive/PNC 0.2.1 Win" .venv/bin/python code/grabflags.py
+    PNC_GAME_DIR="/path/to/your/PNC 0.2.1 install" .venv/bin/python code/grabflags.py
 
 Two serialized `EnemyAI` fields decide what happens to an enemy while its grab screen is up, and
 the mod's whole stand-down (§73) hangs on the first of them:

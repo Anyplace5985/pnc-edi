@@ -11,8 +11,8 @@
 This repo holds the mod and nothing else. The game lives outside it, and the two symlinks are how
 it is reached:
 
-    game-windows -> ../PNC 0.3.2 WIN
-    game-linux   -> ../PNC 0.3.2 Linux
+    game-windows -> <your 0.3.2 Windows install>
+    game-linux   -> <your 0.3.2 Linux install>
 
 **The payload is `release.py`'s.** `bepinex_payload()`, `gallery_files()` and `fetch_edi()` are
 imported rather than reimplemented, so what you test locally is assembled by the same code that
@@ -43,7 +43,7 @@ player install:
   * **`start-pnc-linux.sh` gets a log-rotation block** in a Linux dev install, and only there -
     see `DEV_ROTATE`. The shipped script in `code/dist/` is untouched, so a player still gets one
     plain launcher.
-  * **`PncEdi-README.txt` / `PncEdi-CHANGELOG.txt` are not deployed.** They are rendered for a
+  * **`PncEdi-README.txt` / `PncEdi-RELEASES.txt` are not deployed.** They are rendered for a
     named game version and would sit in a 0.3.1 tree claiming to be built for 0.2.1. Nothing reads
     them at runtime.
 

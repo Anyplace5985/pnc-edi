@@ -205,14 +205,20 @@ def plugin_version() -> str:
     """The version, cross-checked across all four places that declare it.
 
     They are hand-maintained in two files, so they can drift; a release named after one of them
-    while the plugin reports another is worse than no version at all."""
+    while the plugin reports another is worse than no version at all.
+
+    The fourth is `PluginVersion`, not the `[BepInPlugin]` attribute. This used to read the
+    attribute's third argument as a string literal, which is how the constant three lines below it
+    was free to sit six minor versions behind while every gate passed: the one declaration that
+    drifted was the one nothing looked at. The attribute now passes the constant, so the compiler
+    keeps those two in step and this reads the constant that feeds it."""
     info = (ROOT / "code/edimod/Properties/AssemblyInfo.cs").read_text(encoding="utf-8")
     plugin = (ROOT / "code/edimod/PncEdi/Plugin.cs").read_text(encoding="utf-8")
     found = {
         "AssemblyVersion": re.search(r'AssemblyVersion\("([\d.]+)"\)', info),
         "AssemblyFileVersion": re.search(r'AssemblyFileVersion\("([\d.]+)"\)', info),
         "AssemblyInformationalVersion": re.search(r'AssemblyInformationalVersion\("([\d.]+)"\)', info),
-        "BepInPlugin": re.search(r'\[BepInPlugin\("[^"]+",\s*"[^"]+",\s*"([\d.]+)"\)\]', plugin),
+        "PluginVersion": re.search(r'const\s+string\s+PluginVersion\s*=\s*"([\d.]+)"', plugin),
     }
     missing = [k for k, v in found.items() if v is None]
     if missing:
@@ -1039,8 +1045,12 @@ def main() -> None:
         entries[f"BepInEx/plugins/{name}.dll"] = dll.read_bytes()
     entries["BepInEx/config/com.edi.pnc.cfg"] = cfg_text.encode("utf-8")
     entries["start-pnc-linux.sh"] = (ROOT / "code/dist/start-pnc-linux.sh").read_bytes()
-    entries["PncEdi-CHANGELOG.txt"] = (
-        (ROOT / "CHANGELOG.md").read_text(encoding="utf-8").replace("\n", "\r\n").encode("utf-8"))
+    # RELEASES.md, not CHANGELOG.md. The changelog is an engineering record - what was tried,
+    # measured, reverted and why - and shipping it to players put 11,700 lines of session
+    # narrative in an archive whose README calls it "what changed, in detail". RELEASES.md is
+    # written for the person installing this.
+    entries["PncEdi-RELEASES.txt"] = (
+        (ROOT / "RELEASES.md").read_text(encoding="utf-8").replace("\n", "\r\n").encode("utf-8"))
     entries["PncEdi-CREDITS.txt"] = (
         (ROOT / "CREDITS.md").read_text(encoding="utf-8").replace("\n", "\r\n").encode("utf-8"))
 

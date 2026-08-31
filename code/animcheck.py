@@ -33,7 +33,7 @@ def game_data_dir():
 
     Default is whatever `game-windows` points at. `PNC_GAME_DIR` overrides it, which is how you
     measure against a different build: every number in TIMING-AUDIT.md and the 63/63 sweep came
-    from 0.2.1, now at `../Archive/PNC 0.2.1 Win`."""
+    from 0.2.1 - point `PNC_GAME_DIR` at that install."""
     return P.game_data_dir("animcheck")
 
 

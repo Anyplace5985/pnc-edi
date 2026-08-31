@@ -4,7 +4,7 @@ Device integration for **Post Nut Calamity**, via [Edi](https://github.com/NoGRo
 BepInEx plugins watch the game's animations and tell Edi which funscript to play, plus the
 funscript gallery itself.
 
-- **Mod `2.6.0`**, for game **0.3.2**.
+- **Mod `3.0.0`**, for game **0.3.2**.
 - Release thread:
   <https://discuss.eroscripts.com/t/game-integration-post-nut-calamity-0-1-0-edi/315695>
 - Whose work this is built on: **[CREDITS.md](CREDITS.md)**. Read it before publishing anything
@@ -39,8 +39,8 @@ runnable install.
 lives outside it and is reached through two symlinks that the tooling patches:
 
 ```sh
-ln -s "../PNC 0.3.2 WIN"   game-windows
-ln -s "../PNC 0.3.2 Linux" game-linux
+ln -s "/path/to/your/PNC 0.3.2 Windows install" game-windows
+ln -s "/path/to/your/PNC 0.3.2 Linux install"   game-linux
 ```
 
 `game-linux` is optional — `deploy.py` skips a target that is missing and says so. **`game-windows`
@@ -77,7 +77,7 @@ them to `BepInEx/plugins/`, and patches both game installs (`deploy.py --dll-onl
 install can never be why a fix looks broken. Suppress the install patching with
 `-p:DeployToGames=false`.
 
-Build against a different install with `-p:GameDir="../Archive/PNC 0.2.1 Win/"`.
+Build against a different install with `-p:GameDir="/path/to/that/install/"`.
 
 ## Deploy
 
@@ -106,7 +106,7 @@ supposed to match. `code/check.py --list` prints the steps and how each one repo
 ## Release
 
 ```sh
-python3 code/release.py                # -> dist/PNC0.3.2-PncEdi-2.6.0.zip
+python3 code/release.py                # -> dist/PNC0.3.2-PncEdi-3.0.0.zip
 python3 code/release.py --check        # validate everything, write nothing
 ```
 
@@ -129,7 +129,8 @@ that.
 | **[PROJECT.md](PROJECT.md)** | The map: what this is, how the repo is laid out, how a funscript actually gets played. Read it first. |
 | **[learnings/README.md](learnings/README.md)** | Everything learned the hard way, indexed by topic. Read before doing anything non-obvious — and grep it for a symptom before diagnosing one. |
 | **[code/README.md](code/README.md)** | Build, release and tool reference for the `code/` tree. |
-| **[CHANGELOG.md](CHANGELOG.md)** | The narrative record, numbered `§1` upward: every change, why, and what was tried and rejected. |
+| **[CHANGELOG.md](CHANGELOG.md)** | The decision record, numbered `§1` upward: what each change was and why, and what was tried and rejected. |
+| **[RELEASES.md](RELEASES.md)** | Player-facing release notes — what changed, and what to do differently. Ships in the archive. |
 | **[CREDITS.md](CREDITS.md)** | Whose work this is built on. |
 
 ## What is not in this repo

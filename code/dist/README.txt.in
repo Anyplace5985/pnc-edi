@@ -224,7 +224,7 @@ Drop a package into BepInEx\custom-enemies\ and restart. The format is documente
   BepInEx\custom-enemies\CUSTOM-ENEMIES.md
 
 which covers the manifest, the runtime PNG artwork, behaviours, and what a package that ships its
-own code has to say for itself. The wall-trap format is documented inside the Joker wall trap
+own code has to say for itself. The wall-trap format is documented inside the Joker Wall Trap
 package instead, beside the code that reads it - that manifest kind belongs to a package, not to
 the framework.
 
@@ -300,7 +300,7 @@ WHAT IS IN HERE
   Edi/Edi.exe                       Edi @EDITAG@ - see HOW IT WORKS above
   Edi/EdiConfig.json                Edi's settings, pointed at the gallery beside it
   Edi/Gallery/                      the funscripts, @SCRIPTS@ per variant
-  PncEdi-CHANGELOG.txt              what changed, in detail
+  PncEdi-RELEASES.txt               what changed in this release, and what to do differently
   PncEdi-CREDITS.txt                who made what this is built on
 
 No game files are included in this archive.

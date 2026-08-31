@@ -2,8 +2,8 @@
 """Does the mod still bind to the game? Every patch target and reflected member, checked statically.
 
     python3 code/patchaudit.py                        # against game-windows
-    python3 code/patchaudit.py --game "../Archive/PNC 0.2.1 Win"
-    python3 code/patchaudit.py --compare "../Archive/PNC 0.2.1 Win"   # what changed between two builds
+    python3 code/patchaudit.py --game "/path/to/your/PNC 0.2.1 install"
+    python3 code/patchaudit.py --compare "/path/to/your/PNC 0.2.1 install"   # what changed between two builds
     python3 code/patchaudit.py -v                     # list every target, not just the failures
     python3 code/patchaudit.py --ai                   # redo the CHANGELOG §46 AI audit statically
     python3 code/patchaudit.py --heat                 # every vanilla `heat == 0` test, with a verdict

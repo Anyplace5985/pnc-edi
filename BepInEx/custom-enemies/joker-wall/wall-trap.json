@@ -1,6 +1,6 @@
 {
   "id": "joker_wall",
-  "displayName": "Joker",
+  "displayName": "Joker Wall Trap",
   "assembly": {
     "file": "WallPictureTrap.dll",
     "module": "WallPictureTraps.WallPictureTrapModule",

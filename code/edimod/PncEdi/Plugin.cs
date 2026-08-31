@@ -16,12 +16,12 @@ using Object = UnityEngine.Object;
 
 namespace PncEdi;
 
-[BepInPlugin("com.edi.pnc", "Post Nut Calamity EDI Integration", "2.6.0")]
+[BepInPlugin(PluginGuid, PluginName, PluginVersion)]
 public partial class Plugin : BaseUnityPlugin
 {
 	public const string PluginGuid = "com.edi.pnc";
 	public const string PluginName = "Post Nut Calamity EDI Integration";
-	public const string PluginVersion = "2.0.8";
+	public const string PluginVersion = "3.0.0";
 	internal static ManualLogSource Log;
 	private static readonly object MissingDefinitionLogLock = new object();
 	private static readonly HashSet<string> MissingDefinitionLogged = new HashSet<string>(StringComparer.OrdinalIgnoreCase);

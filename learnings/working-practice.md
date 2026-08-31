@@ -38,6 +38,16 @@ Process rules this project arrived at the hard way - about copies, defaults, dec
   reset the clock, so §33 deleted it and reads `ConfigEntryBase.DefaultValue` instead — the
   fallback is now the shipped default *by construction*. Where a duplicate must exist, grep the
   source for the **old value**, not the setting name.
+- **A duplicate a gate *checks* is safe; a duplicate the gate reads *through* is not.**
+  `release.py`'s `plugin_version()` was written to stop the mod's version declarations drifting and
+  cross-checks four of them — but it read the version out of the `[BepInPlugin]` attribute's string
+  literal, so `PluginVersion` three lines below was never one of the four. The two sat six minor
+  releases apart (2.6.0 against 2.0.8) with every check green, because the gate looked like it
+  covered four places and covered three (§177). When a gate parses a value out of a source file,
+  ask what *else* declares that value and whether the parse can see it. The fix was to make the
+  attribute take the constant, so the compiler keeps them in step and the regex has one thing to
+  read; `code/versionaudit.py` then checks the rest, including a rule that documents may not state
+  the version independently.
 - **A tool that documents a case it does not handle is worse than one that says nothing**, because
   the documentation is what stops anyone checking. `_remap_by_frame`'s docstring named the exact
   case it was written for — "the gallery Plantasha cum includes a frame gameplay skips" — and it
@@ -81,10 +91,11 @@ Process rules this project arrived at the hard way - about copies, defaults, dec
   building an archive must not swap the binary you are mid-test on.
   **When a manual step has already cost you a session, hang it off the thing you cannot forget
   to do.**
-- **A document that ships inside the archive cannot describe that archive.** `CHANGELOG.md` goes
-  into every release as `PncEdi-CHANGELOG.txt`, so §163's habit of writing the zip's sha256 into
-  the entry that announces it is a loop: recording the number changes the file, which changes the
-  archive, which changes the number. The same trap catches any figure about the build — size, file
+- **A document that ships inside the archive cannot describe that archive.** `RELEASES.md` goes
+  into every release as `PncEdi-RELEASES.txt` (it was `CHANGELOG.md` as `PncEdi-CHANGELOG.txt`
+  until §176), so §163's habit of writing the zip's sha256 into the entry that announces it is a
+  loop: recording the number changes the file, which changes the archive, which changes the
+  number. The same trap catches any figure about the build — size, file
   count, a "what is in this release" summary — written into a file the build packs. **Build last,
   and publish the checksum the final `release.py` prints**, keeping it in `TODO.md`, which is
   untracked and never shipped. A stale sha in a changelog is worse than none: it is a number a
@@ -122,12 +133,14 @@ below is about the file when it exists.) §70 cut it from 1017 lines to
 session and a standing-guidance section that had become a second copy of `learnings/`. The drift is
 one habit: a session finishes something and records the outcome where the work was written down.
 The rule that keeps the file its own size is that **the four documents each hold one thing** — open
-work in `TODO.md`, the narrative in `CHANGELOG.md`, the rules in `learnings/`, the map and the
+work in `TODO.md`, the decision in `CHANGELOG.md` and the session behind it in `HISTORY.md`
+(§176), the rules in `learnings/`, the map and the
 commands in `PROJECT.md`, `README.md` and `code/README.md` — so closing an item means deleting it
 from `TODO.md` once the `§n` entry exists, and one handoff at a time. A generalised rule written into a CHANGELOG
 entry has the same problem in the other direction: it is invisible to the grep that `CLAUDE.md`
-asks for, because nobody greps a 9,000-line narrative for a rule. State it in `learnings/` and let
-the entry point at it (§137).
+asks for, because nobody greps a numbered history for a rule — and since §176 the changelog holds
+the decision rather than the session, so a rule buried in an entry is doubly out of place. State it
+in `learnings/` and let the entry point at it (§137).
 
 **A stale-deploy failure is usually not something you changed.** The *game* rewrites
 `game-linux`'s own `com.edi.pnc.cfg` at launch, so `deploy.py --check` reports the install

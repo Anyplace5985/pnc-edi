@@ -1,6 +1,6 @@
 # PNC + Edi
 
-The Edi device-integration mod for **Post Nut Calamity**: a BepInEx plugin (`PncEdi` v2.6.0, for
+The Edi device-integration mod for **Post Nut Calamity**: a BepInEx plugin (`PncEdi` v3.0.0, for
 game 0.3.2) that watches the game's animations and tells the Edi service which funscript to play,
 plus the funscript gallery itself.
 
@@ -62,8 +62,10 @@ and release it. Everything else lives in one of six places:
 | **[README.md](README.md)** | The public front door: what this is, requirements, setup, build, deploy, check, release. Written for someone who has just cloned it and owns none of this context. | When it drifts. It is the one document strangers read, and the only one that has to stand on its own. |
 | **[learnings/README.md](learnings/README.md)** | Everything learned the hard way, split by topic with an index. | Before doing anything non-obvious. The index alone tells you which file you need, so you do not have to load them all. |
 | **`TODO.md`** — check whether the working tree has one; it is untracked and a clone does not carry it | Private working notes: only what is still **open** — pending work, open questions, known-unfinished things. | Start of a session, if it is there, to pick up work. Nothing resolved lives in it; that moves to the CHANGELOG, which is also where to look when there is no `TODO.md`. |
-| **[CHANGELOG.md](CHANGELOG.md)** | The narrative record, numbered `§1` upward. Every change, why it was made, what was tried and rejected. | You need the full story behind a rule, or want to know whether something was already tried. The learnings files cite `§n` back into it. |
+| **[CHANGELOG.md](CHANGELOG.md)** | The decision record, numbered `§1` upward. What each change was and why, and what was tried and rejected. | You want the reason behind a rule, or to know whether something was already tried. The learnings files cite `§n` back into it, so the numbers never move. |
+| **`HISTORY.md`** — untracked, like `TODO.md`; check whether the working tree has one | The session behind each `§n`: measurements, wrong theories, what a log said. Split out of the changelog in §176. | The decision record's entry is not enough and you need the full story. A clone does not carry it. |
 | **[code/README.md](code/README.md)** | Build, release and tool reference for the `code/` tree. | Working on the plugin source or the Python tooling. |
+| **[RELEASES.md](RELEASES.md)** | Player-facing release notes: what changed in each release and what a player has to do differently. | Before posting a release, and when a change becomes visible to somebody who only plays. Shipped in the release as `PncEdi-RELEASES.txt`. |
 | **[CREDITS.md](CREDITS.md)** | Who made the game, Edi, the mod this one continues, the fork the custom-enemy framework came from, and the funscripts the gallery started as. | Before publishing anything, or when you need to know whose work a part of this is. Shipped in the release as `PncEdi-CREDITS.txt`. |
 
 Two audit notes live beside the tools they describe: `code/NAMING-AUDIT.md` (how animator states
@@ -81,7 +83,7 @@ pnc-edi/                                  the repo: nothing here belongs to the 
 ├── BepInEx/
 │   ├── plugins/                          build output, untracked: one `dotnet build` writes all
 │   │                                      three DLLs here and into both game installs
-│   ├── plugins/PncEdi.dll                the mod (v2.6.0, rebuilt from recovered source)
+│   ├── plugins/PncEdi.dll                the mod (v3.0.0, rebuilt from recovered source)
 │   ├── plugins/PncModManager.dll         the in-game settings window - F11 (§127)
 │   ├── plugins/PncCustomEnemies.dll      the custom-enemy framework (§131) - delete it and the
 │   │                                      mod behaves as if packages never existed
@@ -120,24 +122,22 @@ pnc-edi/                                  the repo: nothing here belongs to the 
 │   └── README.md                         build and release instructions
 ├── .venv/                                the Python venv the asset tools run on — untracked
 ├── dist/                                 release output — regenerable, untracked
-├── game-windows -> ../PNC 0.3.2 WIN      \\ deployed into; not tracked, not read as a source
-└── game-linux   -> ../PNC 0.3.2 Linux    /  of anything except the game's own assemblies
+├── game-windows -> <your 0.3.2 Windows install>   \\ deployed into; not tracked, not read as
+└── game-linux   -> <your 0.3.2 Linux install>     /  a source of anything except the game's
+                                                      own assemblies
 ```
 
-Beside the repo, outside it:
+Nothing outside the repo is named anywhere in it. The two symlinks are the only way out, and each
+person points them at their own copy of the game — so the paths above are yours to choose, not
+something to match.
 
-```
-../PNC 0.3.2 WIN/, ../PNC 0.3.2 Linux/    the game installs the symlinks point at
-../Archive/PNC 0.2.1 Win/                 the 0.2.1 install this repo used to be
-../game-builds/                           the upstream zips both installs came from
-```
+**Keep the 0.2.1 install you started from, wherever you keep it.** Every verified number in this
+project was measured against its assets — the 63/63 timing sweep, `TIMING-AUDIT.md`, the AI tables
+read out of its `Assembly-CSharp.dll`. `PNC_GAME_DIR` points any tool at whichever install you
+want, and the sweep still reports 63/63 on the scenes that build has — the other 30 rows are
+0.3.1-only and print `no clip/script`, which is the right answer rather than a regression. Nothing
+re-derives those figures from a build they were never measured against.
 
-**`../Archive/PNC 0.2.1 Win` is not junk.** Every verified number in this project was measured
-against its assets — the 63/63 timing sweep, `TIMING-AUDIT.md`, the AI tables read out of its
-`Assembly-CSharp.dll`. `PNC_GAME_DIR` points any tool at it, and the sweep still reports 63/63
-on the scenes that build has — the other 30 rows are 0.3.1-only and print `no clip/script`,
-which is the right answer rather than a regression. Nothing re-derives those figures from a
-build they were never measured against.
 
 A deployed install carries `BepInEx/` (runtime, our config, all three plugins, and any custom-enemy
 packages), both loaders, `start-pnc-linux.sh`
@@ -221,7 +221,7 @@ python3 code/deploy.py --refs-only     extract BepInEx for the build to compile 
 non-zero is the answer to "is what I am about to launch actually the working tree".
 
 ```
-python3 code/release.py                -> dist/PNC0.3.2-PncEdi-2.6.0.zip
+python3 code/release.py                -> dist/PNC0.3.2-PncEdi-3.0.0.zip
 python3 code/release.py --check        validate everything, write nothing
 ```
 
@@ -339,6 +339,7 @@ working on the thing it checks — and because it is what `check.py` is made of 
 | `dotnet test code/tests/PncEdi.Tests.csproj` | fast | does the naming, alias and config layer still behave? (114 tests) |
 | `python3 code/patchaudit.py` | fast | does the mod still bind to the game, and is every patch class registered? (`--ai` also redoes the AI audit) |
 | `python3 code/cfgaudit.py` | fast | is every config entry in the section its `Bind()` names? |
+| `python3 code/versionaudit.py` | fast | does every place that states the mod version agree with `PluginVersion`? |
 | `python3 code/bridgeaudit.py` | fast | is the custom-enemy seam still wired at both ends? Every `CustomEnemyBridge` delegate falls back to vanilla, so a dropped call is otherwise invisible (§132) |
 | `dotnet run --project code/slugharness -- BepInEx/config/com.edi.pnc.cfg` | fast | does every animator state resolve to a script? |
 | `.venv/bin/python code/animsweep.py` | full | every scene's timing and polarity against its animation |
@@ -364,7 +365,7 @@ python3 -m venv .venv && .venv/bin/pip install -r code/requirements.txt
 ```
 
 `code/requirements.txt` pins the four direct dependencies and says why each is there. Anything
-reading game assets takes `PNC_GAME_DIR` — point it at `../Archive/PNC 0.2.1 Win` to reproduce a
+reading game assets takes `PNC_GAME_DIR` — point it at a 0.2.1 install to reproduce a
 pre-0.3.1 figure. Since §115 that is resolved in one place, `code/pncpaths.py`, so it means the
 same thing to every tool, a relative path is read against the repo rather than the working
 directory, and the tools run from any directory rather than only from the repo root.
