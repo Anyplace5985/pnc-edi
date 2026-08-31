@@ -11658,6 +11658,15 @@ behaviour attached to a framework-owned host object instead. That is a change to
 design decision, not a cleanup. Left open, with the finding written down so the next session starts
 from it rather than from the glob.
 
+**Six player-facing texts said the older, narrower thing and are corrected**: the switch description
+a player reads in the config file and in the F11 window (it said only "switched off, the package
+does nothing"), the loader's log line, the archive README, the public `README.md`,
+`CUSTOM-ENEMIES.md`, and the Joker package's own `WALL-PICTURE-TRAPS.md` — which was the one that
+was actually wrong rather than merely incomplete, because it promised "no trap, no gallery rows"
+and the rows now arrive whatever the switch says. Each now says the same sentence: switched off it
+runs nothing, its funscripts and its gallery rows reach Edi either way, so turning it on later does
+not also mean restarting Edi.
+
 ## Tried and reverted — do not redo
 
 - **Trimming loop seams.** 14 galleries end on a different position than they start.

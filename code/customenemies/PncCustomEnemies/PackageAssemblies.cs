@@ -185,7 +185,7 @@ internal static class PackageAssemblies
 		{
 			CustomEnemyPlugin.Log?.LogWarning("[CustomEnemies] '" + package.Id + "' ships code (" + package.Declaration.file + ") and is switched off, so none of it runs. " +
 				"Set 'Custom Enemies / " + package.Id + "' in com.edi.pnc.customenemies.cfg, or turn it on in the mod manager (F11), and restart. " +
-				"Until then it runs nothing: no enemy, no traps, no gallery entry. Its funscripts are handed to Edi either way, so turning it on later needs no Edi restart.");
+				"Until then it runs nothing: no enemy, no traps, no gallery entry. Its funscripts and its gallery rows are handed to Edi either way, so turning it on later needs no Edi restart.");
 			return;
 		}
 		try
@@ -269,7 +269,8 @@ internal static class PackageAssemblies
 	internal static string CodeSwitchDescription(string displayName, string file)
 	{
 		return "Enable " + displayName + ". This package ships its own code (" + file + "), which runs like any other mod, so only turn it on if you trust where you got it. "
-			+ "Restart the game after changing this. Switched off, the package does nothing.";
+			+ "Restart the game after changing this. Switched off it runs nothing - no enemy, no traps, no gallery entry - "
+			+ "though its funscripts and its gallery rows still reach Edi, so turning it on later does not also mean restarting Edi.";
 	}
 
 	/// <summary>A package's own display name, for a switch a player reads. Falls back to the id.</summary>

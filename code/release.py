@@ -883,7 +883,8 @@ def build_package(directory: Path, out_dir: Path, check: bool) -> None:
             f"either use the mod manager (F11) in game, or set this line yourself in\n"
             f"BepInEx/config/com.edi.pnc.customenemies.cfg:\n\n"
             f"    Custom Enemies / {package_id} = true\n\n"
-            f"Either way, restart the game afterwards.\n")
+            f"Either way, restart the game afterwards. Its funscripts and its gallery rows are\n"
+            f"installed either way, so switching it on later does not also mean restarting Edi.\n")
 
     scripts = [s for a, s in files if s.suffix == ".funscript"]
     if not scripts:

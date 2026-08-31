@@ -118,8 +118,9 @@ config with an undeclared local tweak in it. Custom-enemy packages are their own
 A package may ship its own code, and one that does arrives **switched off**: its single switch in
 the mod manager (**F11**) is also the permission to run that code, it says so beside the switch, and
 the game needs a restart after it changes. Switched off it runs nothing — no enemy, no traps, no
-gallery entry — though its funscripts still reach Edi's gallery, so turning it on later does not
-also mean restarting Edi. A package that ships no code has the same switch without any of that.
+gallery entry — though its funscripts and its gallery rows still reach Edi, so turning it on later
+does not also mean restarting Edi. A package that ships no code has the same switch without any of
+that.
 
 ## Where to read next
 

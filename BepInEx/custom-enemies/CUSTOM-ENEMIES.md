@@ -16,7 +16,7 @@ code, it says so beside itself, and the game needs a restart after it changes (�
 nothing at all: no enemy, no traps, no gallery entry, no behaviour. A package that ships no code has
 the same switch with none of that.
 
-**Its funscripts are copied into `Edi/Gallery/` either way** (§173), and only those. Edi reads that
+**Its funscripts and its gallery rows are installed either way** (§173, §175), and only those. Edi reads that
 folder and `Definitions.csv` once, when *it* starts, so rows that arrive only on the day a package
 is switched on would mean restarting Edi as well as the game — and until you did, the package would
 be running with a silent device. A funscript is data in a file Edi parses, not something the package
@@ -30,10 +30,11 @@ package: `WallPictureTrap.dll` reads it, and both that assembly and its document
 (`WALL-PICTURE-TRAPS.md`) ship inside the Joker wall trap package. Without a package that provides
 that kind, a `wall-trap.json` is read by nothing at all — no switch, no log line, no error.
 
-**One thing the framework does read out of every manifest, whatever kind it is: the gallery.** The
+**The gallery is the one thing the framework reads out of every manifest, whatever kind it is.** The
 funscripts under `funscripts/` and the rows built from `scenes[]` or `animations[]` are installed
-before any package code runs, for every package, on or off (§175). Everything else about a manifest
-kind it does not implement stays none of its business.
+before any package code runs, for every package, on or off (§175) — including a manifest kind the
+framework does not otherwise implement, such as the wall trap above. Everything else about such a
+kind stays none of its business.
 
 ## Getting a package
 

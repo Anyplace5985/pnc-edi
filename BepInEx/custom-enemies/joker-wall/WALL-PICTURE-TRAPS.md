@@ -17,7 +17,9 @@ sense: **the package starts switched off**, and its one switch is what allows th
 in `com.edi.pnc.customenemies.cfg`, or enable the package in the mod manager (**F11**), where it
 carries the warning that it ships code — then restart, because assemblies load once at startup.
 That code runs like any other mod and the game cannot sandbox it, so the switch is the place you are
-asked. Until it is on, the package does nothing: no trap, no gallery rows.
+asked. Until it is on, the package does nothing: no trap, no gallery entry. Its funscripts and its
+rows in `Definitions.csv` are installed either way, so switching it on later does not also mean
+restarting Edi (§175).
 
 Everything here is read at startup. Diagnostics go to `BepInEx/LogOutput.log` under
 `[WallPictureTrap]`, and that log is the first thing to read when a trap does not behave.
@@ -167,8 +169,9 @@ Same layout as any other package - beside the manifest, grouped by device varian
 
 Each animation gets a row in `Edi/Gallery/Definitions.csv` whose end time is the largest `at` in
 the funscript, and its scripts are copied into `Edi/Gallery/<variant>/`. A stage with no funscript
-to measure gets no row and plays nothing. Restart Edi after adding a package if it was already
-running.
+to measure gets no row and plays nothing. Restart Edi after *adding* a package if it was already
+running — it reads that file once at its own startup. Turning a package on or off afterwards does
+not need one: the mod installs a package's scripts and rows before it reads any switch (§175).
 
 A package may not redefine a gallery row this project already ships: those were measured against
 specific game assets, and a name collision is refused with a warning in the log rather than

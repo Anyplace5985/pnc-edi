@@ -594,15 +594,17 @@ needs. The note is there to be read by a person.
   `Definitions.csv` (`release.definitions_with`) as part of the payload. **This is what runs on a
   machine with this repo**, and it is why `deploy.py --check` still means something: the deployed
   gallery is part of what the payload declares, so it can be compared byte for byte.
-- **From the mod, at runtime.** `CustomEnemies.SyncFunscripts` does the same thing against the live
-  install. That path exists for a player who drops a package into a game directory with no repo
-  behind it. Here it should find its rows already correct and write nothing.
+- **From the mod, at runtime.** `PackageGalleryImport` does the same thing against the live
+  install, for every manifest of every kind and before any package code runs (§175). That path
+  exists for a player who drops a package into a game directory with no repo behind it. Here it
+  should find its rows already correct and write nothing.
 
 **If `deploy --check` reports stale after a launch, those two have drifted apart** — they build the
 row string by the same rule and must keep agreeing (§128). They did drift, and §129 is what that
 cost: the repo side read `manifest["scenes"]` for every package kind, and a wall trap keeps its
 scenes under `animations`, so it emitted no rows at all for one and the two sides undid each other
-on every launch.
+on every launch. Since §175 both sides read both keys in one place each, which is why there are two
+writers to keep in step rather than three.
 
 Both refuse to touch a row the package does not own: ownership is "the row's `FileName` column names
 a funscript this package ships", which is the only test that survives a restart, and a collision
@@ -612,11 +614,15 @@ replaces the file by temp-and-move because a plain `WriteAllLines` truncates it 
 and preserves the file's byte-order mark — `ReadAllLines` strips one, and writing it back without
 changes three bytes that `--check` compares.
 
-**There is one runtime writer, not one per package kind.** `CustomEnemyRegistry.MergeDefinitions`
-is it, and `WallPictureTrapRegistry` calls it. The wall-trap registry used to carry its own copy,
-and the copy had lost the ownership rule, the safe write and the funscript content guard — three
-ways for a package to overwrite something measured. A third package kind must call the same method
-rather than grow a fourth copy.
+**There is one runtime writer, and since §175 one runtime row *builder* too.**
+`CustomEnemyRegistry.MergeDefinitions` is the writer; `PackageGalleryImport` is the only caller
+inside the framework, and `PackageGallery.MergeRows` is how a package reaches it for rows only it
+can know. The wall-trap registry used to carry its own copy of the writer, and the copy had lost the
+ownership rule, the safe write and the funscript content guard — three ways for a package to
+overwrite something measured. It then kept its own row *builder* for two sessions after that, which
+is what made a switched-off Joker import nothing while a switched-off witch imported her rows
+(§173, §175). A new package kind needs neither: its rows are built from its manifest like every
+other package's.
 
 **A custom scene must not keep playing while the game is paused.** The wall trap and the runtime
 sprite visual are clocked on `Time.unscaledDeltaTime` on purpose — a grab overlay has to survive
