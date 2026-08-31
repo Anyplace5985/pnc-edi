@@ -11295,6 +11295,22 @@ truthfully. `prune_custom_enemy_docs` is `prune_gallery`'s shape for that direct
 only its root: an install is allowed to hold a package the tree does not, so pruning by payload
 would delete a package someone dropped in to try.
 
+### And the gap the fresh install itself found
+
+Reading the *rendered* `PncEdi-README.txt` out of a real extracted install — rather than the
+template it comes from — found the one thing every other document already said and this one never
+did: **a package may ship code, and one that does arrives switched off.** `CUSTOM-ENEMIES.md` says
+it, each package archive's own README says it, the mod manager says it beside the switch, and the
+document a player actually reads first said nothing at all. That is §167's exact failure mode
+(an installed package that does nothing, with no visible reason) surviving in the place worst
+equipped to explain it. `EnableHeatLocks` picked up a smaller version of the same problem from the
+profile change: "read only when Profile is Custom" is true of the *switch* and reads as though locks
+are off by default, when the new default profile turns them on.
+
+**The lesson is the reading, not the two fixes.** A template with placeholders in it is not the
+document; four passes over `README.txt.in` did not surface either of these, and one pass over the
+installed file surfaced both.
+
 ## Tried and reverted — do not redo
 
 - **Trimming loop seams.** 14 galleries end on a different position than they start.

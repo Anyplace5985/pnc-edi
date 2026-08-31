@@ -284,3 +284,10 @@ I am about to launch actually the working tree", said both installs were up to d
 visible; the absence of a delete is not. `prune_gallery` had had the right shape since §57 and
 nobody generalised it. **A one-way sync is not a sync, and a staleness check that only compares the
 files it wrote cannot see the ones it stopped writing** (§168).
+
+**Read the rendered artefact, not the template it comes from.** `code/dist/README.txt.in` was gone
+over four times in §168 and still shipped a document that never mentioned that a package can ship
+code and arrives switched off — which every other document in the project says, and which is the
+one thing a player needs to not conclude the mod is broken. One reading of the *extracted install's*
+`PncEdi-README.txt` found it, plus a second smaller error, immediately. A template reads as a set of
+edits you remember making; the rendered file reads as what someone receives (§168).

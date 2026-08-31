@@ -155,8 +155,9 @@ A few worth knowing about:
                                    intended way to play. See GAMEPLAY PROFILES below - and note
                                    that it overrides the three settings under it.
   [Gameplay] EnableHeatLocks       Horny locks replace vanilla's survivability: your heat cannot
-                                   drop below a floor until a peephole or diorama releases it.
-                                   Read only when Profile is Custom.
+                                   drop below a floor until a peephole or diorama releases it. On
+                                   under the default profile; as a switch of its own it is read
+                                   only when Profile is Custom.
   [Gameplay] GodMode               Read only when Profile is Custom - to play with no damage or
                                    death, set Profile to GodMode instead.
   [Gameplay] EndGrabDelaySeconds   How long a scene runs before you can leave it (Q).
@@ -211,6 +212,14 @@ CUSTOM ENEMIES AND WALL TRAPS
 The mod can load enemy packages that are pure data - a manifest, PNG sprite sheets and funscripts
 in a folder. No Unity Editor needed for the 2D kind. They get their own gallery tab, their own
 Edi rows, and a switch each in the mod manager.
+
+A package may also ship its own code, as a .dll beside its manifest, and one that does ARRIVES
+SWITCHED OFF. That code runs like any other mod - nothing here can sandbox it - so the package's
+single switch is both its on/off and your permission for it to run, it says so beside itself in
+F11, and the game needs restarting after you change it. Until then that package does nothing at
+all: no enemy, no traps, and no gallery rows either. A package that ships no code has the same
+switch without any of that, and takes effect immediately. Each package's own README says which
+kind it is.
 
 Drop a package into BepInEx\custom-enemies\ and restart. The format is documented in
 
