@@ -4,7 +4,7 @@ What the mod's contract with Edi is, and the Edi behaviour that shapes how a fun
 
 **Read this when:** adding a gallery row, changing a funscript's length, or a script plays wrongly on the device
 
-**Keywords:** Definitions.csv, StartTime, EndTime, Loop, Type, variant, InproveLoopDetection, GalleryPath, slice, SendPlay, seek, phase, ladder, axis, multi-axis, TCode, OSR, Intensity, amplitude, slew, hysteresis, chaser stomp, animNormalizedTime, animClipSeconds, audio clock, grace, row hold, PauseFillerForMenu, ResumeFillerFromMenu, seekOverrideMs, CurrentLoopPhaseMs, pause menu filler,
+**Keywords:** Definitions.csv, StartTime, EndTime, Loop, Type, variant, InproveLoopDetection, GalleryPath, slice, SendPlay, seek, phase, ladder, axis, multi-axis, TCode, OSR, Intensity, amplitude, slew, hysteresis, chaser stomp, animNormalizedTime, animClipSeconds, audio clock, grace, row hold, PauseFillerForMenu, ResumeFillerFromMenu, seekOverrideMs, CurrentLoopPhaseMs, pause menu filler, Edi reads the gallery once at startup, restarting Edi, importing a switched-off package's funscripts,
 IsGalleryPlaybackActive, FillerPlaybackActive, _fillerSavedWasFiller, ChaserStompRamp, ChaserStompGrace, grabAttemptDuration, isAttemptingGrab, GrabSequence, dash speed, stuck state vs fast signal, ilspycmd measurement
 
 **Edi itself:** source at <https://github.com/NoGRo/Edi>. Documentation and release thread:

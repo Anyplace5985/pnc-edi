@@ -61,13 +61,21 @@ The DLL is only part of an install. Everything else goes through:
 **Run it after touching the config or the gallery.** Editing `Edi/Gallery/handy2pro/` or
 `com.edi.pnc.cfg` changes nothing a running game can see until it is deployed.
 
+**It deletes as well as writes**, which took two sessions to learn twice. `prune_gallery` drops a
+funscript an install has and the tree does not, and `prune_custom_enemies` (§168, widened in §171)
+does the same for `BepInEx/custom-enemies/` — its root always, and *inside* a package directory the
+payload also has, while leaving a package directory the payload does not have entirely alone, since
+an install may legitimately carry a package you dropped in to try. Without it, files the tree
+deleted stay in both installs while `--check` calls them up to date, which is the one thing that
+check exists to say truthfully: **adding is visible, the absence of a delete is not.**
+
 The payload is `release.py`'s — `deploy.py` imports `bepinex_payload()`, `gallery_files()` and
 `fetch_edi()` rather than growing a second definition of what an install needs. Three things
 differ on purpose, all because a dev install is not a player install:
 
 | | release | deploy |
 |---|---|---|
-| `com.edi.pnc.cfg` | rewritten through `SHIPPED`, incl. `Debug = false` | your live testing config, byte for byte, but always `[EDI] Debug = true` |
+| `com.edi.pnc.cfg` | rewritten through `SHIPPED`, incl. `Debug = false` | your live testing config, byte for byte, but always `[EDI] Debug = true`, `[Ambient] DiagnosticMode = true`, and — since §169 — `[Tools] EnableDebugEnemySpawn` and `EnableFreecam` true, which now ship **off** |
 | `Edi/EdiConfig.json` | the scrubbed template | your live one, **only if the target has none** |
 | `PncEdi-README.txt` | rendered for a named game version | not deployed |
 
@@ -114,7 +122,7 @@ before you could build. If it is missing the build stops with the command to run
     python3 code/check.py -k alias   only the steps whose name contains `alias`
     python3 code/check.py -v         print every step's output, not only the failures
 
-One runner over the thirteen checks PROJECT.md lists. It adds no check of its own; what it adds is
+One runner over the fifteen checks PROJECT.md lists — ten fast, five more under `--full`. It adds no check of its own; what it adds is
 knowing **how each tool says no**, which is the part that made a hand-run sweep unreliable:
 
   * `gate` — the exit code is the verdict: `dotnet test`, `patchaudit`, `cfgaudit`,
@@ -477,15 +485,24 @@ manifest names a DLL the package does not have, and puts the disclosure at the t
 archive's README.
 
 **`code/packageaudit.py` is the gate** (in `check.py`): the declared assembly exists, is newer than
-the sources of the project that builds it, declares this framework's `PackageApi.Version`, and any
-`behaviour` a manifest names is one some package publishes. Every one of those fails silently at
+the sources of the project that builds it, declares this framework's `PackageApi.Version`, any
+`behaviour` a manifest names is one some package publishes, and an assembly whose metadata mentions
+`GrabScreen.StartGrab` also mentions `IPackageSceneOwner`. Every one of those fails silently at
 runtime by design, a stale package DLL most quietly of all — it is the only build output nothing
 else in the repo reads.
 
+That last check is §172's: until §165 the framework answered "does this package own the scene, its
+visuals, its own length" by testing for the two types it contained, and the extraction replaced all
+three with an interface `WallPictureTrap` never implemented. `bridgeaudit.py` cannot see that class
+of gap — both ends of the `CustomEnemyBridge` delegate are wired, and the hole is a package that
+never answers — so the check lives here instead. It is a string scan of the DLL rather than IL
+parsing; both names land in any referencing assembly's metadata.
+
 **A package's capture runs vanilla's own grab screen** (§134). Both shipped behaviours call
 `GrabScreen.StartGrab` with their own GameObject as the "enemy", so every PncEdi patch on `StartGrab`
-fires for a scene the package owns and dispatches itself. `CustomEnemyBridge.OwnsGrabScene` is how the
-core mod tells them apart — it stands down from naming, Edi dispatch and the grab-screen audio fill,
+fires for a scene the package owns and dispatches itself. The package answers for it through
+`IPackageSceneOwner` — `OwnsGrabScene`, `OwnsSceneVisual`, `MinimumSceneSeconds` — and
+`CustomEnemyBridge` is how the core mod asks. `OwnsGrabScene` is how it tells them apart — it stands down from naming, Edi dispatch and the grab-screen audio fill,
 and keeps the heat lock. `PackageGrabArt` switches off vanilla's `grabImage` for the length of a
 capture, and deliberately never switches it back on: `HideGrabUI` does that at `EndGrab`, and a
 package's teardown runs after it.
@@ -534,17 +551,27 @@ generated README carrying the package's own `SOURCE.txt` credits. Keeping them o
 archive holds it at ~89 MB instead of ~142 MB, and leaves a player to opt into explicit
 third-party content rather than receive it.
 
-Three guards specific to a package, because a player cannot run this repo's checks:
+Four guards specific to a package, because a player cannot run this repo's checks:
 
 - **no `SOURCE.txt`, no archive.** A package that ships someone's art ships its credits.
+- **a declared assembly that is not in the package fails the build**, and its README gets the
+  ships-code disclosure at the top.
 - **an MP4 with no WebM beside it fails the build.** Unity has no H.264 decoder outside Windows and
   macOS, so that is a blank overlay on Linux rather than an error (§127) — the same rule
   `webmify.py --check` applies to the working tree.
-- **the H.264 masters are not shipped at all.** `PackageVideo.ResolvePath` tries the `.webm`
-  sibling *first and unconditionally*, before its own Linux test, so once a WebM exists the MP4
-  beside it is never opened on any platform. In the witch's package that was 35 MB of a 51 MB
-  download that nothing would ever read; dropping it took that archive to 16.8 MB. The guard above
-  is what makes it safe — no MP4 is dropped unless its WebM is there.
+- **every media file the manifest names has to survive into the archive**, resolved the way the mod
+  resolves it: the file itself, or a `.webm` beside it. §171 is why — not because a file went
+  missing, but because that resolution rule is what the H.264 drop below depends on, and it was
+  written down only in the code doing the dropping.
+
+**The H.264 masters are not shipped**, and since §171 the shipped packages do not have any.
+`PackageVideo.ResolvePath` tries the `.webm` sibling *first and unconditionally*, before its own
+Linux test, so once a WebM exists the MP4 beside it is never opened on any platform; the drop took
+the witch's archive from 51 MB to 16.8 MB. It also produced this project's most instructive package
+defect: her manifest named `dream-1.mp4`, playback resolved the sibling and her behaviour's *own
+validation* resolved the literal name, so the package was valid to play and invalid to load — in an
+archive install only, since the working tree held both files. **The packages now name the `.webm`
+and ship only that**, so the drop rule no longer applies to anything of ours (§171).
 
 The build also **reports** files the manifest never names, rather than dropping them. A package
 directory is also a working directory, and superseded sheets are bytes a stranger downloads for

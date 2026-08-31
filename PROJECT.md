@@ -259,8 +259,12 @@ built from `code/packages/charm-witch/` into `BepInEx/custom-enemies/femboy-witc
 A package that ships code starts **switched off**, and its one switch — `Custom Enemies / <id>` — is
 both the on/off and the permission (§167): BepInEx has no sandbox, so consent is what the framework
 owes, and a second toggle beside the first only made both packages look enabled while doing nothing.
-`BepInEx/custom-enemies/CUSTOM-ENEMIES.md` is the format and that rule, and `code/packageaudit.py`
-is what notices a stale or mismatched assembly.
+Switched off it runs nothing at all — no enemy, no traps, no gallery entry, no behaviour (§170) —
+but **its funscripts and rows are still handed to Edi** (§173), because Edi reads `Definitions.csv`
+once at its own startup and the switch must not quietly cost an Edi restart too.
+`BepInEx/custom-enemies/CUSTOM-ENEMIES.md` is the format and those rules, and `code/packageaudit.py`
+is what notices a stale or mismatched assembly, or one that drives vanilla's grab screen without
+implementing `IPackageSceneOwner` (§172).
 
 **A whole new enemy needs no code change either**, since §127: drop a package under
 `BepInEx/custom-enemies/<name>/` with an `enemy.json`, its art and its funscripts, and
@@ -344,7 +348,7 @@ working on the thing it checks — and because it is what `check.py` is made of 
 | `.venv/bin/python code/refvideo.py --verify` | full | is every reference video still the frames of its clip, in order? |
 | `.venv/bin/python code/dioramaaudit.py` | full | does every ambient `Patterns` entry still match a clip or a looping source in the build? |
 | `python3 code/webmify.py --check` | fast | does every custom-enemy video have a WebM? Unity cannot decode H.264 on Linux, so an MP4-only package is a blank overlay there (§127) |
-| `python3 code/packageaudit.py` | fast | does every package that declares an assembly ship a current one, at this API version, and does a manifest's named behaviour exist? Every failure here is silent at runtime by design (§165) |
+| `python3 code/packageaudit.py` | fast | does every package that declares an assembly ship a current one, at this API version; does a manifest's named behaviour exist; and does an assembly that drives `GrabScreen.StartGrab` implement `IPackageSceneOwner` (§172)? Every failure here is silent at runtime by design (§165) |
 | `python3 code/deploy.py --check` | fast | are the game installs current? |
 | `python3 code/release.py --check` | fast | would a release build succeed? |
 
