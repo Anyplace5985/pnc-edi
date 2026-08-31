@@ -265,8 +265,9 @@ is what notices a stale or mismatched assembly.
 **A whole new enemy needs no code change either**, since §127: drop a package under
 `BepInEx/custom-enemies/<name>/` with an `enemy.json`, its art and its funscripts, and
 `deploy.py --no-build`. The manifest declares its own gallery rows, aliases and scenes;
-`BepInEx/custom-enemies/_example/` and that directory's `CUSTOM-ENEMIES.md` /
-`WALL-PICTURE-TRAPS.md` are the format, and the plugin that reads them is `PncCustomEnemies`
+`BepInEx/custom-enemies/_example/` and that directory's `CUSTOM-ENEMIES.md` are the format, and
+the plugin that reads them is `PncCustomEnemies` — while `WALL-PICTURE-TRAPS.md` now lives in
+`joker-wall/`, because since §165 that manifest kind is read by that package's own assembly
 (§131 — `code/README.md` has what it owns and what holds its boundary with the core mod).
 **A package's text is tracked; its media is not** (§135). The manifest, `SOURCE.txt` and
 `funscripts/` are in git — the funscripts are ours, and the manifest is where a package's tuning

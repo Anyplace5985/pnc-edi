@@ -497,9 +497,12 @@ package's teardown runs after it.
 A package is `BepInEx/custom-enemies/<name>/` with an `enemy.json` (or `wall-trap.json`), its art,
 and its funscripts. It needs no code change: the manifest declares the enemy's scenes, gallery rows
 and aliases, and `CustomEnemyRegistry` registers them at startup.
-`BepInEx/custom-enemies/_example/` and the two format references beside it —
-`CUSTOM-ENEMIES.md` and `WALL-PICTURE-TRAPS.md`, imported from the fork and checked claim by claim
-against this tree in §129 — are the format.
+`BepInEx/custom-enemies/_example/` and `CUSTOM-ENEMIES.md` beside it are the format. The second
+format reference, `WALL-PICTURE-TRAPS.md`, moved into `joker-wall/` in §168: since §165 the
+framework does not implement that manifest kind, so its documentation and its `.example` template
+ship in that package's archive beside `WallPictureTrap.dll` rather than in an archive that cannot
+read either. Both were imported from the fork and checked claim by claim against this tree in
+§129.
 
 **A package's text is tracked; its media is not, and neither is in the release.** The split is
 deliberate and the two halves have different reasons:

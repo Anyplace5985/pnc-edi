@@ -5,7 +5,7 @@ Post Nut Calamity - Edi device integration
 
 Plays a funscript on your stroker that matches whatever is happening on screen: grab scenes,
 peepholes, the dioramas in the world, and every entry in the gallery. @ROWS@ scenes, each one
-timed against the game's own animation rather than scripted to video, in two device variants.
+timed against the game's own animation rather than scripted to video, in three device variants.
 
 Works on the Windows build (directly or under Proton) and on the native Linux build, from these
 same files.
@@ -27,8 +27,9 @@ NoGRo/Edi pull request #15 (https://github.com/NoGRo/Edi/pull/15), reported as i
 else about Edi is changed. Once it is in a released Edi, this archive will simply ship that
 instead.
 
-If you would rather run stock Edi, or already have Edi installed, see "Already have Edi
-installed" below - the mod works with any Edi, it just plays worse on an unpatched one.
+If you would rather run stock Edi, or already have one installed, step 2 below says how to
+point it at this archive's scripts. The mod works with any Edi; it just plays worse on an
+unpatched one.
 
 ------------------------------------------------------------------------------------------------
 INSTALL
@@ -37,23 +38,55 @@ INSTALL
 1. Extract this archive into your Post Nut Calamity folder - the one holding the game executable
    and the "Post Nut Calamity_Data" folder. Keep the layout; say yes to merging folders.
 
-2. Run Edi\Edi.exe. It opens a window and a local web UI; leave it running while you play.
+2. Run Edi\Edi.exe. It opens a window; leave it running the whole time you play.
 
    Everything it needs is already beside it: Edi\EdiConfig.json is set up, and the funscripts
-   are in Edi\Gallery, which is exactly where that config points. Nothing to configure.
+   are in Edi\Gallery, which is exactly where that config points. Nothing in it to edit.
 
-   Your device appears in the config the first time Edi sees it. That is the one thing you do
-   have to touch - see step 4.
+   ALREADY HAVE EDI INSTALLED, and would rather keep using that one? Do not copy any files.
+   Run your own Edi, and in its window, under "Game & General", press "+ Add game" and point
+   its "File" box at the config in this archive:
 
-   Already have Edi installed elsewhere and would rather keep it? Run that one instead, and copy
-   this archive's Edi\Gallery folder next to its EdiConfig.json.
+       <your Post Nut Calamity folder>\Edi\EdiConfig.json
 
-3. Start the game:
+   Edi then reads that config, and the gallery sitting beside it, exactly as the bundled copy
+   would. Point it at the config file, not at the Gallery folder: several scenes depend on the
+   loop-detection and slicing settings that live in that config, and copying only the scripts
+   leaves those behind.
 
-   Windows, and the Windows build under Proton
-       Just launch the game as usual. Nothing else to do - winhttp.dll loads the mod.
+3. Connect your device in Edi. Under "Connection Settings", paste your Handy connection key into
+   "Device Keys" (other device types have their own box in the same place), then press
+   "Reconnect Devices". Your device appears in the "Active Devices" list on the right.
 
-   Native Linux build
+4. Set that device's "Variant" - the drop-down in its row in the Active Devices list. Choose the
+   one that matches your hardware: handy2pro, handy2 or handy1. DEVICE VARIANTS below says which
+   is which.
+
+   Do not skip this because it already looks set. Edi fills the variant in by itself the first
+   time it sees a device, and what it fills in is simply the first variant folder it found -
+   not the one for your hardware. On the wrong variant everything still works; it just plays
+   weaker and flatter than it was written to, which is a much easier fault to miss than silence.
+
+   UPGRADING FROM 2.5.2 OR EARLIER: the variant folders are now named after the devices they are
+   for. What used to be called "detailed" is now "handy2pro". A saved "detailed" no longer
+   matches any folder, so pick one from the drop-down again.
+
+5. Start the game.
+
+   Windows
+       Launch the game the way you normally do. Nothing else to do - winhttp.dll loads the mod.
+
+   The Windows build under Proton or Wine (Linux, Steam Deck)
+       Proton will not load winhttp.dll unless you tell it to. On Steam, right-click the game,
+       Properties, and put this in Launch Options:
+
+           WINEDLLOVERRIDES="winhttp=n,b" %command%
+
+       Outside Steam, set that same WINEDLLOVERRIDES value in whatever launcher you use (Lutris,
+       Heroic, Bottles) or in the shell before your wine command. Without it the game starts
+       perfectly and the mod is simply not there.
+
+   The native Linux build
        ./start-pnc-linux.sh
 
        (Or BepInEx's own script if you prefer: ./run_bepinex.sh ./<the game>.x86_64)
@@ -62,15 +95,7 @@ INSTALL
        machine and point [EDI] Url in the config at it - the mod only needs to reach it over
        HTTP.
 
-4. In Edi, set your device's "Variant" to the folder that matches your hardware - "handy2pro",
-   "handy2" or "handy1". A device left on "None" is muted, which looks exactly like the mod not
-   working. See "DEVICE VARIANTS" below.
-
-   UPGRADING FROM 2.5.2 OR EARLIER: the variant folders are now named after the devices they are
-   for. What used to be called "detailed" is now "handy2pro". If your EdiConfig.json still says
-   "Variant": "detailed", change it, or Edi will look for a folder that is no longer there.
-
-You should now see a BepInEx console line on startup, and BepInEx/LogOutput.log should fill with
+You should now see a BepInEx console line on startup, and BepInEx\LogOutput.log should fill with
 [EDI] lines as scenes play.
 
 
@@ -78,8 +103,9 @@ You should now see a BepInEx console line on startup, and BepInEx/LogOutput.log 
 DEVICE VARIANTS
 ------------------------------------------------------------------------------------------------
 
-Three sets of the same scripts are included. Edi picks one by the "Variant" set on the device in
-EdiConfig.json, and the variant name is the folder name:
+Three sets of the same scripts are included. You choose one per device, from the "Variant"
+drop-down in Edi's "Active Devices" list. A variant is just a folder under Edi\Gallery, and the
+name in the drop-down is that folder's name:
 
   handy2pro   The masters, and the default. Written for a Handy 2 Pro with the slider overclock
               turned up (1200 mm/s over a 125 mm stroke = 960 units/s, off the device's own
@@ -89,8 +115,8 @@ EdiConfig.json, and the variant name is the folder name:
   handy2      Held to 600 units/s sustained, 700 peak - the soft and hard caps the eroscripts
               multi-axis scripting guide gives for a Handy 2. For a Handy 2, an OSR/SR6, or a
               2 Pro that is overclocked part-way or not at all and where the loud scenes feel like
-              too much. Sixteen of the 102 scripts differ from the masters; the rest are
-              identical, because they were already inside those caps.
+              too much. @HANDY2DIFF@ of the @SCRIPTS@ scripts differ from the masters; the rest
+              are identical, because they were already inside those caps.
 
               A 2 Pro with no overclock at all is 450 mm/s = 360 units/s, which is what handy1 is
               limited to - so that is the better folder for one, despite the name.
@@ -102,9 +128,12 @@ In every variant the TIMING is identical - it is the sync to the animation and n
 strokes the device could not have completed are shortened, so a slower variant loses reach on the
 loud scenes and changes nothing anywhere else.
 
-Set it like this in EdiConfig.json:
+Setting it in Edi's window is all there is to it - Edi writes the choice into EdiConfig.json
+itself, where it looks like this, should you ever want to edit the file directly:
 
     "The Handy [xxxxxxxx]": { "Variant": "handy2pro", "Channel": null, "Min": 0, "Max": 100 }
+
+"None" in that drop-down mutes the device, which looks exactly like the mod not working.
 
 
 ------------------------------------------------------------------------------------------------
@@ -115,18 +144,21 @@ Press F11 in game, or use the MOD MANAGER button on the main menu. It lists ever
 plugin, searches, and saves as you edit. Most settings take effect immediately; the ones that do
 not say so in their own description.
 
-The same settings live in BepInEx/config/com.edi.pnc.cfg, one comment per setting saying what it
+The same settings live in BepInEx\config\com.edi.pnc.cfg, one comment per setting saying what it
 does and what its default is. BepInEx rewrites that file on each launch, which reorders entries
 but keeps your values.
 
 A few worth knowing about:
 
   [Gameplay] Profile               One coherent set of rules instead of the individual switches
-                                   having to agree. See GAMEPLAY PROFILES below.
+                                   having to agree. Defaults to PressureAndRelease, which is the
+                                   intended way to play. See GAMEPLAY PROFILES below - and note
+                                   that it overrides the three settings under it.
   [Gameplay] EnableHeatLocks       Horny locks replace vanilla's survivability: your heat cannot
                                    drop below a floor until a peephole or diorama releases it.
-  [Gameplay] GodMode               Off by default here, because heat locks replace it. Turn it on
-                                   if you want to browse rather than play.
+                                   Read only when Profile is Custom.
+  [Gameplay] GodMode               Read only when Profile is Custom - to play with no damage or
+                                   death, set Profile to GodMode instead.
   [Gameplay] EndGrabDelaySeconds   How long a scene runs before you can leave it (Q).
   [EDI]      Url                   Where Edi is listening. Default http://127.0.0.1:5000.
 
@@ -137,15 +169,22 @@ GAMEPLAY PROFILES
 
 [Gameplay] Profile picks one of four, and can be switched mid-run from the mod manager:
 
+  PressureAndRelease   The default. Heat locks, class heat scaling and lock-scaled spawn pressure,
+                       together. Each qualifying scene adds a lock; your heat cannot fall below
+                       what those locks hold until a peephole or diorama releases them, and waves
+                       grow from vanilla size at no locks to 2.5x at full lock. The intended way
+                       to play.
   Vanilla              The game's own combat, health, heat and spawning, untouched. Scene
                        detection and device playback stay on - the mod still plays every scene.
-  PressureAndRelease   Heat locks, class heat scaling and lock-scaled spawn pressure, together.
-                       Each qualifying scene adds a lock; your heat cannot fall below what those
-                       locks hold until a peephole or diorama releases them, and waves grow from
-                       vanilla size at no locks to 2.5x at full lock. The intended way to play.
   GodMode              Damage and death blocked, locks off. For exploring and filling the gallery.
-  Custom               The default, and what an existing config keeps doing: the individual
-                       Gameplay settings are read exactly as they were before profiles existed.
+  Custom               The individual Gameplay settings below are read exactly as they were before
+                       profiles existed. This is what a config written before profiles keeps
+                       doing, and it is the only profile under which those settings do anything.
+
+That last point is worth repeating, because it is the one thing about profiles that surprises
+people: under PressureAndRelease, Vanilla or GodMode, the individual [Gameplay] switches -
+EnableHeatLocks, GodMode, Enabled - are ignored. Toggling one of them changes nothing until you
+set Profile to Custom.
 
 Switching clears transient locks and reapplies the vanilla player stats it observed at startup,
 so a switch out of God Mode cannot leave you with its health.
@@ -155,13 +194,14 @@ _50 / _75): Automatic uses heat under Vanilla and God Mode and the stronger of h
 pressure under Pressure and Release; Heat and ReleasePressure force one or the other; Highest
 always takes whichever is stronger.
 
-[EDI] ChaserAura, on by default, builds the idle filler as a chaser boss closes in: while the
-dragon's or the wendigo's approach loop is audible, the device's stroke range is scaled by how
-close it is - shallow at the edge of the band, full at the range where it grabs. It never changes
-which script is playing and never makes anything louder than the script asks for, and it hands the
-range straight back when a real scene starts. ChaserAuraRange is how wide the band is in metres,
-ChaserAuraIntensityFar how shallow its far end, and ChaserAuraRamp how fast the change is allowed
-to move - lower that if it reads as abrupt, or set ChaserAura = false to turn it off.
+[EDI] ChaserStomp, on by default, takes over the idle filler as a chaser boss closes in. While
+a dragon or a wendigo is audible and in range, the device plays a scene of its own - Dragon_Stomp
+or Wendigo_Stomp - locked to that creature's own footfall, and how deep it runs is scaled by how
+close it is: shallow at the edge of the band, full a few metres out. It hands everything back the
+moment a real scene starts. ChaserStompRange is how wide the band is in metres (0 means the
+creature's own audible range), ChaserStompIntensityFar how shallow the far end is, and
+ChaserStompIntensityNearDistance the range at which it reaches full. ChaserStomp = false
+restores the plain filler.
 
 
 ------------------------------------------------------------------------------------------------
@@ -172,11 +212,14 @@ The mod can load enemy packages that are pure data - a manifest, PNG sprite shee
 in a folder. No Unity Editor needed for the 2D kind. They get their own gallery tab, their own
 Edi rows, and a switch each in the mod manager.
 
-Drop a package into BepInEx/custom-enemies/ and restart. The format, both kinds, is documented in:
+Drop a package into BepInEx\custom-enemies\ and restart. The format is documented in
 
-  BepInEx/custom-enemies/README.md               which kind is which
-  BepInEx/custom-enemies/CUSTOM-ENEMIES.md       roaming enemies, artwork, the witch boss
-  BepInEx/custom-enemies/WALL-PICTURE-TRAPS.md   pictures that pull you off the wall
+  BepInEx\custom-enemies\CUSTOM-ENEMIES.md
+
+which covers the manifest, the runtime PNG artwork, behaviours, and what a package that ships its
+own code has to say for itself. The wall-trap format is documented inside the Joker wall trap
+package instead, beside the code that reads it - that manifest kind belongs to a package, not to
+the framework.
 
 No packages ship in this archive - the format does.
 
@@ -186,25 +229,35 @@ IF IT DOES NOT WORK
 ------------------------------------------------------------------------------------------------
 
 Nothing happens at all
-    Check BepInEx/LogOutput.log exists. If it does not, BepInEx never loaded: on Windows confirm
-    winhttp.dll sits beside the game executable; on Linux launch through start-pnc-linux.sh
-    rather than the executable directly.
+    Check that the file BepInEx\LogOutput.log exists. If it does not, BepInEx never loaded:
+
+      - On Windows, confirm winhttp.dll sits in the same folder as the game's .exe.
+      - Under Proton or Wine, confirm the WINEDLLOVERRIDES launch option from step 5. This is
+        the usual cause on a Steam Deck: the game runs, and nothing of the mod is loaded.
+      - On the native Linux build, launch through start-pnc-linux.sh rather than the executable.
 
 The log fills with [EDI] lines but the device is silent
-    Edi is not running, is on a different port, or the device's Variant is "None" (which mutes
-    it) or "detailed" (the pre-2.6.0 name for what is now "handy2pro"). Set it to a folder that
-    exists under Edi/Gallery/.
+    Edi is not running, is on a different port, or the device's Variant is set to "None", which
+    mutes it. Check the Active Devices list in Edi's window: the device should be listed, show
+    as ready, and have a variant chosen.
+
+Everything works, but it feels weak, shallow or flat
+    Almost always the wrong variant. Edi chooses one by itself the first time it sees a device,
+    and its choice is not based on what your device is. Set it by hand in the Active Devices
+    list - see DEVICE VARIANTS above.
 
 One scene does nothing
-    grep the log for ALIAS-GAP:
+    The mod writes a line whenever it sees an animation it has no script for. Open the file
 
-        grep "\[ALIAS-GAP\]" BepInEx/LogOutput.log
+        BepInEx\LogOutput.log
 
-    That names any animation the mod saw and had no script for. Please report it with the line.
+    in Notepad, press Ctrl+F, and search for ALIAS-GAP. Any line it finds names the animation
+    that had nothing to play. Please report those lines - they are exactly what is needed to
+    add the missing scene.
 
-The filler goes shallow when a boss is nearby
-    That is the chaser aura, and it is deliberate - see ChaserAura under GAMEPLAY PROFILES above.
-    [EDI] ChaserAura = false turns it off; ChaserAuraIntensityFar raises its quiet end.
+The device gets loud when a boss is nearby
+    That is the chaser stomp, and it is deliberate - see ChaserStomp under GAMEPLAY PROFILES
+    above. [EDI] ChaserStomp = false turns it off and restores the plain filler.
 
 A scene is too strong
     Two knobs under [EDI], both live-editable from F11, and neither one touches the funscripts:
@@ -214,15 +267,16 @@ A scene is too strong
 
     Both work through Edi's intensity endpoint, which moves the top of the device's stroke range
     while the script keeps playing - so a scene gets shallower, not slower, and nothing is
-    re-dispatched or retimed. Row names are the ones in Edi/Gallery/Definitions.csv.
+    re-dispatched or retimed. Row names are the ones in Edi\Gallery\Definitions.csv.
 
     If the problem is that fast sections feel mushy or rattly rather than too deep, that is speed
     and not strength: switch to the "handy2" or "handy1" variant instead. See DEVICE VARIANTS.
 
 To remove the mod
     Delete winhttp.dll, doorstop_config.ini, .doorstop_version, libdoorstop.so, run_bepinex.sh,
-    start-pnc-linux.sh, the BepInEx folder and the Edi folder. The game is untouched otherwise -
-    nothing in this archive overwrites a game file.
+    start-pnc-linux.sh, the BepInEx folder and the Edi folder - and, under Proton or Wine, the
+    WINEDLLOVERRIDES launch option. The game is untouched otherwise: nothing in this archive
+    overwrites a game file.
 
 
 ------------------------------------------------------------------------------------------------

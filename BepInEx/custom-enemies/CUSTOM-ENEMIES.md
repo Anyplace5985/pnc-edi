@@ -1,16 +1,27 @@
 # Custom enemy packages
 
-A custom enemy is a directory with a manifest in it:
+This directory is where packages go. Each one is a directory with a manifest in it:
 
     BepInEx/custom-enemies/<package>/enemy.json
 
 Packages are discovered at startup. What loaded, what did not, and why goes to
 `BepInEx/LogOutput.log` under `[CustomEnemies]` and `[SPAWN]` - read that before reading anything
-else when a package misbehaves.
+else when a package misbehaves. Funscripts go in `funscripts/<variant>/` beside the manifest, and
+every discovered package gets a switch in the mod manager (**F11**) under **PNC Custom Enemies →
+Custom Enemies**.
 
-For pictures that hang on a wall and pull the player in, see
-[WALL-PICTURE-TRAPS.md](WALL-PICTURE-TRAPS.md). That is a different manifest (`wall-trap.json`) and
-a different format.
+**A package may ship its own code**, and one that does **arrives switched off**. BepInEx cannot
+sandbox a plugin, so that package's single switch is both its on/off and the permission to run its
+code, it says so beside itself, and the game needs a restart after it changes (§167). Off means off:
+no enemy, no traps, and no gallery rows either. A package that ships no code has the same switch
+with none of that. [Shipping a behaviour of your own](#shipping-a-behaviour-of-your-own) is the
+format; the short version is that only turn one on if you trust where you got it.
+
+There is a second manifest kind, `wall-trap.json` — a picture that hangs itself on a wall and pulls
+the player into a scene. **This framework does not implement it.** Since §165 it belongs to a
+package: `WallPictureTrap.dll` reads it, and both that assembly and its documentation
+(`WALL-PICTURE-TRAPS.md`) ship inside the Joker wall trap package. Without a package that provides
+that kind, a `wall-trap.json` is read by nothing at all — no switch, no log line, no error.
 
 ## Getting a package
 
@@ -29,7 +40,9 @@ registers them at startup.
 They are also the worked examples this document describes. `_example/` beside this file is a
 template with the fields and no content behind them; the two real packages are the same formats
 with real art, real funscripts and real tuning in them, so reading one is the fastest way to see
-what a manifest looks like when it is finished.
+what a manifest looks like when it is finished. Its manifests end in `.example`, which is what
+makes the directory inert: copy it somewhere new, rename `enemy.json.example` to `enemy.json`, and
+the package loads on the next launch.
 
 **Working from a clone of the source repo rather than a release?** A package's *text* is tracked —
 its manifest, its `SOURCE.txt` and its `funscripts/` — but its media is not, because that is
@@ -230,7 +243,7 @@ Behaviours that exist today, both published by the packages that ship them:
 A package can also be a *kind* of its own rather than a behaviour another manifest attaches: the
 Joker package's wall traps have their own manifest (`wall-trap.json`), their own placement and their
 own gallery entries, all inside that package's assembly. See
-[WALL-PICTURE-TRAPS.md](WALL-PICTURE-TRAPS.md).
+`WALL-PICTURE-TRAPS.md`, in the Joker wall trap package.
 
 ### Shipping a behaviour of your own
 
@@ -267,7 +280,7 @@ an animated charm circle, timed heat locks, portal blinks, proximity capture, dr
 overlays, Edi playback, and alive-only reinforcements.
 
 ```json
-"witch": {
+"charm-witch": {
   "enabled": true,
   "auraRadius": 8.5,
   "heatPerSecond": 7,
@@ -291,10 +304,14 @@ overlays, Edi playback, and alive-only reinforcements.
   "circleBreakSeconds": 10,
   "circleBreakCooldownSeconds": 10,
   "auraGallery": "bog_witch_aura",
-  "captureGallery": "bog_witch_capture",
-  "dreamVideos": ["dream-1.mp4", "dream-2.mp4"]
+  "captureGallery": "bog_witch_capture"
 }
 ```
+
+**The block is named after the behaviour**, because that is how the framework finds it:
+`ExtractObject(manifest, behaviourName)`. A block under any other name is not read and the
+behaviour runs on its defaults, silently. `charm-witch` also accepts a legacy `"witch"` block,
+which is what manifests written before §165 call it; new ones should not use it.
 
 With `movementOnly` (the default) the base enemy contributes nothing but walking: every attack
 cooldown clock on its AI is pushed forward each frame, so spins, projectiles and the vanilla grab
@@ -341,8 +358,10 @@ rather than falling back to some other package's.
 ### Gallery videos, and Linux
 
 A package's videos are declared once, at the top level of the manifest rather than inside a
-behaviour's block, because they are media rather than behaviour - the gallery plays them with the
-package's code switched off, and `charm-witch` reads the same list for its in-game dream clouds:
+behaviour's block, because they are media rather than behaviour: the framework's own gallery reads
+them, so a package with no code at all still gets its video steps, and `charm-witch` falls back to
+the same list for its in-game dream clouds rather than making a manifest carry two copies. A
+behaviour block may still name its own `dreamVideos`, and that wins where it does.
 
 ```json
 "galleryVideos": {
@@ -396,13 +415,15 @@ variant your package does not carry gets **nothing** for your enemy — Edi look
 folder the device names and finds no file. `.venv/bin/python code/variants.py --write` emits a
 package's `handy2/` from its `handy2pro/` masters, held to 600 units/s sustained and 700 peak. A
 `handy1/` is not generated for you: 364 units/s is a hard enough limit that the shipped packages'
-Handy 1 scripts were authored by hand rather than slew-limited, and the tool leaves them alone. `endTime: 0` means "the largest `at` timestamp in the funscript".
+Handy 1 scripts were authored by hand rather than slew-limited, and the tool leaves them alone.
+
 Restart Edi after adding or changing a package if it was already running.
 
 In a scene, `animation` must exactly match the animator state the game or gallery selects, `gallery`
-is the name sent to Edi, and `file` is the funscript basename without `.funscript`. Optional
-`aliases` catch extra live-game state names without editing any central config. Each scene also
-appears as a selectable grab animation in the enemy gallery.
+is the name sent to Edi, and `file` is the funscript basename without `.funscript`. `endTime: 0`
+means "the largest `at` timestamp in the funscript", so a scene that plays a whole script needs no
+times at all. Optional `aliases` catch extra live-game state names without editing any central
+config. Each scene also appears as a selectable grab animation in the enemy gallery.
 
 Two rules protect the project's own gallery, and both refuse rather than overwrite:
 

@@ -4,7 +4,7 @@ Process rules this project arrived at the hard way - about copies, defaults, dec
 
 **Read this when:** before adding a second copy of anything, changing a default, or trusting a note that says 'do not redo'
 
-**Keywords:** build last then publish the checksum, a document that ships cannot describe its own archive, mirrored copy, generate, config default, decisions expire, deploy, release, permission bit, dedup key, decompile diff, rename pass
+**Keywords:** build last then publish the checksum, a document that ships cannot describe its own archive, mirrored copy, generate, config default, decisions expire, deploy, release, permission bit, dedup key, decompile diff, rename pass, player-facing README, documenting another program's UI, WINEDLLOVERRIDES, Proton, DefaultVariant, a backwards-compatibility default, a hardcoded count in a document
 
 ---
 
@@ -250,3 +250,37 @@ The instrument stays; only the conclusion was wrong. **A number is a description
 did. Whether that is a defect is a question about what someone wanted**, and on this project that
 someone is the person who played it. When a fresh instrument produces a striking figure, say the
 figure and ask, rather than treating it as a bug report that arrived from yourself.
+
+**Documentation about another program's UI is an untested claim, and it decays without anyone
+touching it.** `PncEdi-README.txt` told players to copy the Gallery folder beside an existing Edi's
+config (Edi will instead read *our whole config* if pointed at it — `ResolveGallery`), to set the
+device variant by editing JSON (it is a drop-down in Edi's Active Devices list), and that an
+unconfigured device is muted (`DeviceCollector.ConfigureDevice` assigns `DefaultVariant()`, so it is
+never muted — it plays the wrong variant, which is far harder to notice). None of the three was ever
+true of the Edi we ship; all three were checkable in minutes against the clone `PROJECT.md` already
+says to keep. The same pass found the README documenting four `ChaserAura*` settings that **our own**
+config stopped having in §153. **Every claim a shipped document makes about a program's UI or
+settings — ours or someone else's — is a claim to verify against that program's source at release
+time, exactly like a checksum** (§168).
+
+**A default that exists for backwards compatibility is the wrong default for a new install.**
+`Gameplay/Profile` shipped as `Custom` so that configs written before profiles existed kept behaving
+identically. But BepInEx only writes a default for a key that is *absent*, so the default is read by
+new installs and by nobody else — the population it was chosen for never sees it. It now defaults to
+`PressureAndRelease`, the intended way to play, and upgraders keep `Custom` because their file
+already says so (§168). Ask who actually reads a default before choosing it: if the answer is "only
+someone with no config", then compatibility is not one of the things it can buy.
+
+**A count written into a document is wrong by the next regeneration.** "Sixteen of the 102 scripts
+differ from the masters" was 18 of 104. `release.py` now computes it into `@HANDY2DIFF@` — and it
+compares the `actions` arrays, because `variants.py` rewrites every file it emits, so a byte
+comparison answers "all of them" and means nothing. Same rule as generate-don't-mirror, applied to
+prose: if a document states a number the tree can derive, derive it at build time (§168).
+
+**When something moves out of a tree, the thing that copies the tree has to notice it is gone.**
+`deploy.py` wrote every file the payload holds and deleted nothing, so two documents that §168
+moved stayed in both game installs at their old paths — and `--check`, whose whole job is "is what
+I am about to launch actually the working tree", said both installs were up to date. Adding is
+visible; the absence of a delete is not. `prune_gallery` had had the right shape since §57 and
+nobody generalised it. **A one-way sync is not a sync, and a staleness check that only compares the
+files it wrote cannot see the ones it stopped writing** (§168).

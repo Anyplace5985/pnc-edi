@@ -57,8 +57,11 @@ public sealed class CharmWitchModule : IPackageModule, IPackageBehaviourFactory
 		if (settings.dreamVideos == null || settings.dreamVideos.Length == 0)
 		{
 			// A package that lists its videos once, under the framework's own `galleryVideos`, is
-			// the shape to write today: the gallery plays them with this package's code switched
-			// off, and the behaviour reads the same list rather than the manifest carrying two.
+			// the shape to write today: that list is the framework's, read by the gallery whether
+			// or not a behaviour ever looks at it, and this reads the same one rather than making
+			// the manifest carry two copies. (It used to say the gallery played them with this
+			// package's code switched off. Since §167 a switched-off code package has no gallery
+			// entry at all, so that was no longer a reason for anything.)
 			settings.dreamVideos = ExtractStringArray(ExtractObject(request.ManifestJson, "galleryVideos"), "files");
 		}
 		CharmWitchRuntimeData.For(request.Id, request.Directory, settings);

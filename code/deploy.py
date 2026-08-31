@@ -500,6 +500,35 @@ def prune_gallery(target: Path, files: dict[str, bytes], check: bool) -> int:
     return pruned
 
 
+def prune_custom_enemy_docs(target: Path, files: dict[str, bytes], check: bool) -> int:
+    """Delete the framework's own documentation files an install still has and the tree does not.
+
+    Deliberately **only** this directory's root - the `.md` and `.example` files that are the
+    format's documentation - and never a package directory. `deploy.py` takes whatever the tree
+    holds, but an install is also allowed to hold a package this tree does not have (someone drops
+    one in to try it), and pruning by payload would delete it on the next deploy.
+
+    Without this, §168's two documentation moves left both installs carrying a `README.md` that no
+    longer exists and a `WALL-PICTURE-TRAPS.md` at a location it moved out of, while
+    `--check` reported both installs up to date - which is the one thing that check exists to say
+    truthfully. A file the payload never writes again is a file nothing else will ever correct."""
+    pruned = 0
+    folder = target / "BepInEx/custom-enemies"
+    if not folder.is_dir():
+        return 0
+    for doc in sorted(folder.iterdir()):
+        if not doc.is_file():
+            continue
+        name = f"BepInEx/custom-enemies/{doc.name}"
+        if name in files:
+            continue
+        pruned += 1
+        if not check:
+            doc.unlink()
+            note(f"removed {name} - no longer in the working tree")
+    return pruned
+
+
 def deploy_one(target: Path, files: dict[str, bytes], full: bool, check: bool) -> int:
     changed = 0
     # A full deploy of a Linux install gets the rotating launcher; every other target, and every
@@ -516,6 +545,7 @@ def deploy_one(target: Path, files: dict[str, bytes], full: bool, check: bool) -
         changed += remove_stale_edi(target, check)
         changed += deploy_edi_config(target, check)
         changed += prune_gallery(target, files, check)
+        changed += prune_custom_enemy_docs(target, files, check)
         # ../learnings/working-practice.md §60: the Linux build ships mode 0666, and BepInEx's
         # run_bepinex.sh needs an
         # executable to hand over to. start-pnc-linux.sh chmods it too; doing it here as well

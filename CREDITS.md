@@ -52,8 +52,9 @@ two releases in `code/NAMING-AUDIT.md` — belong to that composite rather than 
 The in-game mod manager, the gameplay profiles and the whole custom-enemy framework came from
 **`PncEdi-portable-patch`**, by **Dupli9d**, posted to the same thread on 19 August 2026 (§127).
 Its features were adapted onto this tree rather than merged, and two of its documents —
-`BepInEx/custom-enemies/CUSTOM-ENEMIES.md` and `WALL-PICTURE-TRAPS.md` — are theirs, checked claim
-by claim against this tree in §129. The manifest parser is still substantially their code.
+`BepInEx/custom-enemies/CUSTOM-ENEMIES.md` and `WALL-PICTURE-TRAPS.md`, the second of which now
+travels inside the Joker wall trap package — are theirs, checked claim by claim against this tree
+in §129. The manifest parser is still substantially their code.
 
 ## The funscripts
 

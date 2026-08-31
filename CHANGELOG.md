@@ -11191,6 +11191,110 @@ One thing that changed with it: a code package that is off no longer shows its g
 its funscripts, because off now means off. Every document that promised "its art and funscripts work
 either way" was corrected rather than left to be discovered.
 
+## 168. Five things the player-facing README said that were not true
+
+The fresh-install test (§169's subject, and the reason this was read at all) started by reading
+`PncEdi-README.txt` as a stranger would. It does not survive that reading. Five defects, four of
+them found by the person the document is written for and one found while checking those:
+
+1. **"Already have Edi installed? Copy this archive's Gallery folder next to its EdiConfig.json."**
+   Wrong, and it throws away settings. `Edi.Core/Services/Edi.cs:73` `ResolveGallery` takes a path
+   ending in `EdiConfig.json`, calls `ConfigurationManager.SetGamePath` and resolves that config's
+   own `GalleryPath` relative to it, so an existing Edi is pointed at **our config file** through
+   *Game & General → + Add game*, and reads the gallery beside it with `InproveLoopDetection` and
+   the bundler settings the scripts were written against. Copying only the scripts leaves those on
+   whatever the player's own config says.
+2. **"Under Proton: just launch the game as usual."** Proton does not load `winhttp.dll` without
+   `WINEDLLOVERRIDES="winhttp=n,b"`. The failure is the game starting perfectly with no mod in it,
+   which reads as "the mod does not work" rather than as a missing launch option.
+3. **The variant was documented as a JSON edit.** It is a per-device drop-down in Edi's *Active
+   Devices* list (`Edi.Wpf/Forms/MainWindow.xaml:285`), sourced from the gallery's folder names.
+   Nobody was ever going to hand-edit the file, and the README told them to.
+4. **"A device left on `None` is muted, which looks exactly like the mod not working."** Not what a
+   new install does. `DeviceCollector.ConfigureDevice:146` assigns `device.DefaultVariant()` —
+   `Variants.FirstOrDefault("")` — whenever the stored variant is missing, `"None"`, or unknown, so
+   a newly discovered device is **never muted**: it lands on whichever variant folder was discovered
+   first, which is not the one for the player's hardware. The real first-run fault is therefore not
+   silence but *everything works and it feels weak*, which the document described nowhere. The same
+   line also quietly repairs a config still saying `detailed`, which softens §149's upgrade warning.
+5. **`ChaserAura` does not exist.** §153 folded it into `ChaserStomp` and changed what it does — it
+   dispatches a real row now rather than squeezing the filler's Intensity — and the README still
+   documented four `ChaserAura*` settings a player cannot find, under behaviour that is no longer
+   what happens. Found while checking the other four.
+
+**The document is now written for the player who actually downloads it: Windows, and no shell.**
+`grep "\[ALIAS-GAP\]" BepInEx/LogOutput.log` is the instruction that gave this away — it is the
+one thing in the file that assumes a person who owns a terminal, and it is in the section reached
+by someone whose scene did not play. It is now "open the file in Notepad and press Ctrl+F". Prose
+paths use backslashes; Proton and the native Linux build each get their own named block under
+*Start the game* rather than sharing a sentence with Windows.
+
+**`Sixteen of the 102 scripts` is now generated.** It was 18 of 104 by the time anyone looked.
+`release.py:variant_diff_count` compares the `actions` arrays — not the files, because
+`variants.py` rewrites every file it emits and a byte comparison says "all of them differ" — and
+fills `@HANDY2DIFF@`. A number in a document that no build recomputes is a number that is already
+wrong.
+
+**`Gameplay/Profile` now defaults to `PressureAndRelease`.** Its old default, `Custom`, existed to
+keep configs written before profiles existed behaving identically — a reason that applies to
+upgraders and to nobody else, since BepInEx only writes a default for a key that is absent. With
+the shipped values (`Enabled = true`, `GodMode = false`, `EnableHeatLocks = true`) the two are
+already behaviourally identical: `GameplayProfileRules` returns the same four answers for both. So
+this changes what a new install *says it is doing*, not what it does, and every existing config
+keeps `Custom` untouched. The cost is real and is now stated three times in the README and once in
+the setting's own description: under any profile but `Custom`, the three individual `[Gameplay]`
+switches are ignored, so a player who flips `GodMode` in F11 and sees nothing happen has found this
+and not a bug.
+
+### The custom-enemy documentation, read the same way
+
+Reading `BepInEx/custom-enemies/` as someone installing a package found the same class of defect
+one layer down, and one question worth answering rather than patching.
+
+**`README.md` told people to make a package that cannot work.** "Copy `_example/` and rename
+`enemy.json.example` *or* `wall-trap.json.example`, and the package loads on the next launch." For
+the second one that is false and silent: `PackageAssemblies.TryDeclare` returns immediately for a
+manifest with no `assembly` block, and the framework's own registry reads only `enemy.json`, so a
+renamed `wall-trap.json` gets no switch, no loader and no log line. It also still framed the two
+manifest kinds as symmetric framework features and said nothing about a package shipping code.
+
+**Then: why is `WALL-PICTURE-TRAPS.md` in the framework's directory at all?** Because it was the
+framework's, until §165 moved the implementation into a package. Since then the main archive has
+shipped a 185-line reference, and a `wall-trap.json.example` template, for a manifest kind that
+nothing in that archive can read — the documentation in one download and the code that implements
+it in another. **Both moved into `BepInEx/custom-enemies/joker-wall/`**, so they ship in
+`PncEdi-Joker-*.zip` beside `WallPictureTrap.dll`. `custom_enemy_files`' Markdown rule had no
+directory restriction and would have shipped a package's `.md` in the main archive anyway; it is
+root-level `.md` only now, and a package archive's README says which format reference it carries.
+
+**`README.md` is gone, merged into `CUSTOM-ENEMIES.md`.** With one format left in the directory, an
+index pointing at one document earns nothing — and the two files already said the same things
+(framework ships no content, the two published packages, `_example/`, the code switch), which is
+precisely why one of them could drift while the other did not. One file, one place to correct.
+
+**Three things `CUSTOM-ENEMIES.md` itself had wrong**, all found by checking it against the code
+rather than reading it:
+
+- **The witch tuning block was written as `"witch"`.** The framework finds a behaviour's settings
+  with `ExtractObject(manifest, behaviourName)` — the block is named after the behaviour, so under
+  `"behaviour": "charm-witch"` the documented block is not read and the boss runs on its defaults,
+  silently. (`CharmWitchModule` does still accept `witch` as the pre-§165 name, deliberately, but
+  that is a compatibility path and not the shape to teach.)
+- **`galleryVideos` was justified by "the gallery plays them with the package's code switched
+  off"** — a §167 casualty, since a switched-off code package now has no gallery entry at all. The
+  real reason is that the list is the *framework's*, read whether or not any behaviour looks at it,
+  with `charm-witch` falling back to it. The same stale sentence was in `CharmWitchModule.cs`'s own
+  comment.
+- **`endTime: 0`** was documented in the middle of a sentence about `handy1` generation, three
+  paragraphs from the scene fields it belongs to.
+
+**And a defect in `deploy.py` that these moves exposed.** Neither install lost the files the tree
+had deleted: both kept a stale `README.md` and a `WALL-PICTURE-TRAPS.md` at its old path, while
+`deploy.py --check` reported both installs up to date — the one thing that check exists to say
+truthfully. `prune_custom_enemy_docs` is `prune_gallery`'s shape for that directory's root, and
+only its root: an install is allowed to hold a package the tree does not, so pruning by payload
+would delete a package someone dropped in to try.
+
 ## Tried and reverted — do not redo
 
 - **Trimming loop seams.** 14 galleries end on a different position than they start.

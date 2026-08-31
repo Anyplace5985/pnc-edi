@@ -626,8 +626,13 @@ def custom_enemy_files(packages: bool = True) -> list[tuple[str, Path]]:
         if not f.is_file():
             continue
         relative = f.relative_to(root)
-        # The format documentation ships; the packages that use it do not.
-        if not packages and relative.parts[0] != "_example" and f.suffix.lower() != ".md":
+        # The format documentation ships; the packages that use it do not. The Markdown rule is
+        # deliberately root-level only: since §165 a format can belong to a *package* rather than
+        # to the framework - `WALL-PICTURE-TRAPS.md` describes a manifest kind that only
+        # `WallPictureTrap.dll` reads - and such a document travels in that package's own archive,
+        # beside the code that implements it, rather than in an archive that cannot execute it.
+        if not packages and relative.parts[0] != "_example" and (
+                f.suffix.lower() != ".md" or len(relative.parts) != 1):
             continue
         out.append((f"BepInEx/custom-enemies/{relative.as_posix()}", f))
     return out
@@ -724,6 +729,28 @@ def definitions_with(rows: list[str]) -> bytes:
     return ("\n".join(lines) + "\n").encode("utf-8")
 
 
+def variant_diff_count(variant: str) -> int:
+    """How many of the master scripts this variant actually changes.
+
+    The README quotes this number, and it was wrong by the time anyone noticed: it said sixteen
+    of 102 long after `variants.py` had regenerated the set. Comparing the `actions` arrays
+    rather than the files is the whole point - `variants.py` rewrites every file it emits, so a
+    byte comparison says "all of them differ" and means nothing."""
+    master = ROOT / "Edi/Gallery/handy2pro"
+    other = ROOT / "Edi/Gallery" / variant
+    changed = 0
+    for path in sorted(master.glob("*.funscript")):
+        twin = other / path.name
+        if not twin.is_file():
+            continue
+        # BOM: OpenFunscripter writes one, and `json.loads` refuses it.
+        left = json.loads(path.read_text(encoding="utf-8-sig")).get("actions")
+        right = json.loads(twin.read_text(encoding="utf-8-sig")).get("actions")
+        if left != right:
+            changed += 1
+    return changed
+
+
 def render_readme(**subs: str) -> bytes:
     text = (ROOT / "code/dist/README.txt.in").read_text(encoding="utf-8")
     for k, v in subs.items():
@@ -791,7 +818,7 @@ install and nothing to edit.
 {code_note}
 Requires {mod} {version_note}, which carries PncCustomEnemies.dll - the plugin that reads
 packages. Without that DLL this archive does nothing at all.
-
+{docs_note}
 To remove it, delete the directory above.
 
 {sources}
@@ -851,10 +878,12 @@ def build_package(directory: Path, out_dir: Path, check: bool) -> None:
         code_note = (
             f"\nTHIS PACKAGE SHIPS CODE: {assembly_file}\n\n"
             f"Its behaviour is a program, not just art and funscripts, and it runs like any other\n"
-            f"mod - so only turn it on if you trust where you got it. It arrives switched off:\n\n"
+            f"mod - so only turn it on if you trust where you got it.\n\n"
+            f"It arrives switched OFF, and does nothing at all until you turn it on. To do that,\n"
+            f"either use the mod manager (F11) in game, or set this line yourself in\n"
+            f"BepInEx/config/com.edi.pnc.customenemies.cfg:\n\n"
             f"    Custom Enemies / {package_id} = true\n\n"
-            f"in BepInEx/config/com.edi.pnc.customenemies.cfg, or turn it on in the mod manager\n"
-            f"(F11). Restart the game afterwards. Until then the package does nothing.\n")
+            f"Either way, restart the game afterwards.\n")
 
     scripts = [s for a, s in files if s.suffix == ".funscript"]
     if not scripts:
@@ -889,8 +918,14 @@ def build_package(directory: Path, out_dir: Path, check: bool) -> None:
               f"beside each is what the mod actually opens")
 
     entries = {a: s.read_bytes() for a, s in files}
+    # A format reference that belongs to a package ships with it (§168), so say it is in there:
+    # the file is the only documentation of that manifest kind anywhere in a player's install.
+    docs = sorted(s.name for a, s in files if s.suffix.lower() == ".md")
+    docs_note = ("\nThis package also carries " + ", ".join(docs)
+                 + " - the format reference for the manifest kind its own code reads.\n") if docs else ""
+
     entries[f"{MOD_NAME}-{slug}-README.txt"] = PACKAGE_README.format(
-        display=display, mod=MOD_NAME, game=GAME_VERSION, directory=name,
+        display=display, mod=MOD_NAME, game=GAME_VERSION, directory=name, docs_note=docs_note,
         version_note=f"{plugin_version()} or newer",
         code_note=code_note, sources=source.read_text(encoding="utf-8").strip(),
     ).replace("\n", "\r\n").encode("utf-8")
@@ -1008,6 +1043,7 @@ def main() -> None:
         ROWS=str(sum(1 for _ in (ROOT / "Edi/Gallery/Definitions.csv")
                      .read_text(encoding="utf-8").splitlines()[1:] if _.strip())),
         SCRIPTS=str(len(gallery) // len(GALLERY_VARIANTS)),
+        HANDY2DIFF=str(variant_diff_count("handy2")),
         EDITAG=f"{EDI_TAG} (patched, PR #{EDI_PATCH_PR})" if EDI_PATCH_PR else EDI_TAG,
         # The commit's date, not today's, so the same commit always produces the same archive.
         BUILT=datetime.datetime.fromtimestamp(git_commit_epoch(), datetime.UTC).date().isoformat(),
