@@ -12,8 +12,10 @@ Patching and configuration mechanics: what runs when, and how a config entry goe
 `GetKeyDown(MainKey) && ModifierKeyTest()`, and `ModifierKeyTest` requires that no supported
 KeyCode outside the shortcut's own is currently down. Right for a UI shortcut, wrong for a debug
 key: holding `W` kills it. `Hotkeys.IsDown` relaxes that — **but only for non-modifier keys**,
-because the config ships `FillerOnKey = Alpha1 + LeftControl` beside `SpawnZombieKey = Alpha1`,
-and dropping the rule outright makes `Ctrl+1` fire both.
+because a bare binding and a modified one can share a main key, and dropping the rule outright
+makes both fire. The config shipped exactly that pair until §169 (`FillerOnKey = Alpha1 +
+LeftControl` beside `SpawnZombieKey = Alpha1`) and now ships no modified binding at all; the rule
+stays for a player who adds one.
 
 - **The grapple is a UI overlay, not the world model.** `GrappleScreenobject` animates a
   2D `grappleUI` (`OneImp`/`TwoImps`/`ThreeImps`) while `ChargingEnemyAI.PerformGrabAttack`

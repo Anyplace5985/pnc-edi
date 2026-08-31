@@ -291,3 +291,13 @@ code and arrives switched off — which every other document in the project says
 one thing a player needs to not conclude the mod is broken. One reading of the *extracted install's*
 `PncEdi-README.txt` found it, plus a second smaller error, immediately. A template reads as a set of
 edits you remember making; the rendered file reads as what someone receives (§168).
+
+**A convenience nobody uses is not tested by anyone, including the person who wrote it.** The
+`Ctrl+1` / `Ctrl+2` filler toggles carried three independent defects — BepInEx's raw
+`shortcut.IsDown()` instead of `Hotkeys.IsDown` (dead while any other key is held, which is §72's
+whole subject), a gate on `EnableFreecam` that has nothing to do with filler, and no stand-down for
+the mod-manager window — and none had ever been noticed, because the keys were pressed for the
+first time in §169. **A debug affordance either earns a place in a run someone actually does, or it
+is deleted**; keeping it costs config surface, a shipped binding, and a comment in `Hotkeys` that
+justified a rule by pointing at it.
+

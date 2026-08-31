@@ -33,7 +33,6 @@ public partial class Plugin : BaseUnityPlugin
 	};
 
 
-	internal static bool FillerEnabled = true;
 	internal static bool EdiPausedByFocus;
 	internal static bool ShouldBeStopped;
 	internal static string LastSent;
@@ -385,20 +384,6 @@ public partial class Plugin : BaseUnityPlugin
 			if (FreeCam.WasTogglePressed(CfgKeyFreecam.Value))
 			{
 				FreeCam.Toggle();
-			}
-			KeyboardShortcut shortcut = CfgKeyFillerOn.Value;
-			if (shortcut.IsDown())
-			{
-				FillerEnabled = true;
-				DBG("FILLER", "ON");
-				GoFiller();
-			}
-			shortcut = CfgKeyFillerOff.Value;
-			if (shortcut.IsDown())
-			{
-				FillerEnabled = false;
-				DBG("FILLER", "OFF");
-				SendStop();
 			}
 			FreeCam.Tick();
 		}
@@ -1130,7 +1115,7 @@ public partial class Plugin : BaseUnityPlugin
 		// base-filler swap is the same idea for the same reason: PauseFillerForMenu already put
 		// the row this frame should show, and letting the ladder recompute over it during a pause
 		// is exactly the "keeps drifting while paused" bug the swap exists to fix.
-		if (!FillerEnabled || !_fillerPlaybackActive || _inMenuScene || PlayerDead || GalleryHooks.BlocksInGameEdiTracking() || CustomEnemyBridge.EdiChannelHeld || PauseHooks.GamePaused)
+		if (!_fillerPlaybackActive || _inMenuScene || PlayerDead || GalleryHooks.BlocksInGameEdiTracking() || CustomEnemyBridge.EdiChannelHeld || PauseHooks.GamePaused)
 		{
 			return false;
 		}
@@ -1223,7 +1208,7 @@ public partial class Plugin : BaseUnityPlugin
 	// the last thing that happened was a death.
 	private static void GoMenuFiller()
 	{
-		if (!FillerEnabled || !CfgFillerInMenus.Value)
+		if (!CfgFillerInMenus.Value)
 		{
 			_fillerPlaybackActive = false;
 			SendStop();
@@ -1251,21 +1236,13 @@ public partial class Plugin : BaseUnityPlugin
 		{
 			return;
 		}
-		if (!FillerEnabled)
-		{
-			_fillerPlaybackActive = false;
-			SendStop();
-		}
-		else
-		{
-			// No preservePhase here: GoFiller is the entry *into* filler from somewhere else -
-			// a scene ending, a reset, the hotkey - and there is no ladder phase to carry. A
-			// chaser stomp still carries its own audio phase, though: a scene can end right next
-			// to a stomping dragon, and the row should not restart the beat from 0 when it does.
-			string fillerGallery = GetFillerGallery(out float animNormalizedTime, out float animClipSeconds);
-			SendPlay(fillerGallery, loop: true, inGame: true, filler: true,
-				animNormalizedTime: animNormalizedTime, animClipSeconds: animClipSeconds);
-		}
+		// No preservePhase here: GoFiller is the entry *into* filler from somewhere else - a scene
+		// ending or a reset - and there is no ladder phase to carry. A chaser stomp still carries
+		// its own audio phase, though: a scene can end right next to a stomping dragon, and the row
+		// should not restart the beat from 0 when it does.
+		string fillerGallery = GetFillerGallery(out float animNormalizedTime, out float animClipSeconds);
+		SendPlay(fillerGallery, loop: true, inGame: true, filler: true,
+			animNormalizedTime: animNormalizedTime, animClipSeconds: animClipSeconds);
 	}
 
 	internal void ResetGrabTracking()

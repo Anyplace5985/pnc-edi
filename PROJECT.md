@@ -377,7 +377,7 @@ Ten enemies on the ten digits, ordered by what the enemy *is* rather than by wha
 
     .  random from the shuffle pool        Q / Keypad+  escape grab / end grab
     F1 freecam                             Keypad x / - add / remove heat
-    Ctrl+1 / Ctrl+2  filler on / off       F11          the settings window
+    F11 the settings window
 
 The mimic is off the digits because it waits for you rather than walking up; the digit row is
 exactly the ten walking enemies in encounter order. Gravy's shopkeeper is deliberately unspawnable

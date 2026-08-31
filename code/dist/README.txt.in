@@ -7,8 +7,7 @@ Plays a funscript on your stroker that matches whatever is happening on screen: 
 peepholes, the dioramas in the world, and every entry in the gallery. @ROWS@ scenes, each one
 timed against the game's own animation rather than scripted to video, in three device variants.
 
-Works on the Windows build (directly or under Proton) and on the native Linux build, from these
-same files.
+Works on the Windows build and on the native Linux build, from these same files.
 
 
 ------------------------------------------------------------------------------------------------
@@ -58,33 +57,26 @@ INSTALL
    "Device Keys" (other device types have their own box in the same place), then press
    "Reconnect Devices". Your device appears in the "Active Devices" list on the right.
 
-4. Set that device's "Variant" - the drop-down in its row in the Active Devices list. Choose the
-   one that matches your hardware: handy2pro, handy2 or handy1. DEVICE VARIANTS below says which
-   is which.
+4. Pick the "Variant" for your device - the drop-down in its row in the Active Devices list:
 
-   Do not skip this because it already looks set. Edi fills the variant in by itself the first
-   time it sees a device, and what it fills in is simply the first variant folder it found -
-   not the one for your hardware. On the wrong variant everything still works; it just plays
-   weaker and flatter than it was written to, which is a much easier fault to miss than silence.
+       Handy 2 Pro, overclocked       handy2pro   <- what Edi already selects
+       Handy 2, OSR/SR6, or a 2 Pro   handy2
+         overclocked only part-way
+       Handy 1, or a 2 Pro with       handy1
+         no overclock at all
 
-   UPGRADING FROM 2.5.2 OR EARLIER: the variant folders are now named after the devices they are
-   for. What used to be called "detailed" is now "handy2pro". A saved "detailed" no longer
-   matches any folder, so pick one from the drop-down again.
+   Edi selects handy2pro by itself, so a fully overclocked 2 Pro has nothing to do here. Every
+   other device wants one of the other two, and on the wrong variant nothing breaks or falls
+   silent - it just plays too fast to follow, or shallower than it was written to. DEVICE VARIANTS
+   below has the numbers behind each one.
+
+   UPGRADING FROM 2.5.2 OR EARLIER: "detailed" was renamed to "handy2pro" and no longer matches
+   any folder, so pick from the drop-down again.
 
 5. Start the game.
 
    Windows
        Launch the game the way you normally do. Nothing else to do - winhttp.dll loads the mod.
-
-   The Windows build under Proton or Wine (Linux, Steam Deck)
-       Proton will not load winhttp.dll unless you tell it to. On Steam, right-click the game,
-       Properties, and put this in Launch Options:
-
-           WINEDLLOVERRIDES="winhttp=n,b" %command%
-
-       Outside Steam, set that same WINEDLLOVERRIDES value in whatever launcher you use (Lutris,
-       Heroic, Bottles) or in the shell before your wine command. Without it the game starts
-       perfectly and the mod is simply not there.
 
    The native Linux build
        ./start-pnc-linux.sh
@@ -238,22 +230,19 @@ IF IT DOES NOT WORK
 ------------------------------------------------------------------------------------------------
 
 Nothing happens at all
-    Check that the file BepInEx\LogOutput.log exists. If it does not, BepInEx never loaded:
-
-      - On Windows, confirm winhttp.dll sits in the same folder as the game's .exe.
-      - Under Proton or Wine, confirm the WINEDLLOVERRIDES launch option from step 5. This is
-        the usual cause on a Steam Deck: the game runs, and nothing of the mod is loaded.
-      - On the native Linux build, launch through start-pnc-linux.sh rather than the executable.
+    Check that the file BepInEx\LogOutput.log exists. If it does not, BepInEx never loaded: on
+    Windows confirm winhttp.dll sits in the same folder as the game's .exe, and on Linux launch
+    through start-pnc-linux.sh rather than the executable itself.
 
 The log fills with [EDI] lines but the device is silent
     Edi is not running, is on a different port, or the device's Variant is set to "None", which
     mutes it. Check the Active Devices list in Edi's window: the device should be listed, show
     as ready, and have a variant chosen.
 
-Everything works, but it feels weak, shallow or flat
-    Almost always the wrong variant. Edi chooses one by itself the first time it sees a device,
-    and its choice is not based on what your device is. Set it by hand in the Active Devices
-    list - see DEVICE VARIANTS above.
+Everything works, but it feels wrong - too fast to follow, or shallow and flat
+    Almost always the variant. Edi selects handy2pro for any new device, which is right only for
+    an overclocked Handy 2 Pro. Set yours from the drop-down in the Active Devices list - step 4
+    above has which one.
 
 One scene does nothing
     The mod writes a line whenever it sees an animation it has no script for. Open the file
@@ -283,9 +272,9 @@ A scene is too strong
 
 To remove the mod
     Delete winhttp.dll, doorstop_config.ini, .doorstop_version, libdoorstop.so, run_bepinex.sh,
-    start-pnc-linux.sh, the BepInEx folder and the Edi folder - and, under Proton or Wine, the
-    WINEDLLOVERRIDES launch option. The game is untouched otherwise: nothing in this archive
-    overwrites a game file.
+    start-pnc-linux.sh, the BepInEx folder and the Edi folder. The game is untouched otherwise:
+    nothing in this archive overwrites a game file - every path in it is one the game does not
+    have.
 
 
 ------------------------------------------------------------------------------------------------

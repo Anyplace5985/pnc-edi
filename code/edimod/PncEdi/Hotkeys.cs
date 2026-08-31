@@ -54,10 +54,11 @@ internal static class Hotkeys
 				return false;
 			}
 		}
-		// Ignore unrelated keys, but NOT unrelated modifiers. The config ships
-		// FillerOnKey = Alpha1 + LeftControl alongside SpawnZombieKey = Alpha1, so dropping the
-		// held-key rule outright would make Ctrl+1 fire both. Blocking on held modifiers that the
-		// shortcut does not ask for keeps the two distinct while still letting W stay down.
+		// Ignore unrelated keys, but NOT unrelated modifiers, so that a bare binding and a
+		// modified one on the same main key stay distinct while W is allowed to stay down. The
+		// config shipped exactly that pair until §169 - FillerOnKey = Alpha1 + LeftControl beside
+		// SpawnZombieKey = Alpha1 - and no longer ships any modified binding at all. The rule
+		// stays because a player can add one in the config, and because it costs nothing.
 		foreach (KeyCode blocker in ModifierKeys)
 		{
 			bool requested = false;

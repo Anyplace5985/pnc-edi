@@ -11311,6 +11311,64 @@ are off by default, when the new default profile turns them on.
 document; four passes over `README.txt.in` did not surface either of these, and one pass over the
 installed file surfaced both.
 
+## 169. The first run of what a stranger actually installs
+
+`../fresh-test/` is a 0.3.2 Linux game with `PNC0.3.2-PncEdi-2.6.0.zip` extracted over it and
+nothing of this repo in it — no symlink, no `deploy.py`, no dev config. **Nothing had ever been
+tested that way**: every check this project has runs against a tree `deploy.py` controls, and
+`deploy.py` repairs exactly the things an archive could get wrong.
+
+**The install itself is provably right**, which is worth more than it sounds. Every file hashed and
+matched against the zip it came from:
+
+    575 files on disk  =  223 from the game zip  +  352 from the mod zip
+    overlapping paths: none    unaccounted: none    missing: none    content drift: none
+
+Zero overlapping paths is the proof behind a claim the README has always made and never
+demonstrated — *nothing in this archive overwrites a game file* — and it is what makes the removal
+instructions safe. Also verified at rest: no device key or home path anywhere in the tree, no
+certificate, `EdiConfig.json` carrying only `Preview Device` with a null `Handy.Key`, 104 rows and
+104 scripts per variant, and every number the shipped documents quote.
+
+**The run itself was clean.** All three plugins loaded, the mod-manager button appeared, F11 listed
+them, `[GalleryAliases] loaded 361 shared + 53 in-game-only mappings`, `[CustomEnemies] loaded 0
+package(s)`, and Edi resolved every row it was sent — `filler`, `filler_cum_25`, `filler_cum_50`,
+`Nun_Grab`, all at `Variant: handy2pro`. No `ALIAS-GAP`, no `EDI-SKIP`, no `failed:`, and no
+`PncEdi-missing-definitions.log` at all. Two log lines that are **not** faults: `Unable to start
+Unity log writer` on line 1 is `LogConsoleToUnityLog` and has never meant anything (§56), and
+`[UnityInput] Failed to detect available input systems` is the NRE `SafeInput` exists to repair a
+moment later (§72) — the spawn keys working is the proof it did.
+
+**What the device did was simulated.** Only `Preview Device` was ever registered, so the run
+exercised mod → Edi → gallery → slice and not the last hop to hardware. That hop is the best-tested
+part of the project and the least likely thing an archive breaks, but the install test has not
+covered it and should not be said to have.
+
+**The default variant is `handy2pro`, and that settles §168's one guess.**
+`DeviceCollector.ConfigureDevice` gives a new device `Variants.FirstOrDefault("")`, and discovery
+order is not alphabetical, so §168's "in practice `handy1`" was wrong. The consequence flips with
+it: nobody is silently on the slowest scripts, but a Handy 1 or an un-overclocked 2 Pro is silently
+on the *fastest*. The README now names the folder and gives three lines of hardware instead of a
+paragraph of mechanism, and the failure it warns about is "too fast to follow" as well as "shallow".
+
+**The Proton section is gone.** The game has a native Linux build and is not on Steam, so a section
+explaining `WINEDLLOVERRIDES` and Steam launch options served nobody: the Linux player wants
+`start-pnc-linux.sh`, which is one line above it. Written from a habit about BepInEx rather than
+from anything about this game.
+
+**`Ctrl+1` / `Ctrl+2` are gone, and why they never worked is the useful part.** They were the only
+two shortcuts in the mod calling BepInEx's raw `shortcut.IsDown()` rather than `Hotkeys.IsDown` —
+the strict version whose `ModifierKeyTest` refuses while *any* unrelated key is held, which is
+precisely the "the spawn keys are wonky while moving" defect §72 wrote `Hotkeys` to fix. They also
+sat inside the `EnableFreecam` gate, which has nothing to do with filler, and neither of them
+stood down for the mod-manager window. Three bugs in eight lines, in a debug convenience nobody had
+used since it was written. Cut rather than repaired: `FillerEnabled` was only ever written by those
+two keys, so it went with them and three conditions lost a term that was always true.
+
+Nothing that ships references them any more, and `Hotkeys`' "unrelated modifiers still block"
+rule keeps its comment but loses its example — the config now ships no modified binding at all.
+The rule stays, because a player can add one.
+
 ## Tried and reverted — do not redo
 
 - **Trimming loop seams.** 14 galleries end on a different position than they start.
