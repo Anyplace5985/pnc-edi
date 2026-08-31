@@ -4,7 +4,7 @@
   "assembly": {
     "file": "WallPictureTrap.dll",
     "module": "WallPictureTraps.WallPictureTrapModule",
-    "api": 1
+    "api": 2
   },
   "enabled": true,
   "autoPlace": true,

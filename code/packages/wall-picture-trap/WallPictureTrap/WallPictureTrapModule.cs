@@ -20,7 +20,7 @@ namespace WallPictureTraps;
 /// rows, a sound - so a package cannot get between the viewer and the device, and every package's
 /// gallery behaves the same way.
 /// </summary>
-public sealed class WallPictureTrapModule : IPackageModule, IPackageGalleryProvider
+public sealed class WallPictureTrapModule : IPackageModule, IPackageGalleryProvider, IPackageDebugSpawn
 {
 	/// <summary>The config file this package binds into, and the host object it hangs its own components on. Both come from the context; nothing here reaches the framework's own objects.</summary>
 	internal static ConfigFile Config { get; private set; }
@@ -28,9 +28,6 @@ public sealed class WallPictureTrapModule : IPackageModule, IPackageGalleryProvi
 	internal static GameObject Host { get; private set; }
 
 	internal static MonoBehaviour Runner { get; private set; }
-
-	/// <summary>This package's own placement key, bound in its own section rather than in the framework's `Tools`, because it is this package's key and not the loader's.</summary>
-	internal static ConfigEntry<KeyboardShortcut> SpawnKey { get; private set; }
 
 	/// <summary>This package's on/off switch, bound by the framework before this assembly loaded.</summary>
 	internal static ConfigEntry<bool> EnabledEntry { get; private set; }
@@ -41,11 +38,6 @@ public sealed class WallPictureTrapModule : IPackageModule, IPackageGalleryProvi
 		EnabledEntry = context.EnabledEntry;
 		Host = context.Host;
 		Runner = context.Host.AddComponent<WallPictureTrapRunner>();
-		SpawnKey = context.Config.Bind(
-			"Wall Picture Traps",
-			"PlaceTrapKey",
-			new KeyboardShortcut(KeyCode.F10),
-			"Place or reposition a wall-picture trap on the vertical wall being aimed at, within 25 m (debug). Destroys the current instance in this scene and puts a replacement where aimed. Needs Tools / EnableDebugEnemySpawn in com.edi.pnc.cfg, which is one gate for every debug spawn key in the install.");
 		WallPictureTrapRegistry.Initialize(System.IO.Path.Combine(context.Directory, context.ManifestFileName));
 		// Registered here, by name, rather than behind a helper: `patchaudit.py` reads this file as
 		// this package's registration list, and a patch class reached through a call it cannot see is
@@ -58,6 +50,20 @@ public sealed class WallPictureTrapModule : IPackageModule, IPackageGalleryProvi
 		{
 			ModServices.LogError("[WallPictureTrap] pull patch failed: " + ex);
 		}
+	}
+
+	/// <summary>
+	/// The framework's debug spawn key, asking this package what spawning means for it (§181).
+	///
+	/// A trap is not put in front of the player like an enemy: it goes on the vertical wall being
+	/// aimed at, and it replaces this package's existing traps in the scene rather than
+	/// accumulating, so the key repositions. Until §181 this package bound its own
+	/// `Wall Picture Traps / PlaceTrapKey`, which meant a second package of any invented kind would
+	/// have brought a third hotkey in a fourth config section while every enemy package shared one.
+	/// </summary>
+	public bool DebugSpawn()
+	{
+		return WallPictureTrapRegistry.SpawnFirstAtAim() != null;
 	}
 
 	public IEnumerable<EnemyGalleryEntry> GalleryEntries => WallPictureTrapRegistry.GalleryEntries();

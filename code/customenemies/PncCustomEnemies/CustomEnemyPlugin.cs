@@ -57,9 +57,9 @@ public sealed class CustomEnemyPlugin : BaseUnityPlugin
 		Instance = this;
 		Log = Logger;
 		CfgKeySpawnCustomEnemy = Config.Bind("Tools", "SpawnCustomEnemyKey", new KeyboardShortcut(KeyCode.F9),
-			"Spawn the custom-enemy package named by SpawnCustomEnemyId in front of the player (debug). A package that clones a vanilla enemy has no prefab until that enemy exists in the level, so spawn from inside a run rather than from the menu.");
+			"Spawn or place the package named by SpawnCustomEnemyId (debug). A package that clones a vanilla enemy has no prefab until that enemy exists in the level, so use this from inside a run rather than from the menu. A package that ships code and is switched off cannot place anything and says so in the log.");
 		CfgSpawnCustomEnemyId = Config.Bind("Tools", "SpawnCustomEnemyId", "",
-			"Package id - the \"id\" field of BepInEx/custom-enemies/<package>/enemy.json - spawned by SpawnCustomEnemyKey. Empty (the default) spawns the only installed package when there is exactly one, and otherwise logs the ids to choose from: no package's id is a default here, because the framework ships no packages. The log lists every loaded id when the key finds nothing.");
+			"Package id - the \"id\" field of the manifest in BepInEx/custom-enemies/<package>/ - acted on by SpawnCustomEnemyKey. This is one key for every kind of package: an enemy is spawned in front of the player, and a package that owns its own kind (a wall trap, say) is asked to place its own thing wherever that means for it. Empty (the default) acts on the only spawnable package when there is exactly one, and otherwise logs the ids to choose from: no package's id is a default here, because the framework ships no packages. The log lists every spawnable id when the key finds nothing.");
 
 		// Before the packages load: a package registering rows can be asked about immediately.
 		CustomEnemyBridgeInstaller.Install();
@@ -86,9 +86,11 @@ public sealed class CustomEnemyPlugin : BaseUnityPlugin
 		{
 			return;
 		}
+		// One key for every package kind since §181: the framework spawns an `enemy.json` clone
+		// itself and asks a package that owns its own kind to place its own thing.
 		if (Hotkeys.IsDown(CfgKeySpawnCustomEnemy))
 		{
-			CustomEnemyRegistry.SpawnById(CfgSpawnCustomEnemyId.Value);
+			PackageDebugSpawn.Run(CfgSpawnCustomEnemyId.Value);
 		}
 	}
 }

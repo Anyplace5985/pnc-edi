@@ -1,0 +1,39 @@
+{
+  "id": "bundle_brute",
+  "displayName": "Bundle Brute",
+  "description": "A complete enemy loaded from a Unity AssetBundle, arriving with its own AI already on the prefab.",
+  "enabled": true,
+  "alwaysUnlocked": false,
+  "includeInRandomSpawns": true,
+  "spawnWeight": 0.4,
+
+  "assetBundle": "bundle_brute.bundle",
+  "prefab": "BundleBrute",
+  "galleryPrefab": "BundleBrutePreview",
+  "grabGalleryPrefab": "BundleBruteGrab",
+  "galleryController": "BundleBruteIdle",
+  "grabController": "BundleBruteGrabController",
+  "icon": "BundleBruteIcon",
+  "nameAliases": ["BundleBrute", "Bundle Brute"],
+
+  "galleryAnimations": ["Idle"],
+  "scenes": [
+    {
+      "animation": "Loop",
+      "gallery": "bundle_brute_loop",
+      "file": "bundle_brute_loop",
+      "sound": "BundleBruteLoop",
+      "startTime": 0,
+      "endTime": 0,
+      "oneShot": false
+    },
+    {
+      "animation": "Cum",
+      "gallery": "bundle_brute_cum",
+      "file": "bundle_brute_cum",
+      "startTime": 0,
+      "endTime": 0,
+      "oneShot": true
+    }
+  ]
+}

@@ -109,6 +109,18 @@ def newest_source(package_dir: Path) -> float:
 GRAB_ENTRY = b"StartGrab"
 SCENE_OWNER = b"IPackageSceneOwner"
 
+# The same shape once more, and this one had been broken for four sessions before §181 found it.
+# `OwnsGrabScene` and `OwnsSceneVisual` are asked *of a GameObject the caller already has*, so a
+# package that implements `IPackageSceneOwner` is wired by existing. `HoldsEdiChannel` answers "is
+# anyone holding the channel", which has no object to ask, so the framework keeps a registry and the
+# package has to join it - the only one of the three seams that needs the package to opt in, and
+# therefore the only one that can be half-implemented. §165 replaced a direct read of
+# `CharmWitchController.IsPlayerInsideAnyAura` with that registry and never added the Register call,
+# so the aura's hold on the device was silently dead from §165 to §181 (§172 is the same bug in the
+# seam next door). A class that declares the interface and never registers is the whole defect.
+CHANNEL_OWNER = b"IPackageEdiChannelOwner"
+CHANNEL_REGISTER = b"RegisterEdiChannelOwner"
+
 
 def scene_owner_gap(assembly_path: Path) -> bool:
     """True when a package assembly drives GrabScreen and never mentions IPackageSceneOwner."""
@@ -117,6 +129,15 @@ def scene_owner_gap(assembly_path: Path) -> bool:
     except OSError:
         return False
     return GRAB_ENTRY in blob and SCENE_OWNER not in blob
+
+
+def channel_owner_gap(assembly_path: Path) -> bool:
+    """True when a package assembly implements IPackageEdiChannelOwner and never registers one."""
+    try:
+        blob = assembly_path.read_bytes()
+    except OSError:
+        return False
+    return CHANNEL_OWNER in blob and CHANNEL_REGISTER not in blob
 
 
 def main() -> int:
@@ -151,6 +172,12 @@ def main() -> int:
                 if source and source > built:
                     problems.append(f"{where}: {file} is older than the sources it is built from - "
                                     f"rebuild, or the install runs last build's behaviour")
+                if channel_owner_gap(package_dir / file):
+                    problems.append(
+                        f"{where}: {file} implements IPackageEdiChannelOwner and never calls "
+                        f"PackageRuntime.RegisterEdiChannelOwner - the framework asks the registered "
+                        f"set and never scans, so nothing it holds is ever noticed and the mod's "
+                        f"filler takes the device back mid-scene (§181)")
                 if scene_owner_gap(package_dir / file):
                     problems.append(
                         f"{where}: {file} drives GrabScreen.StartGrab and never mentions "

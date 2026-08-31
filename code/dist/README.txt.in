@@ -224,11 +224,27 @@ Drop a package into BepInEx\custom-enemies\ and restart. The format is documente
   BepInEx\custom-enemies\CUSTOM-ENEMIES.md
 
 which covers the manifest, the runtime PNG artwork, behaviours, and what a package that ships its
-own code has to say for itself. The wall-trap format is documented inside the Joker Wall Trap
-package instead, beside the code that reads it - that manifest kind belongs to a package, not to
-the framework.
+own code has to say for itself. To build one, start from
+
+  BepInEx\custom-enemies\_example\
+
+which holds six manifest templates - one for each way of building a package, from "clone a zombie
+and give it new artwork" up to "ship your own code" - a funscript set in all three device variants,
+and a README.md saying which template is which. Copy that folder somewhere new under
+custom-enemies\, drop the .example suffix from the one manifest you want and from the funscripts,
+and it loads on the next launch.
+
+Wall traps are the exception to "the format lives here": their manifest kind belongs to a package
+rather than to the framework, so what each of their fields means is documented inside the Joker
+Wall Trap package, beside the code that reads it. The template to copy is still _example\.
 
 No packages ship in this archive - the format does.
+
+There is one debug key for every kind of package: Tools / SpawnCustomEnemyKey (F9) in
+com.edi.pnc.customenemies.cfg, acting on whichever package Tools / SpawnCustomEnemyId names, and
+gated by Tools / EnableDebugEnemySpawn in com.edi.pnc.cfg like every other debug key here. An
+enemy is spawned in front of you; a package that owns its own kind places its own thing wherever
+that means for it - a wall trap goes on the wall you are aiming at.
 
 
 ------------------------------------------------------------------------------------------------
@@ -292,7 +308,8 @@ WHAT IS IN HERE
   BepInEx/plugins/PncCustomEnemies.dll
                                     the custom-enemy framework - loads the packages below
   BepInEx/config/com.edi.pnc.cfg    its settings
-  BepInEx/custom-enemies/           the custom-enemy format: documentation and a template
+  BepInEx/custom-enemies/           the custom-enemy format: documentation and _example/,
+                                    six manifest templates and a funscript set
   BepInEx/core/                     BepInEx @BEPINEX@ (unmodified)
   winhttp.dll, doorstop_config.ini  Windows loader (Unity Doorstop @DOORSTOP@, unmodified)
   libdoorstop.so, run_bepinex.sh    Linux loader (same, unmodified)

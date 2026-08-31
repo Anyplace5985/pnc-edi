@@ -102,6 +102,12 @@ BepInEx/custom-enemies/*/**
 !BepInEx/custom-enemies/*/*.json
 !BepInEx/custom-enemies/*/SOURCE.txt
 !BepInEx/custom-enemies/*/funscripts/**/*.funscript
+# `_example/` is the format's templates, not a package. All of it is text, all of it ships in the
+# release archive, and none of it matches the three names above - the manifests end `.example` so
+# that nothing discovers them - so it is named back in whole rather than by file type. Before §180
+# only the files that predated this rule were tracked, and every template added after it would have
+# been silently ignored.
+!BepInEx/custom-enemies/_example/**
 
 # --- Edi: the gallery and the source scripts, not the Edi application ---------------------
 #

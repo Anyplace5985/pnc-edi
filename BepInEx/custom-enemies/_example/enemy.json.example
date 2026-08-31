@@ -6,27 +6,34 @@
   "alwaysUnlocked": false,
   "includeInRandomSpawns": true,
   "spawnWeight": 1.0,
+
   "baseEnemy": "zombie",
   "nameAliases": ["ArmoredZombie"],
-  "galleryAnimations": ["Idle", "Walk", "Attack"],
+
   "fields": [
-    { "component": "ChargingEnemyAI", "field": "maxHealth", "value": "150" },
-    { "component": "ChargingEnemyAI", "field": "attackDamage", "value": "20" }
+    { "component": "EnemyAI", "field": "maxHealth", "value": "150" },
+    { "component": "EnemyAI", "field": "attackDamage", "value": "20" },
+    { "component": "EnemyAI", "field": "attackCooldown", "value": "1.4" }
   ],
+
+  "galleryAnimations": ["Idle"],
   "scenes": [
     {
       "animation": "Loop",
       "gallery": "armored_zombie_loop",
       "file": "armored_zombie_loop",
+      "startTime": 0,
       "endTime": 0,
-      "oneShot": false
+      "oneShot": false,
+      "aliases": ["Zombie_Loop_Variant"]
     },
     {
       "animation": "Cum",
       "gallery": "armored_zombie_cum",
       "file": "armored_zombie_cum",
+      "startTime": 0,
       "endTime": 0,
-      "oneShot": false
+      "oneShot": true
     }
   ]
 }

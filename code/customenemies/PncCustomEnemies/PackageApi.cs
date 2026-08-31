@@ -28,7 +28,7 @@ public static class PackageApi
 	/// anything in this file changes shape; the loader refuses a package built against another
 	/// number, with a log line saying which side is behind.
 	/// </summary>
-	public const int Version = 1;
+	public const int Version = 2;
 }
 
 /// <summary>
@@ -192,6 +192,31 @@ public static class PackageRuntime
 	{
 		PackageSceneOwners.Unregister(owner);
 	}
+}
+
+/// <summary>
+/// Implemented by a module whose package can be put into the level on demand, for the debug spawn
+/// key.
+///
+/// **The framework can already spawn an `enemy.json` package itself** — it built the template, so
+/// it knows what "spawn this" means. It knows nothing of the sort about a kind a package invented:
+/// a wall trap is not spawned in front of the player, it is *placed* on the wall being aimed at,
+/// and only the package's own code can do that. Before §181 the answer was for such a package to
+/// bind a debug key of its own, which meant one key and one id selector for every enemy package and
+/// a new key in a new config section for every package of any other kind.
+///
+/// So the framework keeps the key and the selector, and asks the package what spawning means. One
+/// hotkey, one `Tools / SpawnCustomEnemyId`, every package kind.
+/// </summary>
+public interface IPackageDebugSpawn
+{
+	/// <summary>
+	/// Put this package's content in the level, however that reads for this kind. Return false when
+	/// nothing could be placed — no wall in range, no live base enemy to clone — so the framework
+	/// can say so in the log rather than leaving the key looking dead. Never throw: the caller is a
+	/// hotkey, and the whole debug surface is off in a normal install.
+	/// </summary>
+	bool DebugSpawn();
 }
 
 /// <summary>

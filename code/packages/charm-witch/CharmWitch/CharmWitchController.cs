@@ -52,21 +52,6 @@ internal sealed class CharmWitchController : MonoBehaviour, IPackageSceneOwner, 
 	private static readonly Dictionary<string, AudioClip> LockSounds = new Dictionary<string, AudioClip>(StringComparer.OrdinalIgnoreCase);
 	private readonly List<GameObject> _reinforcements = new List<GameObject>();
 
-	internal static bool IsPlayerInsideAnyAura
-	{
-		get
-		{
-			for (int i = 0; i < ActiveControllers.Count; i++)
-			{
-				CharmWitchController c = ActiveControllers[i];
-				if (c != null && c.isActiveAndEnabled && c._insideAura && !c.CircleBroken)
-				{
-					return true;
-				}
-			}
-			return false;
-		}
-	}
 	[SerializeField]
 	private CharmWitchSettings _settings;
 	[SerializeField]
@@ -199,6 +184,12 @@ internal sealed class CharmWitchController : MonoBehaviour, IPackageSceneOwner, 
 		{
 			ActiveControllers.Add(this);
 		}
+		// The framework asks the *registered* set whether anything holds the Edi channel; it has no
+		// object to GetComponent and cannot scan the level several times a second for one. So unlike
+		// `OwnsGrabScene` and `OwnsSceneVisual`, which are asked of a GameObject the caller already
+		// has, this seam is only connected if the package joins - and between §165 and §181 it never
+		// did, so the aura's hold on the device was silently dead the whole time.
+		PackageRuntime.RegisterEdiChannelOwner(this);
 		// Clones made by the game's spawners and the debug spawner lose the custom-class
 		// _settings field (see CharmWitchRuntimeData); the runtime data holder's reference
 		// survives, so the whole configuration is restored from it before anything else runs.
@@ -1088,6 +1079,7 @@ internal sealed class CharmWitchController : MonoBehaviour, IPackageSceneOwner, 
 	private void OnDisable()
 	{
 		ActiveControllers.Remove(this);
+		PackageRuntime.UnregisterEdiChannelOwner(this);
 		StopAura();
 		if (_capturing && GrabScreen.Instance != null && GrabScreen.Instance.GrabbingEnemy == gameObject) GrabScreen.Instance.EndGrab();
 		EndCapture();
@@ -1103,5 +1095,8 @@ internal sealed class CharmWitchController : MonoBehaviour, IPackageSceneOwner, 
 	private void OnDestroy()
 	{
 		ActiveControllers.Remove(this);
+		// The registry drops a destroyed component by itself, but leaving one in it until the next
+		// read is the kind of thing that only ever looks fine.
+		PackageRuntime.UnregisterEdiChannelOwner(this);
 	}
 }

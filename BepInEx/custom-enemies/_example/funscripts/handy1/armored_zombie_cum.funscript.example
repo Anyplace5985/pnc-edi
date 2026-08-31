@@ -1,0 +1,10 @@
+{
+  "actions": [
+    { "at": 0, "pos": 20 },
+    { "at": 250, "pos": 100 },
+    { "at": 500, "pos": 20 }
+  ],
+  "metadata": {
+    "description": "Handy 1-safe Armored Zombie climax. The master's 5-100 in 250 ms is 380 units/s, over the 364 units/s firmware ceiling, so the stroke is shortened to 20-100 (320 units/s) and the timing is left alone. Shorten the stroke, never stretch the time: the funscript has to stay in step with the animation."
+  }
+}

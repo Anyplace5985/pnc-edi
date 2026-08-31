@@ -178,10 +178,36 @@ internal static class CustomEnemyRegistry
 		Array.Sort(manifests, StringComparer.OrdinalIgnoreCase);
 		foreach (string manifestPath in manifests)
 		{
+			// `_example/` holds the format's templates and is skipped by name, the same way
+			// PackageGalleryImport and PackageAssemblies skip it. Their globs are `*.json` and would
+			// not match a template anyway, since every file in there ends `.example`; this one asks
+			// for `enemy.json` exactly and recurses, so it is the path that would load a template
+			// somebody renamed in place - a package the other two would then refuse to give a
+			// gallery or a config switch. Skipping here is what keeps the three answers the same.
+			if (IsExampleTemplate(root, manifestPath))
+			{
+				continue;
+			}
 			LoadManifest(manifestPath);
 		}
 		ResolvePending();
 		Plugin.Log?.LogInfo("[CustomEnemies] loaded " + Enemies.Count + " package(s) from " + root);
+	}
+
+	/// <summary>True for a manifest under the `_example/` template directory, at any depth below <paramref name="root"/>.</summary>
+	private static bool IsExampleTemplate(string root, string manifestPath)
+	{
+		string stop = Path.GetFullPath(root).TrimEnd(Path.DirectorySeparatorChar);
+		for (string dir = Path.GetDirectoryName(Path.GetFullPath(manifestPath));
+			 !string.IsNullOrEmpty(dir) && !string.Equals(dir.TrimEnd(Path.DirectorySeparatorChar), stop, StringComparison.OrdinalIgnoreCase);
+			 dir = Path.GetDirectoryName(dir))
+		{
+			if (string.Equals(Path.GetFileName(dir), "_example", StringComparison.OrdinalIgnoreCase))
+			{
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private static void LoadManifest(string path)

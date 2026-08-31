@@ -647,7 +647,7 @@ def custom_enemy_files(packages: bool = True) -> list[tuple[str, Path]]:
 def custom_enemy_gallery(packages: list[tuple[str, Path]]) -> tuple[list[tuple[str, Path]], list[str]]:
     """A package's funscripts and Definitions.csv rows, resolved on this side.
 
-    The mod can do this itself at runtime - `CustomEnemies.SyncFunscripts` copies the scripts into
+    The mod can do this itself at runtime - `PackageGalleryImport` copies the scripts into
     `Edi/Gallery/<variant>` and merges the rows - because a player who drops a package into a game
     install has no repo to deploy from. But when there *is* one, having the mod write into a
     deployed tree is how `deploy.py --check` stops meaning anything: the game-side gallery diverges
@@ -681,9 +681,10 @@ def custom_enemy_gallery(packages: list[tuple[str, Path]]) -> tuple[list[tuple[s
         # A wall trap keeps its scenes under `animations` rather than `scenes`, so reading only the
         # key above produced no rows at all for one and left the runtime writer as the only source
         # of them - a permanent `deploy.py --check` "stale" as the two sides undid each other on
-        # every launch (§128 warned this could happen; §129 is it happening). These mirror
-        # WallPictureTrapRegistry.SyncFunscripts exactly: no start/end fields, always looping, and
-        # a stage with no funscript to measure contributes no row.
+        # every launch (§128 warned this could happen; §129 is it happening). Since §175 the
+        # runtime half reads manifests rather than kinds, so `PackageGalleryImport` builds a
+        # trap's rows from this same `animations` key: no start/end fields, always looping, and a
+        # stage with no funscript to measure contributes no row.
         for stage in manifest.get("animations") or []:
             gallery = (stage.get("gallery") or "").strip()
             if not gallery:
@@ -720,7 +721,7 @@ def definitions_with(rows: list[str]) -> bytes:
     A package that names a row the gallery already defines does not get to redirect it - that row
     was measured against a specific game asset, and quietly repointing it at a package's funscript
     would be the worst kind of silent breakage. It is dropped with a warning instead, which is the
-    same rule `CustomEnemies.UpsertDefinitions` applies at runtime.
+    same rule `CustomEnemyRegistry.MergeDefinitions` applies at runtime, driven by `PackageGalleryImport`.
     """
     text = (ROOT / "Edi/Gallery/Definitions.csv").read_text(encoding="utf-8")
     lines = text.splitlines()

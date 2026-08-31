@@ -1,0 +1,89 @@
+{
+  "id": "bog_witch",
+  "displayName": "Bog Witch",
+  "description": "A behaviour another package published, asked for by name. This manifest ships no code: JSON, PNG sheets, video and funscripts only.",
+  "enabled": true,
+  "alwaysUnlocked": true,
+  "includeInRandomSpawns": true,
+  "spawnWeight": 0.2,
+
+  "baseEnemy": "plantasha",
+  "stripBaseEnemy": true,
+  "nameAliases": ["BogWitch", "Bog Witch"],
+
+  "fields": [
+    { "component": "SpinningEnemyAI", "field": "maxHealth", "value": "600" },
+    { "component": "SpinningEnemyAI", "field": "canGrab", "value": "false" },
+    { "component": "SpinningEnemyAI", "field": "detectionRange", "value": "22" }
+  ],
+
+  "behaviour": "charm-witch",
+  "charm-witch": {
+    "enabled": true,
+    "auraRadius": 8.5,
+    "heatPerSecond": 7,
+    "lockIntervalSeconds": 0,
+    "lockSound": "bog-whoosh.wav",
+    "lockSoundVolume": 0.85,
+    "captureDistance": 1.8,
+    "minimumSceneSeconds": 20,
+    "movementOnly": true,
+    "teleportMinSeconds": 4,
+    "teleportMaxSeconds": 8,
+    "reinforcementIntervalSeconds": 13,
+    "maxReinforcements": 4,
+    "circleBreakDamage": 80,
+    "auraGallery": "bog_witch_aura",
+    "captureGallery": "bog_witch_capture"
+  },
+
+  "spriteVisual": {
+    "pixelsPerUnit": 100,
+    "pivot": "0.5,0",
+    "offset": "0,0.040,0",
+    "scale": "1.55,1.55,1",
+    "hideOriginalRenderers": true,
+    "continuous": true,
+    "defaultAnimation": "idle",
+    "animations": [
+      {
+        "name": "idle",
+        "file": "bog-witch-idle.png",
+        "fps": 8,
+        "loop": true,
+        "columns": 10,
+        "rows": 8,
+        "frameCount": 76,
+        "aliases": ["idle", "walk", "run", "move", "spin", "attack", "shoot", "grab", "hurt", "damage", "death", "die"]
+      }
+    ]
+  },
+
+  "galleryVideos": {
+    "files": ["dream-1.webm", "dream-2.webm", "dream-3.webm"],
+    "labels": ["Dream 1", "Dream 2", "Capture"],
+    "volume": 1.0,
+    "gallery": "bog_witch_aura",
+    "lastGallery": "bog_witch_capture"
+  },
+
+  "galleryAnimations": ["Idle"],
+  "scenes": [
+    {
+      "animation": "Aura",
+      "gallery": "bog_witch_aura",
+      "file": "bog_witch_aura",
+      "startTime": 0,
+      "endTime": 60000,
+      "oneShot": false
+    },
+    {
+      "animation": "Capture",
+      "gallery": "bog_witch_capture",
+      "file": "bog_witch_capture",
+      "startTime": 0,
+      "endTime": 20000,
+      "oneShot": false
+    }
+  ]
+}

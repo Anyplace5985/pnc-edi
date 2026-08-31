@@ -1,0 +1,10 @@
+{
+  "actions": [
+    { "at": 0, "pos": 5 },
+    { "at": 250, "pos": 100 },
+    { "at": 500, "pos": 5 }
+  ],
+  "metadata": {
+    "description": "handy2 variant of 'handy2pro': slew-limited to 600 units/s sustained, 700 peak. 380 units/s is under both, so the master passes through untouched."
+  }
+}

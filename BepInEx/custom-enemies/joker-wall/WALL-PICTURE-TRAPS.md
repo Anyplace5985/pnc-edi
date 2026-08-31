@@ -47,12 +47,17 @@ a trap you watched being hung is not much of an ambush.
 
 ## Placing one by hand
 
-**F10** places a trap on the vertical wall you are aiming at, up to 35 metres away, and falls back
-to the automatic wall search if you are not aiming at anything suitable. It first destroys **every**
-trap of that package already in the scene, so it repositions rather than accumulates. The key is
-`Wall Picture Traps / PlaceTrapKey` in `com.edi.pnc.customenemies.cfg` - the package binds it
-itself, in its own section, since §165 - and it needs `Tools / EnableDebugEnemySpawn` in
-`com.edi.pnc.cfg`, which is one gate for every debug spawn key in the install.
+**F9** places a trap on the vertical wall you are aiming at, up to 35 metres away, and falls back to
+the automatic wall search if you are not aiming at anything suitable. It first destroys **every**
+trap of that package already in the scene, so it repositions rather than accumulates.
+
+That is the framework's own `Tools / SpawnCustomEnemyKey`, with `Tools / SpawnCustomEnemyId` set to
+this package's id (or left empty if it is the only package installed), both in
+`com.edi.pnc.customenemies.cfg`. **The package no longer binds a key of its own** — it was `Wall
+Picture Traps / PlaceTrapKey` on F10 until §181, which meant a second package of any invented kind
+would have brought a third key in a fourth config section while every enemy package went on sharing
+one. The framework keeps the key and the id and asks this package what placing means for it.
+`Tools / EnableDebugEnemySpawn` in `com.edi.pnc.cfg` still gates the whole debug row.
 
 ## What it does
 
@@ -84,14 +89,26 @@ destroyed for the rest of the scene. `colliderDepth` is how far that hitbox stan
 
 ## Manifest
 
-Only `id`, `portrait` and one entry in `animations` are required; everything else has the default
-shown.
+`_example/wall-trap.json.example`, in the mod's own `BepInEx/custom-enemies/_example/`, is this
+written out as a file to copy.
+
+Only `id`, `portrait`, one entry in `animations` and the `assembly` block are required; everything
+else has the default shown. **The `assembly` block is not optional here.** A wall trap is a
+manifest kind the framework knows nothing about - it exists only because this package's own
+assembly implements it - so a `wall-trap.json` without one loads nothing, publishes nothing, binds
+no config switch and logs no complaint, because the loader never learned there was code to run.
 
 ```json
 {
   "id": "example_wall",
   "displayName": "Wall Picture",
   "enabled": true,
+
+  "assembly": {
+    "file": "WallPictureTrap.dll",
+    "module": "WallPictureTraps.WallPictureTrapModule",
+    "api": 1
+  },
 
   "portrait": "portrait.png",
   "portraitPixelsPerUnit": 300,
@@ -148,6 +165,7 @@ Field notes, for the ones where the name is not the whole story:
 | `captureSound` | package-relative **16-bit PCM WAV**. Plays on capture, looping if `captureSoundLoop`. A file saved as `WAVE_FORMAT_EXTENSIBLE` is refused with a message in the log even though it is 16-bit PCM inside; re-export as plain PCM. |
 | animation `columns`/`rows`/`frameCount` | the sprite-sheet grid. Frames are read left to right, then top to bottom; `frameCount` may be smaller than the grid to ignore unused cells at the end. |
 | animation `gallery`/`funscript` | the Edi row name and the funscript basename. Defaults to `<id>_<name>` and to the gallery name respectively. |
+| `assembly` | `file` is package-relative, `module` is the `IPackageModule` type inside it, and `api` is the framework API version it was built against. A mismatch is refused with a log line; a missing block is refused with none. |
 
 ## Funscripts
 

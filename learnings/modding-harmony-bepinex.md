@@ -217,3 +217,32 @@ looked like nothing. **`bridgeaudit.py` cannot see this class**: both ends of th
 wired, and the hole is a package that never answers. `packageaudit.py` now checks the one case that
 is mechanically detectable — an assembly that drives `GrabScreen.StartGrab` and never mentions the
 interface.
+
+**A seam the package must opt into is the one that gets half-implemented — prefer asking an object
+you already have.** `CustomEnemyBridgeInstaller` wires three questions PncEdi asks about packages,
+all three replacing a test for a type the framework used to contain (§165). Two of them —
+`OwnsGrabScene`, `OwnsSceneVisual` — are asked *of a `GameObject` the caller is already holding, and
+reach the package with `GetComponent<IPackageSceneOwner>()`: a package that implements the interface
+is connected by existing, and there is no second step to forget. The third, `HoldsEdiChannel`, asks
+"is *anyone* holding the channel", has no object to ask, and cannot afford `FindObjectsByType` on the
+filler's schedule — so it is a registry the package joins in `OnEnable`. **That opt-in is the whole
+difference, and it is why that seam was dead from §165 to §181 while its two neighbours worked**: the
+witch implemented `IPackageEdiChannelOwner`, computed `HoldsEdiChannel` correctly, and never once
+called `PackageRuntime.RegisterEdiChannelOwner`, so the list was always empty and the delegate always
+`false`. §172 is the same bug in the seam next door. Nothing about either failure is visible at
+runtime — a silent registry and a silent interface both just answer "no". So when a design needs the
+package to register, treat the register call as part of the interface and **check the pairing
+statically**: `packageaudit.py` refuses an assembly whose metadata names `IPackageEdiChannelOwner`
+without naming `RegisterEdiChannelOwner`, exactly as it does for `StartGrab` without
+`IPackageSceneOwner`.
+
+**One capability, one key: a hotkey bound per package is a config section per package.** The
+framework spawned `enemy.json` packages with `Tools / SpawnCustomEnemyKey` plus a
+`SpawnCustomEnemyId` selector, while the wall-trap package bound `Wall Picture Traps / PlaceTrapKey`
+in its own section because "it is this package's key and not the loader's" — locally reasonable, and
+wrong the moment there are two packages of invented kinds, since ten enemy packages share one key
+and every other kind brings another. The framework already had the key and the id; what it lacked
+was a verb it could ask a kind it does not implement. `IPackageDebugSpawn.DebugSpawn()` is that verb
+(§181). The general form: when the framework owns the *selector* for a capability, it should own the
+*trigger* too and ask the package what the action means — otherwise the selector only ever selects
+among the kinds the framework happens to understand.

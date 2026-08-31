@@ -69,8 +69,6 @@ internal static class CustomGallerySectionHooks
 	private static readonly HashSet<GalleryTabController> ActivatingCustom = new HashSet<GalleryTabController>();
 	private static readonly HashSet<EnemyGalleryUI> ActiveCustomGalleries = new HashSet<EnemyGalleryUI>();
 
-	internal static bool IsCustomGalleryActive(EnemyGalleryUI ui) => ui != null && ActiveCustomGalleries.Contains(ui);
-
 	internal static void RefreshExisting()
 	{
 		foreach (GalleryTabController controller in UnityEngine.Object.FindObjectsByType<GalleryTabController>(FindObjectsInactive.Include, FindObjectsSortMode.None))

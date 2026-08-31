@@ -341,3 +341,30 @@ WebM, because `release.py` drops an H.264 master nothing opens — so the packag
 and invalid to load, and the load threw, and the enemy came up as a reskin with no behaviour
 (§171). **A check that is not the code path it guards is a second implementation**, and the
 environment where the two differ is the one you do not run.
+
+**Anything every gate skips will drift, and it will look correct the whole time.**
+`BepInEx/custom-enemies/_example/` is the format's own templates and ships in every mod archive, and
+it fell four framework versions behind the reference document beside it — teaching an override that
+matched no component, one funscript variant where the doc says all three are mandatory, and a wall
+trap with no `assembly` block, which is a package that loads nothing and logs nothing. Every skip
+was individually right: `packageaudit.py` skips it because a template names a DLL that is not there
+and a behaviour nothing publishes, `speedcheck.py` because its scripts have no gallery rows, the
+plugin's discovery paths because it must never load. **The skips were correct and the sum of them
+was a blind spot**, and nothing about a template is ever wrong at runtime, because it never runs.
+So: when you exempt something from a check, ask what *does* check it, and if the answer is nothing,
+that exemption is the specification for a check of its own. `code/exampleaudit.py` is that one, and
+the question that makes it maintain itself is **coverage run backwards** — not "is every key in the
+template a real field", which only catches a typo, but "does every field the framework reads appear
+in some template", which fails by name the next time the framework grows one (§180).
+
+**An allowlist `.gitignore` hides new files, and nothing that builds from the working tree will
+notice.** `BepInEx/custom-enemies/` is ignored by default and names its text back by type —
+`*.json`, `SOURCE.txt`, `funscripts/**/*.funscript`. Templates under `_example/` match none of
+those (their manifests end `.example` so that no discovery glob finds them), and the ones that
+existed were tracked only because they predated the rule. Adding files there in §180 produced no
+`git status` entry at all: `deploy.py` copied them, `release.py` would have shipped them, both
+installs ran them, and a clone would have had none of it — with every one of sixteen checks green,
+because every one reads the working tree. **A file that ships and is not tracked is invisible to
+every tool whose input is the tree.** The habits that catch it are cheap: read `git status` after
+adding a file under an allowlist ignore, and have whatever gate owns that directory ask
+`git check-ignore` about what it ships (§180).

@@ -1,0 +1,28 @@
+Example Package source media
+
+Every package in this format ships a SOURCE.txt naming where its artwork, video and audio came
+from. Nothing in the mod reads this file - it is for the people who install the package, and for
+whoever has to answer for the content later. Both shipped packages carry one; a package posted
+without one is asking its players to take the provenance on trust.
+
+Say, for each asset: who made it, where you got it, on what date, and what you did to it.
+
+Idle animation:
+https://example.invalid/gallery/post/1234567
+
+Scene clips, in manifest order:
+https://example.invalid/gallery/post/1234568
+https://example.invalid/gallery/post/1234569
+
+The source GIF was converted to a transparent 10x8 PNG atlas (76 frames at 360x428). The clips
+were resized to at most 640 pixels on the longest side, normalized to 24 fps and converted to
+VP8/WebM, and retain stereo 48 kHz audio.
+
+Capture sound: Example Sounds, "Whoosh" by someone.
+Page: https://example.invalid/sounds/whoosh
+Free under that site's content licence. The MP3 download was converted locally to mono 16-bit PCM
+WAV for Unity playback on 2026-01-01. WAVE_FORMAT_EXTENSIBLE is refused even when it is 16-bit PCM
+inside, so export plain PCM.
+
+Funscripts: authored by hand against the handy2pro masters in this package, or state whose scripts
+they started from.

@@ -267,13 +267,15 @@ a wall trap's `animations[]` alike, so which manifest a package uses no longer d
 rows survive its switch.
 `BepInEx/custom-enemies/CUSTOM-ENEMIES.md` is the format and those rules, and `code/packageaudit.py`
 is what notices a stale or mismatched assembly, or one that drives vanilla's grab screen without
-implementing `IPackageSceneOwner` (§172).
+implementing `IPackageSceneOwner` (§172). `code/exampleaudit.py` is the same question asked of the
+*templates* rather than the packages (§180), which every other gate skips by name.
 
 **A whole new enemy needs no code change either**, since §127: drop a package under
 `BepInEx/custom-enemies/<name>/` with an `enemy.json`, its art and its funscripts, and
 `deploy.py --no-build`. The manifest declares its own gallery rows, aliases and scenes;
-`BepInEx/custom-enemies/_example/` and that directory's `CUSTOM-ENEMIES.md` are the format, and
-the plugin that reads them is `PncCustomEnemies` — while `WALL-PICTURE-TRAPS.md` now lives in
+`BepInEx/custom-enemies/_example/` and that directory's `CUSTOM-ENEMIES.md` are the format — six
+manifest templates, one per route through it, with `_example/README.md` saying which is which
+(§180) — and the plugin that reads them is `PncCustomEnemies`; `WALL-PICTURE-TRAPS.md` lives in
 `joker-wall/`, because since §165 that manifest kind is read by that package's own assembly
 (§131 — `code/README.md` has what it owns and what holds its boundary with the core mod).
 **A package's text is tracked; its media is not** (§135). The manifest, `SOURCE.txt` and
@@ -353,6 +355,7 @@ working on the thing it checks — and because it is what `check.py` is made of 
 | `.venv/bin/python code/dioramaaudit.py` | full | does every ambient `Patterns` entry still match a clip or a looping source in the build? |
 | `python3 code/webmify.py --check` | fast | does every custom-enemy video have a WebM? Unity cannot decode H.264 on Linux, so an MP4-only package is a blank overlay there (§127) |
 | `python3 code/packageaudit.py` | fast | does every package that declares an assembly ship a current one, at this API version; does a manifest's named behaviour exist; and does an assembly that drives `GrabScreen.StartGrab` implement `IPackageSceneOwner` (§172)? Every failure here is silent at runtime by design (§165) |
+| `python3 code/exampleaudit.py` | fast | do `_example/`'s templates still show the whole format — every field the framework reads, every funscript variant, an `assembly` block where one is load-bearing — and is the directory still inert? Nothing else looks at it, because every other gate skips it on purpose (§180) |
 | `python3 code/deploy.py --check` | fast | are the game installs current? |
 | `python3 code/release.py --check` | fast | would a release build succeed? |
 
@@ -394,6 +397,8 @@ is. Nothing to switch on before a session; nothing a player trips over.
 
 The mimic is off the digits because it waits for you rather than walking up; the digit row is
 exactly the ten walking enemies in encounter order. Gravy's shopkeeper is deliberately unspawnable
-by key. The spawn hotkeys for custom-enemy packages (F9, F10) live in
-`BepInEx/config/com.edi.pnc.customenemies.cfg`, not in the main config, and
-`Tools / EnableDebugEnemySpawn` gates the row itself.
+by key. The debug spawn hotkey for custom-enemy packages is **one key for every package kind** since §181 —
+`Tools / SpawnCustomEnemyKey` (F9) with `Tools / SpawnCustomEnemyId`, in
+`BepInEx/config/com.edi.pnc.customenemies.cfg` rather than the main config. An enemy package is
+spawned by the framework; a package that owns its own kind implements `IPackageDebugSpawn` and is
+asked to place its own thing. `Tools / EnableDebugEnemySpawn` gates the row itself.

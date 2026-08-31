@@ -438,3 +438,20 @@ vanilla's `ClearOverheatIfBelowMax`, which **refuses while heat is above `MaxHea
 the floor sits one point under the cap. `[OVERHEAT]` prints the latch, `CanAttackNow()`, heat, floor
 and locks on every change; two runs show it flapping at full lock and clearing every time, so the
 gap is real in the code and has not been caught happening (§134).
+
+**The seven AI classes are siblings, not a hierarchy — and only their fields are reachable, never
+their properties.** `EnemyAI`, `ChargingEnemyAI`, `SpinningEnemyAI`, `ProjectileEnemyAI`,
+`BrawlerEnemyAI`, `DragonEnemyAI` and `ProximityDragonEnemyAI` each `extends MonoBehaviour`
+directly, and each declares its own `maxHealth`, `attackDamage`, `detectionRange` and the rest. So
+`EnemyAI` is **not** a base you can name to reach the others: a manifest override, a Traverse call
+or a Harmony patch aimed at the wrong one of the seven simply matches nothing. In a package
+manifest that failure is near-invisible — `ApplyOverrides` logs one `override not found` warning and
+the enemy keeps its vanilla numbers, so a package looks retuned and is not. Which class a prefab
+carries has to be established, not assumed: a zombie is a plain `EnemyAI` (§144 deleted a knob whose
+patch was gated on zombie-and-`ChargingEnemyAI`, an intersection that has always been empty), and
+`plantasha` is a `SpinningEnemyAI`. The debug spawner's hint table pairs `zombie` with a
+`ChargingEnemyAI` sweep, which reads like a claim about zombies and is not — it is a search over
+live objects by type. Separately, `ApplyOverrides` goes through `AccessTools.Field`, so anything a
+component exposes as a *property* is out of range: there is no movement-speed override because an
+enemy's speed is `maxSpeed`, a property on its A* `FollowerEntity`, and the `moveSpeed` a document
+once showed exists on nothing but `SecretDoorBlock` (§180).

@@ -472,7 +472,7 @@ internal static class WallPictureTrapRegistry
 		WallPictureTrapPackage package = Packages.Find(p => p.Enabled) ?? (Packages.Count > 0 ? Packages[0] : null);
 		if (package == null)
 		{
-			ModServices.LogWarning("[WallPictureTrap] F10: no loaded wall-trap package");
+			ModServices.LogWarning("[WallPictureTrap] debug place: no loaded wall-trap package");
 			return null;
 		}
 
@@ -629,13 +629,6 @@ internal sealed class WallPictureTrapPlacer : MonoBehaviour
 
 	private void Update()
 	{
-		if (ModServices.DebugSpawnEnabled)
-		{
-			if (ModServices.HotkeyPressed(WallPictureTrapModule.SpawnKey))
-			{
-				WallPictureTrapRegistry.SpawnFirstAtAim();
-			}
-		}
 		Scene scene = SceneManager.GetActiveScene();
 		if (_sceneHandle != scene.handle)
 		{

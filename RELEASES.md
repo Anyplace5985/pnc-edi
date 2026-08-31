@@ -87,9 +87,15 @@ shallower than it was written to.
 - **The device keeps playing in menus**, on the pause screen and after a run ends, instead of
   falling silent. Losing window focus still pauses it. There is a switch for it.
 - **Custom enemies and wall traps** are a documented format, so anyone can build one. The format
-  ships in the archive even though the packages do not.
+  ships in the archive even though the packages do not: `BepInEx/custom-enemies/CUSTOM-ENEMIES.md`
+  is the reference, and `BepInEx/custom-enemies/_example/` holds six manifest templates — one for
+  each way of building a package, from "clone a zombie and give it new artwork" up to "ship your
+  own code" — with a funscript set in all three device variants and a `README.md` saying which
+  template is which.
 - **The chaser bosses have an aura** that drives the device by how close they are, and the
   serpent's hypnosis now builds in stages with a minimum dwell rather than flickering between them.
+- **The Femboy Witch's charm circle keeps the device to itself** while you stand in it. It was
+  supposed to all along; the filler could take the channel back mid-scene, and now cannot.
 - **Distance drives the device** for ambient scenes, rather than a fixed playlist.
 - **The class selection screen tells the truth** about your horniness capacity: it counts armour
   once instead of twice, and it shows the numbers your chosen profile will actually run at.

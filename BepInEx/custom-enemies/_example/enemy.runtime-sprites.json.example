@@ -6,18 +6,23 @@
   "alwaysUnlocked": true,
   "includeInRandomSpawns": true,
   "spawnWeight": 0.5,
+
   "baseEnemy": "zombie",
   "nameAliases": ["SpriteRaider"],
+
   "fields": [
-    { "component": "ChargingEnemyAI", "field": "maxHealth", "value": "150" },
-    { "component": "ChargingEnemyAI", "field": "attackDamage", "value": "20" }
+    { "component": "EnemyAI", "field": "maxHealth", "value": "150" },
+    { "component": "EnemyAI", "field": "attackDamage", "value": "20" }
   ],
+
   "spriteVisual": {
+    "renderer": null,
     "pixelsPerUnit": 100,
     "pivot": "0.5,0",
     "offset": "0,0,0",
     "scale": "1,1,1",
     "hideOriginalRenderers": true,
+    "continuous": false,
     "defaultAnimation": "idle",
     "animations": [
       { "name": "idle", "file": "idle.png", "fps": 8, "loop": true, "columns": 6, "rows": 1, "frameCount": 6, "aliases": ["idle"] },
@@ -27,5 +32,16 @@
       { "name": "death", "file": "death.png", "fps": 10, "loop": false, "columns": 8, "rows": 1, "frameCount": 8, "aliases": ["death", "die"] }
     ]
   },
-  "galleryAnimations": ["Idle", "Walk", "Attack"]
+
+  "galleryAnimations": ["Idle"],
+  "scenes": [
+    {
+      "animation": "Loop",
+      "gallery": "sprite_raider_loop",
+      "file": "sprite_raider_loop",
+      "startTime": 0,
+      "endTime": 0,
+      "oneShot": false
+    }
+  ]
 }

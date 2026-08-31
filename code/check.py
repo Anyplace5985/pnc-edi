@@ -8,16 +8,16 @@
     python3 code/check.py -k alias      only steps whose name contains `alias`
     python3 code/check.py -v            print every step's output, not only the failures
 
-**Why this exists.** PROJECT.md's "Checking your work" table is fifteen checks (and four
+**Why this exists.** PROJECT.md's "Checking your work" table is sixteen checks (and four
 instruments) with four different invocations (`python3`, `.venv/bin/python`, `dotnet test`,
 `dotnet run --project`), three different ideas of what failure looks like, and one entry that needs
-the hardware plugged in. A session that has just changed one file either runs all fifteen by hand
+the hardware plugged in. A session that has just changed one file either runs all sixteen by hand
 or - what actually happened - runs the two it remembers. This runs them, in dependency order, and gives one exit code.
 
 **The three ways a tool here reports failure**, all of which this has to understand:
 
-  `gate`   exit code is the verdict:  patchaudit, cfgaudit, versionaudit, ladders --check,
-           deploy --check, release --check, dotnet test.
+  `gate`   exit code is the verdict:  patchaudit, cfgaudit, versionaudit, packageaudit,
+           exampleaudit, ladders --check, deploy --check, release --check, dotnet test.
   `grep`   exit code is always 0 and the verdict is a word in the output: slugharness prints
            `UNMAPPED` per unmapped pair, animsweep prints `OFF` in its time column. A tool like
            this cannot be wrapped by exit code alone, and wrapping it wrong is worse than not
@@ -88,6 +88,8 @@ STEPS = [
          "does every custom-enemy video have a WebM, so it plays on Linux?"),
     Step("packageaudit", [PY, "code/packageaudit.py"],
          "does every package that declares an assembly ship a current one?"),
+    Step("exampleaudit", [PY, "code/exampleaudit.py"],
+         "do the format's own templates still show the whole format?"),
     Step("deploy", [PY, "code/deploy.py", "--check"],
          "are the game installs current?",
          needs=("game",)),

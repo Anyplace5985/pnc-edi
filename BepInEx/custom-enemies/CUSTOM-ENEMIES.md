@@ -50,12 +50,16 @@ the game directory and adds a single directory under `BepInEx/custom-enemies/`. 
 configure — the manifest declares the enemy's scenes, gallery rows and aliases, and the mod
 registers them at startup.
 
-They are also the worked examples this document describes. `_example/` beside this file is a
-template with the fields and no content behind them; the two real packages are the same formats
-with real art, real funscripts and real tuning in them, so reading one is the fastest way to see
-what a manifest looks like when it is finished. Its manifests end in `.example`, which is what
-makes the directory inert: copy it somewhere new, rename `enemy.json.example` to `enemy.json`, and
-the package loads on the next launch.
+They are also the worked examples this document describes. `_example/` beside this file holds
+**six manifest templates, one per route through this format** - listed in `_example/README.md`,
+with the fields filled in and no content behind them - plus a `SOURCE.txt.example` and a funscript
+set in all three device variants. The two real packages are the same formats with real art, real
+funscripts and real tuning in them, so reading one is the fastest way to see what a manifest looks
+like when it is finished. Every file in `_example/` ends in `.example` and the framework skips a
+directory of that name besides, which is what makes it inert twice over: copy it somewhere new,
+drop the `.example` suffix from the one manifest you want and from the funscripts, and the package
+loads on the next launch. **One package directory, one manifest** - every `*.json` in a package
+directory is read, so leaving two of the six behind registers two packages.
 
 **Working from a clone of the source repo rather than a release?** A package's *text* is tracked —
 its manifest, its `SOURCE.txt` and its `funscripts/` — but its media is not, because that is
@@ -67,8 +71,10 @@ There are two ways to build an enemy:
 
 - **clone a vanilla enemy** (`baseEnemy`) and replace its artwork, its fields, or its whole
   behaviour. No Unity Editor needed - artwork is PNG sprite sheets read at runtime.
+  `_example/enemy.json.example` and `_example/enemy.runtime-sprites.json.example`.
 - **load a complete prefab** from a Unity AssetBundle (`assetBundle` + `prefab`). This needs the
   Editor, and the prefab has to arrive with a working AI already on it.
+  `_example/enemy.assetbundle.json.example`.
 
 Every discovered package gets a switch in the mod manager (**F11**) under **PNC Custom Enemies →
 Custom Enemies**, saved in `BepInEx/config/com.edi.pnc.customenemies.cfg`, which overrides the
@@ -77,17 +83,27 @@ enemy already walking around stays until the scene changes.
 
 ## Spawning one to look at it
 
-**F9** spawns the package whose `id` matches `Tools / SpawnCustomEnemyId` in
-`com.edi.pnc.customenemies.cfg`, `Tools / SpawnEnemyDistance` metres in front of the player. That
-setting **ships empty**, which spawns the only installed package when there is exactly one and
+**F9 is the debug key for every kind of package**, and there is only one of it. It acts on the
+package whose `id` matches `Tools / SpawnCustomEnemyId` in `com.edi.pnc.customenemies.cfg`. That
+setting **ships empty**, which acts on the only spawnable package when there is exactly one and
 otherwise logs the ids to choose from: the framework ships no packages, so no package's id is a
-default here. It
-needs `Tools / EnableDebugEnemySpawn` in `com.edi.pnc.cfg` - that switch stays with the core mod,
-because it is one gate for every debug spawn key in the install.
+default here. It needs `Tools / EnableDebugEnemySpawn` in `com.edi.pnc.cfg` - that switch stays with
+the core mod, because it is one gate for every debug spawn key in the install.
+
+What the key *does* depends on the kind:
+
+- an **enemy** package is spawned `Tools / SpawnEnemyDistance` metres in front of the player. The
+  framework built the template, so it knows what spawning one means.
+- a package that owns **its own kind** is asked to place its own thing, and decides what that means
+  - a wall trap goes on the wall you are aiming at rather than in front of you. It does that by
+  implementing `IPackageDebugSpawn` (§181); before that it bound a debug key of its own, which meant
+  a new key in a new config section for every package of every invented kind while all the enemy
+  packages shared one.
 
 A package that clones a vanilla enemy has no prefab until that base enemy exists in the level, so
-**spawn from inside a run, not from the main menu**. If nothing appears, `[SPAWN]` in the log says
-why and lists every id that did load.
+**spawn from inside a run, not from the main menu**. A package whose code is switched off cannot
+place anything and says so. If nothing appears, `[SPAWN]` in the log says why and lists every id
+the key would accept.
 
 ## Cloning a vanilla enemy
 
@@ -100,13 +116,26 @@ set `baseEnemy`. That is the same case-insensitive prefab hint the debug spawner
 ```json
 "fields": [
   { "component": "EnemyAI", "field": "maxHealth", "value": "120" },
-  { "component": "EnemyAI", "field": "moveSpeed", "value": "3.5" }
+  { "component": "EnemyAI", "field": "attackCooldown", "value": "1.4" }
 ]
 ```
 
 `component` matches a component's short or full type name; the field is found on any component of
 that type anywhere in the prefab's hierarchy. Supported types are `string`, `bool`, `int`, `float`,
 `double`, enums, `Vector2` and `Vector3`; vectors are written `"x,y,z"`.
+
+**Name the AI class this base enemy actually carries.** The game's seven AI classes - `EnemyAI`,
+`ChargingEnemyAI`, `SpinningEnemyAI`, `ProjectileEnemyAI`, `BrawlerEnemyAI`, `DragonEnemyAI` and
+`ProximityDragonEnemyAI` - are **siblings, not a hierarchy**: every one of them extends
+`MonoBehaviour` directly and every one declares its own `maxHealth`, `attackDamage` and
+`detectionRange`. So `EnemyAI` is not a base class you can name to reach the others, and naming the
+wrong one matches no component on the prefab, logs one warning, and leaves the enemy at its vanilla
+numbers - a package that looks retuned and is not. A zombie is a plain `EnemyAI` (§144);
+`plantasha` is a `SpinningEnemyAI`, which is why the Femboy Witch's overrides name that one.
+
+**Only fields are reachable, never properties.** The override goes through `AccessTools.Field`, so
+anything a component exposes as a property is out of range. That is why there is no movement-speed
+override: an enemy's speed is `maxSpeed` on its A\* `FollowerEntity`, and it is a property.
 
 A component or field that does not exist logs a warning and the rest of the package still loads. A
 *value* that cannot be parsed into the field's type, or a field of an unsupported type, is an error
@@ -116,7 +145,10 @@ and takes the whole package down with it - so check the log after editing one.
 
 A clone can replace the vanilla artwork entirely with sprite sheets. The cloned enemy keeps
 supplying its tested AI, attacks, hitboxes and navigation.
-`_example/enemy.runtime-sprites.json.example` is a working starting point.
+`_example/enemy.runtime-sprites.json.example` is a working starting point. `renderer` is normally
+`null`, which means "the enemy's own"; `continuous: true` keeps one long sheet running across state
+changes rather than restarting it, which is what a package with a single idle animation and a long
+loop wants.
 
 ```json
 "spriteVisual": {
@@ -242,6 +274,9 @@ does - and it is code.
 "charm-witch": { "auraRadius": 8.5, "heatPerSecond": 7 }
 ```
 
+`_example/enemy.behaviour.json.example` is that manifest written out in full - the one template
+here that ships no code at all.
+
 `behaviour` names one; the block named the same way tunes it. **A package that only asks for a
 behaviour is still pure data** - no compiler, no Unity Editor, nothing but JSON, art and funscripts.
 What it does need is that some *installed* package published that name. If none did, the enemy still
@@ -255,8 +290,10 @@ Behaviours that exist today, both published by the packages that ship them:
 
 A package can also be a *kind* of its own rather than a behaviour another manifest attaches: the
 Joker Wall Trap package's traps have their own manifest (`wall-trap.json`), their own placement and
-their own gallery entries, all inside that package's assembly. See `WALL-PICTURE-TRAPS.md`, in the
-Joker Wall Trap package.
+their own gallery entries, all inside that package's assembly. `_example/wall-trap.json.example` is
+the template; `WALL-PICTURE-TRAPS.md`, in the Joker Wall Trap package, is the reference for what
+each field means. A kind the framework does not know exists only because its own assembly
+implements it, so that template carries an `assembly` block and cannot work without one.
 
 ### Shipping a behaviour of your own
 
@@ -266,10 +303,15 @@ A package may ship a .NET assembly and publish behaviours from it:
 "assembly": { "file": "MyBoss.dll", "module": "MyBoss.MyModule", "api": 1 }
 ```
 
+`_example/enemy.assembly.json.example` is the worked version of this one.
+
 `file` is package-relative, `module` is a type in it with a public parameterless constructor
 implementing `PncCustomEnemies.Api.IPackageModule`, and `api` is the framework API version the
 assembly was built against - a mismatch is refused with a log line saying which side is behind,
-rather than failing halfway through a run. Compile against `PncCustomEnemies.dll` and the game's own
+rather than failing halfway through a run. **A manifest that carries a DLL and no `assembly` block
+is the one failure in this format with no symptom whatsoever**: nothing loads, nothing is
+published, no config switch is bound, and no line is logged, because the loader never learned the
+package had code to refuse. Compile against `PncCustomEnemies.dll` and the game's own
 assemblies; the whole surface is `PncCustomEnemies.Api`, and `code/packages/charm-witch/` in the
 mod's repo is a working example of every part of it.
 
@@ -414,7 +456,7 @@ Put scripts beside the manifest, grouped by Edi device variant:
 
     bog-witch/
       enemy.json
-      bog_witch.bundle
+      SOURCE.txt
       funscripts/
         handy2pro/
           bog_witch_loop.funscript
@@ -437,6 +479,11 @@ package's `handy2/` from its `handy2pro/` masters, held to 600 units/s sustained
 `handy1/` is not generated for you: 364 units/s is a hard enough limit that the shipped packages'
 Handy 1 scripts were authored by hand rather than slew-limited, and the tool leaves them alone.
 
+`_example/funscripts/` carries all three folders for that reason, and its two scripts are chosen to
+show the one case that matters: the climax runs at 380 units/s, which is inside a Handy 2's 600 and
+over a Handy 1's 364, so the `handy1/` copy shortens the *stroke* and leaves the *timing* alone. It
+is always the stroke that gives - the script has to stay in step with the animation on screen.
+
 Restart Edi after adding or changing a package if it was already running.
 
 In a scene, `animation` must exactly match the animator state the game or gallery selects, `gallery`
@@ -453,6 +500,16 @@ Two rules protect the project's own gallery, and both refuse rather than overwri
   written.
 
 Both log a warning naming the package. Rename the offending scene or script.
+
+## `SOURCE.txt`
+
+Every package in this format ships one, and both of the published ones do. Nothing in the mod reads
+it: it is for the people who install the package, and for whoever has to answer for the content
+later. Say, for each asset, who made it, where you got it, on what date, and what you did to it -
+the resize, the atlas layout, the WAV conversion. `_example/SOURCE.txt.example` is the shape.
+
+A package posted without one is asking its players to take its provenance on trust, which is not a
+thing this format wants to normalise.
 
 ## Spawning and gallery behaviour
 

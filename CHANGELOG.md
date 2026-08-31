@@ -1453,6 +1453,122 @@ Nothing about the 0.2.1 install's importance changed — `PNC_GAME_DIR` still re
 figure, and the documents still say to keep that install. What is gone is the assertion about where
 it lives. Machine-specific locations worth keeping live outside the repo entirely.
 
+## 180. The templates caught up with the format, and a gate so they stay caught up
+
+`BepInEx/custom-enemies/_example/` is the format's own worked shape and ships in every mod archive,
+and it had drifted four framework versions behind the reference beside it. It taught the AssetBundle
+route not at all, and `behaviour`, `assembly`, `stripBaseEnemy`, `galleryVideos`, `spriteVisual.continuous`
+and a scene's `sound` / `aliases` / `startTime` not at all either. Three of its claims were wrong
+rather than merely absent:
+
+- both templates overrode fields on `ChargingEnemyAI` of a `zombie`. **The game's seven AI classes
+  are siblings, not a hierarchy** — each extends `MonoBehaviour` and each declares its own
+  `maxHealth` — and §138/§144 established that no zombie prefab is a `ChargingEnemyAI` on any build
+  this project has run. So the template's headline demonstration of `fields` matched no component,
+  logged one warning and changed nothing. Now `EnemyAI`, which is what a zombie carries.
+- `funscripts/` held `handy2pro/` alone, while the document four inches above it says a player whose
+  device names a missing variant gets **nothing** for that enemy. Now all three, with the climax
+  chosen to sit over a Handy 1's 364 units/s and under a Handy 2's 600, so the `handy1/` copy
+  demonstrates the rule: shorten the stroke, never stretch the time.
+- `wall-trap.json.example` carried no `assembly` block. A wall trap is a manifest kind the framework
+  does not implement, so without one a copy of that template loads nothing, publishes nothing, binds
+  no config switch and logs nothing — **the one failure in this format with no symptom at all.**
+  That copy also lived in `joker-wall/`, which the mod archive does not ship, so the only template
+  for one of the two package kinds reached nobody who had not already bought into the kind. It is
+  now `_example/wall-trap.json.example`, one copy, and `WALL-PICTURE-TRAPS.md` points at it.
+
+There are six manifest templates now, one per route — clone, runtime PNG, AssetBundle, a behaviour
+asked for by name with **no code**, a behaviour published from an assembly **with code**, and a
+package kind of its own — plus a `SOURCE.txt.example`, since every shipped package carries one and
+the template set did not say so. `_example/README.md` names which is which and states the three
+mistakes that cost the most.
+
+**`code/exampleaudit.py` is the new gate, and sixteen is the check count.** The reason `_example/`
+could drift is that every gate skips it, each for a good reason: `packageaudit.py` because a
+template names a DLL that is not there and a behaviour nothing publishes, `speedcheck.py` because
+its scripts have no rows, `PackageGalleryImport` and `PackageAssemblies` because it must never load.
+Nothing about a template is wrong at runtime — it never runs. So the audit asks a template's own
+questions instead, and the load-bearing one is **coverage**: every field the framework reads has to
+appear in some template, or the run fails naming the field. A new manifest field is now a new line
+in a template or a new line in the audit's `NOT_TEMPLATED` with a reason, and a session has to
+choose between them. Seven mutations were checked to fail before it was wired in.
+
+**And `.gitignore` would have dropped every new template on the floor.** The package rules name back
+`*.json`, `SOURCE.txt` and `funscripts/**/*.funscript`; a template matches none of the three,
+because its manifests end `.example` precisely so nothing discovers them. The templates that existed
+were tracked only because they predated the rule. `release.py` builds the archive from the working
+tree, so the new ones would have shipped to players and reached no clone, and every check in this
+repo would have passed. `_example/**` is named back in whole now, and the audit asks `git
+check-ignore` about every file it ships.
+
+Three things fixed along the way. `CustomEnemies.cs` was the one discovery path that did not skip
+`_example` by name — harmless while every file there ends `.example`, but it was the path that would
+half-load a template renamed in place, registered by one path and refused a gallery and a config
+switch by the other two. And `release.py` still named `CustomEnemies.SyncFunscripts` and
+`UpsertDefinitions` in three comments; §175 deleted both.
+
+The archive's own `README.txt` now names `_example/` and says what to do with it — it had pointed
+only at the reference document, and called the directory "a template" when it holds six.
+
+`CUSTOM-ENEMIES.md` gains the sibling-class rule, the "only fields, never properties" rule that goes
+with it — its own `fields` example had been overriding a `moveSpeed` that exists on no AI class, an
+enemy's speed being a property on its A\* `FollowerEntity` — a `SOURCE.txt` section, and a pointer
+from each route to the template that shows it.
+
+## 181. The aura's hold on the device, reconnected, and one debug key for every package kind
+
+Two things the §165 extraction left behind, found by asking what in `PncCustomEnemies` was still
+required after §175 homogenised the two packages. The answer was "almost all of it" — the framework
+is lean now — but one seam in it had never been connected at all.
+
+**`EdiChannelHeld` had returned false since §165.** Before the extraction the framework contained
+the witch and read her directly:
+
+    CustomEnemyBridge.EdiChannelHeldTest = () => CharmWitchController.IsPlayerInsideAnyAura;
+
+§165 replaced that with a registry, `PackageSceneOwners.AnyHoldsEdiChannel`, and never changed the
+witch to join it. `PackageRuntime.RegisterEdiChannelOwner` has no call site in any commit in this
+repo's history. So the list was always empty, the delegate always false, and the guard at
+`Plugin.cs:1232` — whose own comment says a charm circle must not have the channel taken back by the
+dozen callers of `GoFiller` that mean "nothing else is happening" — never fired. `CharmWitchController`
+implemented `IPackageEdiChannelOwner` and computed `HoldsEdiChannel` the whole time; nothing asked.
+
+**Why this one hid when §172's twin was caught.** The installer wires three seams that "used to test
+for a type this plugin contained". Two of them, `OwnsGrabScene` and `OwnsSceneVisual`, are asked *of
+a GameObject the caller already has* and reach it with `GetComponent`, so a package that implements
+the interface is wired by existing. The third asks "is *anyone* holding the channel", which has no
+object to ask and cannot afford a per-frame scan, so it is a registry — **the only one of the three
+that needs the package to opt in, and therefore the only one that can be half-implemented.** That
+asymmetry is the whole defect, and `packageaudit.py` now refuses an assembly that names
+`IPackageEdiChannelOwner` and never names `RegisterEdiChannelOwner`, beside the check §172 added for
+its neighbour. `CharmWitchController.IsPlayerInsideAnyAura`, orphaned since §165, is deleted.
+
+This is very likely part of what TODO records as the witch's aura "flapping" between a witch row and
+a filler row. It is not offered as the whole explanation — an aura *exit* returning to filler is
+correct — and the missing hysteresis at the aura boundary stays open on its own merits.
+
+**One debug key for every package kind.** An `enemy.json` package was spawned by the framework's
+`Tools / SpawnCustomEnemyKey` with `Tools / SpawnCustomEnemyId` choosing between packages, while the
+Joker Wall Trap bound `Wall Picture Traps / PlaceTrapKey` in its own section. Both were defensible
+alone and wrong together: ten enemy packages share one key and a selector, and a second package of
+any invented kind would have brought a third key in a fourth config section. The framework had the
+key and the selector; what it lacked was a way to say "place *your* thing" to a kind it does not
+implement.
+
+`IPackageDebugSpawn` is that — one method, `bool DebugSpawn()`, returning false when there was
+nowhere to put anything so the log can say so rather than leaving the key looking dead.
+`PackageDebugSpawn` is the dispatcher, and it owns id resolution for the whole install, because
+"which package did you mean" is one question and answering it in two places is how two answers
+drift. The trap implements the interface and binds no key; F10 is gone and F9 does both.
+
+**`PackageApi.Version` is 2**, per that file's own rule that it bumps whenever anything in it
+changes shape. Both shipped manifests and both code-shipping templates say `"api": 2`;
+`exampleaudit.py` reads the number out of the source, so it followed by itself.
+
+Also removed: `CustomGallerySection.IsCustomGalleryActive`, declared and never called. That was the
+only genuinely dead code the sweep found — after §175 deleted `SyncFunscripts` and
+`UpsertDefinitions`, the redundancy the question was aimed at is already gone.
+
 ## Tried and reverted — do not redo
 
 

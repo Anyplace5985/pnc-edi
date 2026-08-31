@@ -1,2 +1,10 @@
-{"version":"1.0","inverted":false,"range":100,"actions":[{"at":0,"pos":0},{"at":500,"pos":100},{"at":1000,"pos":0}]}
-
+{
+  "actions": [
+    { "at": 0, "pos": 10 },
+    { "at": 500, "pos": 90 },
+    { "at": 1000, "pos": 10 }
+  ],
+  "metadata": {
+    "description": "Armored Zombie idle-grab loop. This folder is the master a package is authored in: 160 units/s here, well inside the 2 Pro's headroom."
+  }
+}

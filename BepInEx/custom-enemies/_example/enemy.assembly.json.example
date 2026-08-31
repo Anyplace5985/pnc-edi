@@ -1,0 +1,66 @@
+{
+  "id": "example_boss",
+  "displayName": "Example Boss",
+  "description": "A package that ships a .NET assembly and publishes a behaviour of its own. Because it carries code, it starts switched off and the player has to turn it on.",
+  "enabled": true,
+  "alwaysUnlocked": true,
+  "includeInRandomSpawns": true,
+  "spawnWeight": 0.2,
+
+  "baseEnemy": "plantasha",
+  "stripBaseEnemy": true,
+  "nameAliases": ["ExampleBoss", "Example Boss"],
+
+  "assembly": {
+    "file": "ExampleBoss.dll",
+    "module": "ExampleBoss.ExampleBossModule",
+    "api": 2
+  },
+
+  "behaviour": "example-boss",
+  "example-boss": {
+    "enabled": true,
+    "auraRadius": 9.0,
+    "heatPerSecond": 6,
+    "captureGallery": "example_boss_capture"
+  },
+
+  "fields": [
+    { "component": "SpinningEnemyAI", "field": "maxHealth", "value": "800" },
+    { "component": "SpinningEnemyAI", "field": "canGrab", "value": "false" }
+  ],
+
+  "spriteVisual": {
+    "pixelsPerUnit": 100,
+    "pivot": "0.5,0",
+    "offset": "0,0,0",
+    "scale": "1.4,1.4,1",
+    "hideOriginalRenderers": true,
+    "continuous": true,
+    "defaultAnimation": "idle",
+    "animations": [
+      {
+        "name": "idle",
+        "file": "example-boss-idle.png",
+        "fps": 8,
+        "loop": true,
+        "columns": 8,
+        "rows": 4,
+        "frameCount": 32,
+        "aliases": ["idle", "walk", "run", "move", "spin", "attack", "shoot", "grab", "hurt", "damage", "death", "die"]
+      }
+    ]
+  },
+
+  "galleryAnimations": ["Idle"],
+  "scenes": [
+    {
+      "animation": "Capture",
+      "gallery": "example_boss_capture",
+      "file": "example_boss_capture",
+      "startTime": 0,
+      "endTime": 20000,
+      "oneShot": false
+    }
+  ]
+}

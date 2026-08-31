@@ -122,7 +122,7 @@ before you could build. If it is missing the build stops with the command to run
     python3 code/check.py -k alias   only the steps whose name contains `alias`
     python3 code/check.py -v         print every step's output, not only the failures
 
-One runner over the fifteen checks PROJECT.md lists — eleven fast, four more under `--full`. It adds no check of its own; what it adds is
+One runner over the sixteen checks PROJECT.md lists — twelve fast, four more under `--full`. It adds no check of its own; what it adds is
 knowing **how each tool says no**, which is the part that made a hand-run sweep unreliable:
 
   * `gate` — the exit code is the verdict: `dotnet test`, `patchaudit`, `cfgaudit`,
@@ -548,12 +548,28 @@ the top of a package directory, `scenes[]` and a wall trap's `animations[]` alik
 rows reach Edi whether or not its code is allowed to run (§175). Its rows have to stay identical to
 `release.custom_enemy_gallery`'s, which is §164's two-writer obligation and what `deploy.py --check`
 reports when they drift (§129).
-`BepInEx/custom-enemies/_example/` and `CUSTOM-ENEMIES.md` beside it are the format. The second
-format reference, `WALL-PICTURE-TRAPS.md`, moved into `joker-wall/` in §168: since §165 the
-framework does not implement that manifest kind, so its documentation and its `.example` template
-ship in that package's archive beside `WallPictureTrap.dll` rather than in an archive that cannot
-read either. Both were imported from the fork and checked claim by claim against this tree in
-§129.
+`BepInEx/custom-enemies/_example/` and `CUSTOM-ENEMIES.md` beside it are the format — six manifest
+templates since §180, one per route through it, with `_example/README.md` naming which is which.
+The second format reference, `WALL-PICTURE-TRAPS.md`, moved into `joker-wall/` in §168: since §165
+the framework does not implement that manifest kind, so its documentation ships in that package's
+archive beside `WallPictureTrap.dll` rather than in an archive that cannot read either. Its
+`.example` template does not: §180 moved that to `_example/`, because a template belongs where
+every other template is and where the mod archive actually carries it, and because the copy in
+`joker-wall/` had drifted — it was missing the `assembly` block without which a wall trap is not a
+package at all. Both references were imported from the fork and checked claim by claim against this
+tree in §129.
+
+**`code/exampleaudit.py` is the gate over the templates** (§180), and it exists because every other
+gate skips `_example/` on purpose: `packageaudit.py` because a template names a DLL that is not
+there, `speedcheck.py` because its scripts have no rows, both discovery paths in the plugin because
+it must never load. It asks a template's questions instead — every key is a field the framework
+still reads, **every field the framework reads appears in some template**, an `assembly` block
+where one is load-bearing carries the current `api`, `fields[]` names the AI class the base enemy
+actually carries, all three funscript variants are present and inside their ceilings, and the
+directory is still inert both ways, and `git check-ignore` says nothing it ships is excluded — the
+archive is built from the working tree, so an ignored template ships to players and reaches no
+clone with every other check green. The coverage half is the point: a new manifest field now either
+gains a line in a template or a line in the audit's `NOT_TEMPLATED`, and a session has to choose.
 
 **A package's text is tracked; its media is not, and neither is in the release.** The split is
 deliberate and the two halves have different reasons:

@@ -1,0 +1,10 @@
+{
+  "actions": [
+    { "at": 0, "pos": 10 },
+    { "at": 500, "pos": 90 },
+    { "at": 1000, "pos": 10 }
+  ],
+  "metadata": {
+    "description": "handy2 variant of 'handy2pro': slew-limited to 600 units/s sustained, 700 peak. Nothing here was over the cap, so this is the master unchanged - which is the usual outcome and is still worth shipping, because a device pointed at handy2 that finds no file plays nothing."
+  }
+}

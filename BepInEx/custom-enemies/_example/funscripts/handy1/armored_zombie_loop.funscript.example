@@ -1,0 +1,10 @@
+{
+  "actions": [
+    { "at": 0, "pos": 10 },
+    { "at": 500, "pos": 90 },
+    { "at": 1000, "pos": 10 }
+  ],
+  "metadata": {
+    "description": "Handy 1-safe Armored Zombie loop. 160 units/s, inside the 364 units/s firmware ceiling, so the master needed no change here."
+  }
+}

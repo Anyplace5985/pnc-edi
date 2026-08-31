@@ -11,7 +11,7 @@
   "assembly": {
     "file": "CharmWitch.dll",
     "module": "CharmWitch.CharmWitchModule",
-    "api": 1
+    "api": 2
   },
   "stripBaseEnemy": true,
   "nameAliases": [

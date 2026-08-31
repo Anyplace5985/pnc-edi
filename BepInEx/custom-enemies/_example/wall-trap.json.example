@@ -3,6 +3,12 @@
   "displayName": "Example Wall Picture",
   "enabled": true,
 
+  "assembly": {
+    "file": "ExampleWallTrap.dll",
+    "module": "ExampleWallTraps.ExampleWallTrapModule",
+    "api": 2
+  },
+
   "portrait": "portrait.png",
   "portraitPixelsPerUnit": 300,
   "portraitBrightness": 0.35,
