@@ -722,7 +722,7 @@ internal sealed class WallPictureTrapPlacer : MonoBehaviour
 	}
 }
 
-internal sealed class WallPictureTrap : MonoBehaviour, IDamageable
+internal sealed class WallPictureTrap : MonoBehaviour, IDamageable, IPackageSceneOwner
 {
 	private WallPictureTrapPackage _package;
 	private SpriteRenderer _portrait;
@@ -756,7 +756,32 @@ internal sealed class WallPictureTrap : MonoBehaviour, IDamageable
 	private Texture2D _healthBarTexture;
 
 	internal string Id => _package?.Manifest.id ?? "";
-	internal float MinimumSceneSeconds => Mathf.Max(0f, _package?.Manifest.minimumSceneSeconds ?? 20f);
+	/// <summary>
+	/// `IPackageSceneOwner`, and the reason all three members are here rather than two (§172).
+	///
+	/// Until §165 the framework answered these by testing for this type - `SceneVisualOwnerTest =
+	/// enemy => enemy.GetComponent&lt;WallPictureTrap&gt;() != null`, and the same in `OwnsGrabScene`
+	/// and `ResolveSceneMinimumSeconds`. The extraction replaced the type tests with this interface
+	/// and this class never implemented it, so every one of them silently answered "not a package's
+	/// scene" for three sessions. The visible half was that `NearbyEnemyHider` hid the trap at the
+	/// instant of capture - a trap *is* the scene, so the mod deactivated the object drawing it, its
+	/// `Update` stopped, and the overlay froze on frame 0.
+	///
+	/// **`OwnsSceneVisual` is unconditional on purpose.** The guard that reads it runs inside
+	/// `GrabScreen.StartGrab`, which `BeginCapture` calls *before* it sets `_capturing`, so a
+	/// state-gated answer is false at exactly the moment it is asked. A wall trap is its own visual
+	/// whether or not it happens to be mid-capture, which is what the type test used to say.
+	/// </summary>
+	public float MinimumSceneSeconds => Mathf.Max(0f, _package?.Manifest.minimumSceneSeconds ?? 20f);
+
+	/// <summary>True while vanilla's `GrabScreen` is showing this trap's capture. `GrabbingEnemy` is
+	/// assigned by `StartGrab` before its postfix runs, so this is already true when PncEdi asks.</summary>
+	public bool OwnsGrabScene =>
+		_capturing || (GrabScreen.Instance != null && GrabScreen.Instance.GrabbingEnemy == gameObject);
+
+	/// <summary>Always: the picture on the wall is the scene, and the mod's vanilla art handling and
+	/// its nearby-enemy sweep both have to stand down for it.</summary>
+	public bool OwnsSceneVisual => true;
 
 	/// <summary>What this trap is adding to the player's velocity, read once per physics step by
 	/// <see cref="WallPictureTrapPull"/>. Zero unless the trap is actively pulling.</summary>

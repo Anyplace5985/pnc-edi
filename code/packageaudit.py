@@ -95,6 +95,30 @@ def newest_source(package_dir: Path) -> float:
     return newest
 
 
+# A package that drives vanilla's grab screen has to answer for that scene, and the only way to
+# answer is `IPackageSceneOwner`. Until §165 the framework tested for the two types it contained;
+# the extraction replaced those tests with the interface and `WallPictureTrap` never implemented
+# it, so for three sessions the mod hid the trap at the instant of capture - a trap *is* the scene -
+# and its overlay froze on frame 0 while every log line said the capture had started (§172).
+#
+# The check is deliberately a string scan of the assembly rather than real IL parsing: both names
+# land in the metadata #Strings heap of any assembly that references them, there is no dependency
+# to install, and the question is only "does this package mention the interface it plainly needs".
+# A package that calls StartGrab and implements the interface passes; one that does neither is not
+# in scene-owning business and is not asked.
+GRAB_ENTRY = b"StartGrab"
+SCENE_OWNER = b"IPackageSceneOwner"
+
+
+def scene_owner_gap(assembly_path: Path) -> bool:
+    """True when a package assembly drives GrabScreen and never mentions IPackageSceneOwner."""
+    try:
+        blob = assembly_path.read_bytes()
+    except OSError:
+        return False
+    return GRAB_ENTRY in blob and SCENE_OWNER not in blob
+
+
 def main() -> int:
     version = api_version()
     behaviours = published_behaviours()
@@ -127,6 +151,12 @@ def main() -> int:
                 if source and source > built:
                     problems.append(f"{where}: {file} is older than the sources it is built from - "
                                     f"rebuild, or the install runs last build's behaviour")
+                if scene_owner_gap(package_dir / file):
+                    problems.append(
+                        f"{where}: {file} drives GrabScreen.StartGrab and never mentions "
+                        f"IPackageSceneOwner - the mod then reads its capture as an ordinary grab, "
+                        f"hides the object drawing the scene and applies its own escape delay "
+                        f"(§172)")
             if declared != version:
                 problems.append(f"{where}: declares api {declared!r}, this framework speaks {version}"
                                 f" - the loader refuses a mismatch, so the package would not run")

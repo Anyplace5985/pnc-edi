@@ -204,3 +204,16 @@ meaning change does not break the readers it invalidates, it leaves them quietly
 question** (§170). Fixed by an early return in `LoadManifest` for a code package that is off, and
 found only because an install existed where the claim could be checked rather than read.
 
+**Replacing a type test with an interface moves the obligation to every former subject, and nothing
+tells you when one does not take it up.** §165 turned three framework questions about the wall trap
+— does it own the grab scene, does it draw its own visuals, how long is its scene — from
+`enemy.GetComponent<WallPictureTrap>() != null` into `IPackageSceneOwner`, which the object answers
+for itself. `CharmWitchController` implemented it; the extracted `WallPictureTrap` did not, and
+answered *no* to all three for three sessions. Only one had a visible symptom: `OwnsSceneVisual`
+false let `NearbyEnemyHider` deactivate the trap at the instant of capture, so the object drawing
+the scene stopped drawing and its overlay froze on frame 0 (§172). The other two — a capture read as
+an ordinary grab, and the mod's escape delay applied instead of the package's own scene length —
+looked like nothing. **`bridgeaudit.py` cannot see this class**: both ends of the delegate are
+wired, and the hole is a package that never answers. `packageaudit.py` now checks the one case that
+is mechanically detectable — an assembly that drives `GrabScreen.StartGrab` and never mentions the
+interface.

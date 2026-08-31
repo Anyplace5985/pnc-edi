@@ -317,4 +317,3 @@ WebM, because `release.py` drops an H.264 master nothing opens — so the packag
 and invalid to load, and the load threw, and the enemy came up as a reskin with no behaviour
 (§171). **A check that is not the code path it guards is a second implementation**, and the
 environment where the two differ is the one you do not run.
-\n

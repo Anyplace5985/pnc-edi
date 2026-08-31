@@ -11498,6 +11498,59 @@ hold a package this tree does not. It immediately found a sixth stale file nobod
 root-only prune could not see into a subdirectory. **The same rule, at three scopes, found three
 different stale things in two sessions.**
 
+## 172. Three answers the wall trap stopped giving, and the one that showed
+
+**Step 4, second run: the witch works, and the joker's capture does not animate.** It grabs you, the
+overlay appears, and it sits on frame 0 — while the gallery plays the same frames perfectly and
+Edi gets `joker_wall_massage` and `joker_wall_cum` on time. Device right, picture frozen.
+
+`NearbyEnemyHider` hid the trap. `GrabStruggleHooks.StartGrab_Postfix` computes
+
+    bool hidePrimary = !CustomEnemyBridge.OwnsSceneVisual(enemy);
+
+and the comment above it says exactly why that call is there: *"A wall-picture trap is the scene -
+its artwork is the picture on the wall the player is looking at - so hiding the grabbing enemy would
+hide what they came to see."* The call returned false, the trap's `GameObject` was deactivated at the
+instant of capture, its `Update` stopped, and the object drawing the scene stopped drawing. Not a
+rendering bug at all — the mod switched the scene off.
+
+**Why it returned false is the whole lesson.** Until §165 the framework answered by testing for a
+type it contained:
+
+    SceneVisualOwnerTest = enemy => enemy.GetComponent<WallPictureTrap>() != null;
+    OwnsGrabScene        = ...WallPictureTrap... || ...CharmWitchController...;
+    ResolveSceneMinimumSeconds → trap.MinimumSceneSeconds
+
+§165 replaced all three with one `IPackageSceneOwner` the object answers for itself — the right
+shape, and the point of the seam. **The extracted `WallPictureTrap` never implemented it**:
+`internal sealed class WallPictureTrap : MonoBehaviour, IDamageable`. `CharmWitchController` did,
+so the witch kept working and the move looked complete.
+
+So three separate answers went silently to their defaults, and only one of them was visible:
+
+- `OwnsSceneVisual` → false, so the mod hid the scene. **The reported symptom.**
+- `OwnsGrabScene` → false, so PncEdi read the capture as an ordinary grab and slugged it off
+  whichever enemy was grabbed last — `joker_goonshroom_grabscreenstart`, an unknown row in
+  `PncEdi-missing-definitions.log`. `learnings/grab-and-ai-mechanics.md` had already recorded that
+  this name is unstable and that an alias for it cannot exist; what it could not know is that the
+  line should not have been produced at all.
+- `MinimumSceneSeconds` → -1, so the escape gate applied the mod's own 20 s delay instead of the
+  trap's declared scene length.
+
+**A silently-defaulting seam is exactly what `bridgeaudit.py` exists for, and it could not see this
+one**: both ends of the `CustomEnemyBridge` delegate are wired correctly. The gap is one layer
+further out — a *package* not answering a question the framework asks on its behalf. `packageaudit.py`
+now covers it: an assembly whose metadata mentions `StartGrab` and not `IPackageSceneOwner` is a
+package that drives vanilla's grab screen and cannot answer for the scene. It is a string scan of
+the DLL rather than IL parsing — both names are in the metadata heap of any assembly referencing
+them, and the question is only whether the package mentions the interface it plainly needs.
+Verified by mutation: removing the interface, rebuilding, and watching it fail.
+
+`OwnsSceneVisual` is unconditional rather than gated on `_capturing`, and that is deliberate: the
+guard reading it runs inside `GrabScreen.StartGrab`, which `BeginCapture` calls *before* setting
+`_capturing`, so a state-gated answer would be false at the exact moment it is asked. A wall trap is
+its own visual whether or not it is mid-capture, which is what the type test used to say.
+
 ## Tried and reverted — do not redo
 
 - **Trimming loop seams.** 14 galleries end on a different position than they start.
