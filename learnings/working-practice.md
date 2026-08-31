@@ -309,6 +309,18 @@ visible; the absence of a delete is not. `prune_gallery` had had the right shape
 nobody generalised it. **A one-way sync is not a sync, and a staleness check that only compares the
 files it wrote cannot see the ones it stopped writing** (§168).
 
+**A byte comparison of a build artefact can fail on identity rather than on code.** `deploy --check`
+reported five differing DLLs in both installs, all the same size, right after a deploy that had
+said "up to date". `ikdasm` on the installed copy and a fresh build differed in exactly one line —
+the MVID, the module's identity GUID — and in nothing else: same IL, same everything. So the gate
+was right that the bytes differ and wrong about what a reader takes from it, which is "the installs
+are stale". **Before believing a binary gate, disassemble the two copies and diff the IL** (§182);
+four lines of output settles in seconds what a rebuild-and-redeploy only appears to fix. This was
+one occurrence and did not reproduce over a deploy plus two `--full` runs, so the cause is not
+established and the check was left alone: a tolerance that ignores MVID would have to parse the
+metadata GUID heap, and a gate that learns to ignore a class of difference is how a real one gets
+through later.
+
 **Read the rendered artefact, not the template it comes from.** `code/dist/README.txt.in` was gone
 over four times in §168 and still shipped a document that never mentioned that a package can ship
 code and arrives switched off — which every other document in the project says, and which is the
