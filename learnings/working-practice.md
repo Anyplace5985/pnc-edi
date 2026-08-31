@@ -388,4 +388,8 @@ is free. Twice now the history has been rewritten for nothing, because no clone 
 old hashes; the third time would have been a rewrite of a history other people already have, plus a
 key that has to be treated as burned regardless. The push is the one-way door, and the sweep belongs
 immediately before it: working tree *and* every blob in every commit, since a clean tree says
-nothing about what three commits back still carries (§182).
+nothing about what three commits back still carries (§182). **After the push the sweep does not
+stop being worth running — its remedy changes.** Redaction plus a rewrite is available exactly once,
+before anyone else holds the hashes; afterwards a leaked credential is public regardless of what the
+next commit says, and the response is to revoke it at the device rather than to rewrite git (§183).
+Which is why the gate belongs in the tier that runs after every change, not in a pre-push ritual.

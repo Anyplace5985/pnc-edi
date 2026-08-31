@@ -1657,6 +1657,10 @@ MIT; the inherited layers explicitly ungranted) was considered and is the thing 
 question comes back. The only route to a clean whole-tree licence is asking the authors on the
 release thread, which is where all of it was posted and where this mod's releases go.
 
+**Pushed on 2026-08-31**, public from the first push, at `a6c756a`. The rewrite window §182 used is
+closed with it: a credential that reaches a commit from here is public whether or not a later commit
+removes it, and the answer becomes revoking it at the device rather than rewriting history.
+
 ## Tried and reverted — do not redo
 
 

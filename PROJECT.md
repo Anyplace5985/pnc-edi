@@ -25,6 +25,14 @@ what is on screen.
 mod is posted, where everything it was built on was posted first, and where the custom-enemy
 packages go. `CREDITS.md` is what that thread establishes about who made what.
 
+**The source is public** at <https://github.com/Anyplace5985/pnc-edi> (§183), and carries no
+licence, for the reason that entry gives: most of this tree derives from work whose rights nobody
+here holds. Two consequences for a session. Anything committed is public the moment it is pushed,
+so `code/secretaudit.py` runs in `check.py`'s fast tier and its remedy after a push is revoking a
+credential rather than rewriting history (§182). And the archives players actually install still
+come from the thread, not from here — a clone is a source tree that cannot build without a game
+install beside it.
+
 **Edi is open source even though the game is not — read it rather than reverse-engineering it.**
 
 | | |

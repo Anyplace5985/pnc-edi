@@ -4,7 +4,7 @@
     python3 code/secretaudit.py           the working tree: tracked, and untracked-but-not-ignored
     python3 code/secretaudit.py --history every blob in every commit (slow, before a push)
 
-**Why this exists.** The repo is going public, and `.gitignore` already reasons carefully about
+**Why this exists.** The repo is public (§183), and `.gitignore` already reasons carefully about
 this: `EdiConfig.json` is untracked *on purpose* because its device names embed per-user Handy
 connection keys, "which are effectively credentials for controlling that hardware". That rule
 protected the file and nothing else. A real key - this machine's - had been pasted into
@@ -32,9 +32,15 @@ Keys are never printed, here or in a failure: the finding is the file and the li
 value is masked the way `handystate.py` masks it. A check that leaks the secret it found in CI
 output has moved the problem rather than solved it.
 
-`--history` asks the same first two questions of every blob ever committed, which is the form
-that matters before a first push: a working tree can be clean while the reflog is not. It is not
-in `check.py`'s fast tier because it reads the whole object database.
+`--history` asks the same first two questions of every blob ever committed: a working tree can be
+clean while three commits back is not. It is not in `check.py`'s fast tier because it reads the
+whole object database.
+
+**Since the push, this gate is the only line.** §182's redaction worked because nothing had been
+pushed and the history could be rewritten for free. That is spent: a key that reaches a commit now
+is public whether or not it is later removed, and the remedy stops being `git filter-branch` and
+becomes revoking the credential at the device end. The fast-tier run is what keeps that from ever
+being the question.
 """
 from __future__ import annotations
 
